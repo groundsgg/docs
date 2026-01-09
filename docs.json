@@ -91,13 +91,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:hi@grounds.gg"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Development Portal",
+      "href": "https://developer.grounds.gg"
     }
   },
   "contextual": {
