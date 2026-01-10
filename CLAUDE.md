@@ -4,28 +4,6 @@ description: "Configure Claude Code for your documentation workflow"
 icon: "asterisk"
 ---
 
-Claude Code is Anthropic's official CLI tool. This guide will help you set up Claude Code to help you write and maintain your documentation.
-
-## Prerequisites
-
-- Active Claude subscription (Pro, Max, or API access)
-
-## Setup
-
-1. Install Claude Code globally:
-
-  ```bash
-  npm install -g @anthropic-ai/claude-code
-```
-
-2. Navigate to your docs directory.
-3. (Optional) Add the `CLAUDE.md` file below to your project.
-4. Run `claude` to start.
-
-## Create `CLAUDE.md`
-
-Create a `CLAUDE.md` file at the root of your documentation repository to train Claude Code on your specific documentation standards:
-
 ````markdown
 # Mintlify documentation
 
