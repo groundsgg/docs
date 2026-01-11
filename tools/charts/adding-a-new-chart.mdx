@@ -1,0 +1,73 @@
+---
+title: "Adding a New Chart"
+description: "Step-by-step guide to add a new Helm chart to the repository"
+---
+
+# Adding a New Chart
+
+To add a new Helm chart to this repository, follow these steps:
+
+## Step 1: Create Chart Directory
+
+Create a new directory following the naming convention `{chart-name}`:
+
+```bash
+mkdir your-chart-name
+cd your-chart-name
+```
+
+## Step 2: Initialize Helm Chart
+
+Use Helm to create a new chart structure:
+
+```bash
+helm create your-chart-name
+```
+
+Or manually create the required files:
+- `Chart.yaml` - Chart metadata
+- `values.yaml` - Default configuration values
+- `templates/` - Kubernetes manifest templates
+
+## Step 3: Create Chart README
+
+Create a `README.md` in your chart directory with:
+
+- Chart description
+- Prerequisites
+- Installation instructions
+- Configuration options
+- Examples
+
+## Step 4: Update Repository Index
+
+Add your chart to the repository index. This is typically done through CI/CD or manually:
+
+```bash
+helm repo index . --url https://github.com/groundsgg/charts/releases/download/your-chart-name
+```
+
+## Step 5: Update GitHub Workflow
+
+Update the chart matrix in all workflows so the new chart builds and tests:
+
+- `.github/workflows/ci.yml`: add your chart to `strategy.matrix.chart` for CI validation
+- `.github/workflows/release.yml`: add your chart for release automation
+
+## Step 6: Follow Chart Standards
+
+Ensure your chart follows best practices:
+
+- Use semantic versioning
+- Include proper labels and annotations
+- Document all values in `values.yaml`
+- Include example configurations
+- Follow Kubernetes naming conventions
+
+## Resources
+
+For detailed instructions and examples, see the [charts repository README](https://github.com/groundsgg/charts/).
+
+<Note>
+Refer to the [Helm documentation](https://helm.sh/docs/) for comprehensive chart development guidelines.
+</Note>
