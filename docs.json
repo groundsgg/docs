@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Grounds Docs",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -11,68 +11,30 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "grounds Guides",
-        "groups": [
-          {
-            "group": "Getting started",
-            "pages": [
-              "index"
-            ]
-          }
+        "tab": "Welcome",
+        "pages": [
+          "index"
         ]
       },
       {
-        "tab": "grounds API",
-        "groups": [
-          {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
-            ]
-          }
+        "tab": "Plugins",
+        "pages": [
+          "plugins/index"
         ]
       },
       {
-        "tab": "grounds SDKs",
-        "groups": [
-          {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
-            ]
-          }
+        "tab": "APIs",
+        "pages": [
+          "apis/index"
         ]
       }
     ],
     "global": {
       "anchors": [
         {
-          "anchor": "grounds Website",
+          "anchor": "Website",
           "href": "https://grounds.gg",
           "icon": "house"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://grounds.gg/blog",
-          "icon": "newspaper"
         }
       ]
     }
@@ -105,5 +67,11 @@
      "cursor",
      "vscode"
    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/groundsgg",
+      "discord": "https://discord.gg/zNQkU8vm3Z"
+    }
   }
 }
