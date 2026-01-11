@@ -1,0 +1,39 @@
+---
+title: "dev-container-node"
+description: "Node.js container for development in DevSpace environment"
+---
+
+# dev-container-node
+
+A Node.js container used for development in our DevSpace environment.
+
+## Registry
+
+```
+ghcr.io/groundsgg/containers/dev-container-node
+```
+
+## Features
+
+- **Node.js 24.11.0** on Alpine Linux
+- **PNPM package manager** pre-installed
+- **Development tools** (wget, curl, nano, bash)
+- **DevSpace integration** with startup script
+
+## Usage
+
+Pull and use the container:
+
+```bash
+docker pull ghcr.io/groundsgg/containers/dev-container-node:latest
+```
+
+Or use it in your `Dockerfile`:
+
+```dockerfile
+FROM ghcr.io/groundsgg/containers/dev-container-node:latest
+```
+
+## Documentation
+
+For more details, see the [dev-container-node README](https://github.com/groundsgg/containers/tree/main/dev-container-node) in the repository.

@@ -27,6 +27,44 @@
         "pages": [
           "apis/index"
         ]
+      },
+      {
+        "tab": "Tools",
+        "pages": [
+          "tools/index",
+          {
+            "group": "b3 - block3",
+            "pages": [
+              "tools/b3/index"
+            ]
+          },
+          {
+            "group": "containers",
+            "pages": [
+              "tools/containers/index",
+              {
+                "group": "Available Containers",
+                "pages": [
+                  "tools/containers/dev-container-node",
+                  "tools/containers/paper",
+                  "tools/containers/velocity"
+                ]
+              },
+              "tools/containers/adding-a-new-container"
+            ]
+          },
+          {
+            "group": "charts",
+            "pages": [
+              "tools/charts/index",
+              {
+                "group": "Available Charts",
+                "pages": []
+              },
+              "tools/charts/adding-a-new-chart"
+            ]
+          }
+        ]
       }
     ],
     "global": {
