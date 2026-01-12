@@ -1,0 +1,176 @@
+---
+title: "Usage"
+description: "Step-by-step guide to install and configure the Gradle plugin bundle"
+---
+
+The plugins are published to GitHub Packages. To use them, you need to configure your project to access the GitHub Packages Maven repository.
+
+## Prerequisites
+
+Before installing the plugins, ensure you have:
+
+- Gradle 7.0 or higher
+- A GitHub account with access to the `groundsgg` organization
+- A GitHub personal access token with `read:packages` permission
+
+## Step 1: Create GitHub Personal Access Token
+
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Click "Generate new token (classic)"
+3. Give it a descriptive name (e.g., "Gradle Packages Access")
+4. Select the `read:packages` scope
+5. Generate the token and copy it immediately
+
+<Warning>
+Store your token securely. You won't be able to see it again after leaving the page.
+</Warning>
+
+## Step 2: Configure Gradle Properties
+
+Add your GitHub credentials to `~/.gradle/gradle.properties`:
+
+```properties ~/.gradle/gradle.properties
+github.user=your-github-username
+github.token=your-personal-access-token
+```
+
+## Step 3: Configure Plugin Management
+
+Add the GitHub Packages repository to your `pluginManagement` block in `settings.gradle.kts`:
+
+```kotlin settings.gradle.kts
+pluginManagement {
+    repositories {
+        maven {
+            url = uri("https://maven.pkg.github.com/groundsgg/*")
+            credentials {
+                username = providers.gradleProperty("github.user").get()
+                password = providers.gradleProperty("github.token").get()
+            }
+        }
+        gradlePluginPortal()
+    }
+}
+```
+
+<Note>
+The `gradlePluginPortal()` should remain in the repositories list to allow Gradle to resolve other plugins from the Gradle Plugin Portal.
+</Note>
+
+## Step 4: Apply the Plugin
+
+Apply the appropriate plugin in your `build.gradle.kts` file based on your project type:
+
+### Root Plugin
+
+For root projects or shared configurations:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.root") version "0.1.1"
+}
+```
+
+### Paper Plugin
+
+For Paper server plugin projects:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.paper") version "0.1.1"
+}
+```
+
+### Velocity Plugin
+
+For Velocity proxy plugin projects:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.velocity") version "0.1.1"
+}
+```
+
+## Step 5: Verify Installation
+
+Verify the plugin is correctly installed by running:
+
+```bash
+./gradlew tasks --all
+```
+
+You should see tasks provided by the plugin in the output. For example, with the root plugin, you'll see Spotless formatting tasks.
+
+## Multi-Module Projects
+
+For projects with multiple modules, configure the plugin management at the root level:
+
+```kotlin settings.gradle.kts
+pluginManagement {
+    repositories {
+        maven {
+            url = uri("https://maven.pkg.github.com/groundsgg/*")
+            credentials {
+                username = providers.gradleProperty("github.user").get()
+                password = providers.gradleProperty("github.token").get()
+            }
+        }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = "my-project"
+include("paper-plugin", "velocity-plugin")
+```
+
+Then apply the root plugin in the root `build.gradle.kts`:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.root") version "0.1.1"
+}
+```
+
+And apply specific plugins in each subproject's `build.gradle.kts`:
+
+```kotlin paper-plugin/build.gradle.kts
+plugins {
+    id("gg.grounds.paper") version "0.1.1"
+}
+```
+
+```kotlin velocity-plugin/build.gradle.kts
+plugins {
+    id("gg.grounds.velocity") version "0.1.1"
+}
+```
+
+## Troubleshooting
+
+### Authentication Errors
+
+If you encounter authentication errors:
+
+1. Verify your GitHub token has `read:packages` permission
+2. Check that `github.user` and `github.token` are correctly set in your Gradle properties
+3. Ensure the token hasn't expired
+
+### Plugin Not Found
+
+If Gradle cannot find the plugin:
+
+1. Verify the repository URL is correct: `https://maven.pkg.github.com/groundsgg/*`
+2. Check that `gradlePluginPortal()` is included in the repositories list
+3. Ensure you're using the correct plugin version (check [GitHub Packages](https://github.com/orgs/groundsgg/packages?repo_name=library-gradle-plugin) for available versions)
+
+### Version Updates
+
+To update to a newer version, change the version number in your `build.gradle.kts`:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.root") version "0.1.1" // Update this version
+}
+```
+
+Check the [GitHub repository releases](https://github.com/groundsgg/library-gradle-plugin/releases) for the latest version.

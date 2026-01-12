@@ -1,0 +1,55 @@
+---
+title: "Overview"
+description: "Gradle plugin bundle providing standardized build configurations for Grounds projects"
+---
+
+The `library-gradle-plugin` is a Gradle plugin bundle that provides standardized build configurations for Grounds projects. It consolidates common setup tasks, dependency management, and build configurations to ensure consistency across all Grounds projects while reducing boilerplate configuration.
+
+## Quick Links
+
+<CardGroup cols={2}>
+<Card title="GitHub Repository" icon="github" href="https://github.com/groundsgg/library-gradle-plugin">
+  View the source code and contribute to the plugin bundle.
+</Card>
+
+<Card title="GitHub Packages" icon="box" href="https://github.com/orgs/groundsgg/packages?repo_name=library-gradle-plugin">
+  Browse available plugin versions on GitHub Packages.
+</Card>
+</CardGroup>
+
+## Getting Started
+
+To get started with the Gradle plugin bundle:
+
+1. [Install the plugins](/tools/gradle-plugin/usage) in your project
+2. Choose the appropriate plugin for your project type:
+   - Use Root Plugin for shared repository configuration
+   - Use Paper Plugin for Paper server plugins
+   - Use Velocity Plugin for Velocity proxy plugins
+
+## Functionality
+
+The plugin bundle consists of three main plugins, each providing specific functionality:
+
+### Root Plugin (`gg.grounds.root`)
+
+- Applies standard plugins (maven-publish, Kotlin JVM, Kapt, Spotless)
+- Code formatting with Spotless (ktfmt, Google Style, 4-space indentation)
+- Configures Maven Central repository for all projects
+- Automatic Kotlin project configuration (Group: gg.grounds, version management, JVM Toolchain 25)
+- JUnit Platform for tests with full exception output
+- Maven publishing to GitHub Packages
+
+### Paper Plugin (`gg.grounds.paper`)
+
+- Adds Paper repository
+- Shadow packaging configuration (Fat JAR)
+- Optional Paper API dependency (configurable via extension)
+- Automatic version replacement in plugin.yml
+
+### Velocity Plugin (`gg.grounds.velocity`)
+
+- Adds Paper repository
+- Shadow packaging configuration (Fat JAR)
+- Optional Velocity API dependencies (compileOnly and kapt)
+- Automatic generation of BuildInfo class with version for dynamic plugin versioning
