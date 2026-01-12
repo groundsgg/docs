@@ -1,0 +1,178 @@
+---
+title: "Velocity Plugin"
+description: "Velocity proxy plugin defaults with API dependencies and BuildConfig"
+---
+
+# Velocity Plugin (gg.grounds.velocity)
+
+The `gg.grounds.velocity` plugin provides pre-configured defaults for developing Velocity proxy plugins. It sets up Velocity repository access, shadow packaging, Velocity API dependencies, and BuildConfig generation for streamlined proxy plugin development.
+
+## Features
+
+The Velocity plugin automatically configures:
+
+- **Paper Repository Access**: Access to Paper's Maven repository (Velocity uses Paper's repository)
+- **Shadow Packaging**: Fat JAR creation with all dependencies included
+- **Velocity API Dependencies**: Automatic Velocity API dependency management
+- **BuildConfig Generation**: Automatic BuildConfig class generation with version information
+- **Proxy-Specific Build Optimizations**: Optimized build settings for proxy plugins
+
+## When to Use
+
+Use the Velocity plugin when:
+
+- Developing a plugin for Velocity proxy servers
+- You need shadow packaging for distribution
+- You want automatic Velocity API dependency management
+- You're building a proxy-side Minecraft plugin
+- You need BuildConfig for version information in your plugin
+
+## Usage
+
+Apply the plugin in your `build.gradle.kts`:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.velocity") version "0.1.1"
+}
+
+group = "gg.grounds"
+version = "1.0.0"
+```
+
+## Configuration
+
+The Velocity plugin supports the `grounds` extension for configuration:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.velocity") version "0.1.1"
+}
+
+grounds {
+    addDependencies.set(true) // Default: true
+}
+```
+
+<ParamField body="addDependencies" type="boolean" default="true">
+Controls whether the plugin automatically adds Velocity API dependencies. Set to `false` if you want to manage Velocity API dependencies manually.
+</ParamField>
+
+## What It Configures
+
+### Paper Repository
+
+Automatically adds Paper's Maven repository (Velocity uses the same repository):
+
+```kotlin
+repositories {
+    maven("https://repo.papermc.io/repository/maven-public/")
+}
+```
+
+### Shadow Plugin
+
+Configures Shadow plugin for creating fat JARs:
+
+- Relocates dependencies to avoid conflicts
+- Creates a single JAR with all dependencies
+- Configures the JAR task for plugin distribution
+
+### Velocity API Dependencies
+
+When `addDependencies` is `true` (default), automatically adds:
+
+```kotlin
+dependencies {
+    compileOnly("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
+}
+```
+
+### BuildConfig Generation
+
+Automatically generates a BuildConfig class with:
+
+- Plugin version
+- Build timestamp
+- Other build metadata
+
+This allows you to access version information in your plugin code:
+
+```kotlin
+val version = BuildConfig.VERSION
+```
+
+## Example Project
+
+A complete Velocity plugin project setup:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.velocity") version "0.1.1"
+}
+
+group = "gg.grounds"
+version = "1.0.0"
+
+grounds {
+    addDependencies.set(true)
+}
+
+dependencies {
+    // Your additional dependencies here
+}
+```
+
+## Building Your Plugin
+
+After configuring your plugin, build it with:
+
+```bash
+./gradlew build
+```
+
+The shadow JAR will be created in `build/libs/` and can be directly placed in your Velocity proxy's `plugins` folder.
+
+## Multi-Module Projects
+
+For projects with both root configuration and Velocity plugins:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.root") version "0.1.1"
+}
+```
+
+```kotlin velocity-plugin/build.gradle.kts
+plugins {
+    id("gg.grounds.velocity") version "0.1.1"
+}
+```
+
+## Using BuildConfig
+
+The generated BuildConfig class provides access to build information:
+
+```kotlin
+import gg.grounds.yourplugin.BuildConfig
+
+class YourPlugin : PluginInitializer {
+    override fun onInitialize() {
+        logger.info("Plugin version: ${BuildConfig.VERSION}")
+    }
+}
+```
+
+## Benefits
+
+- **Quick Setup**: Start developing immediately without manual configuration
+- **Best Practices**: Follows Velocity plugin development best practices
+- **Dependency Management**: Automatic handling of Velocity API versions
+- **Build Metadata**: Easy access to version information via BuildConfig
+- **Distribution Ready**: Shadow packaging configured for easy distribution
+
+## Related Documentation
+
+- Learn how to [install the plugins](/tools/gradle-plugin/installation)
+- See [Root Plugin](/tools/gradle-plugin/root-plugin) for shared configuration
+- Configure plugin [settings](/tools/gradle-plugin/configuration)

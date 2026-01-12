@@ -63,6 +63,22 @@
               },
               "tools/charts/adding-a-new-chart"
             ]
+          },
+          {
+            "group": "Gradle Plugin",
+            "pages": [
+              "tools/gradle-plugin/index",
+              "tools/gradle-plugin/installation",
+              "tools/gradle-plugin/configuration",
+              {
+                "group": "Available Plugins",
+                "pages": [
+                  "tools/gradle-plugin/root-plugin",
+                  "tools/gradle-plugin/paper-plugin",
+                  "tools/gradle-plugin/velocity-plugin"
+                ]
+              }
+            ]
           }
         ]
       }

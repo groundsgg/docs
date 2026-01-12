@@ -1,0 +1,56 @@
+---
+title: "Overview"
+description: "Gradle plugin bundle providing standardized build configurations for Grounds projects"
+---
+
+# Gradle Plugin Overview
+
+The `library-gradle-plugin` is a Gradle plugin bundle that provides standardized build configurations for Grounds projects. It consolidates common setup tasks, dependency management, and build configurations to ensure consistency across all Grounds projects while reducing boilerplate configuration.
+
+## Quick Links
+
+<CardGroup cols={2}>
+<Card title="GitHub Repository" icon="github" href="https://github.com/groundsgg/library-gradle-plugin">
+  View the source code and contribute to the plugin bundle.
+</Card>
+
+<Card title="GitHub Packages" icon="box" href="https://github.com/orgs/groundsgg/packages?repo_name=library-gradle-plugin">
+  Browse available plugin versions on GitHub Packages.
+</Card>
+</CardGroup>
+
+## Available Plugins
+
+The plugin bundle includes three specialized plugins:
+
+<CardGroup cols={3}>
+<Card title="Root Plugin" icon="folder-tree" href="/tools/gradle-plugin/root-plugin">
+  Shared repository configuration with Kotlin, publishing, and code formatting.
+</Card>
+
+<Card title="Paper Plugin" icon="server" href="/tools/gradle-plugin/paper-plugin">
+  Paper server plugin defaults with repository access and shadow packaging.
+</Card>
+
+<Card title="Velocity Plugin" icon="network-wired" href="/tools/gradle-plugin/velocity-plugin">
+  Velocity proxy plugin defaults with API dependencies and BuildConfig.
+</Card>
+</CardGroup>
+
+## Benefits
+
+- **Consistency**: Standardized build configurations across all Grounds projects
+- **Reduced Boilerplate**: Less repetitive configuration code
+- **Maintainability**: Centralized updates to build conventions
+- **Developer Experience**: Faster project setup with sensible defaults
+
+## Getting Started
+
+To get started with the Gradle plugin bundle:
+
+1. [Install the plugins](/tools/gradle-plugin/installation) in your project
+2. Choose the appropriate plugin for your project type:
+   - Use [Root Plugin](/tools/gradle-plugin/root-plugin) for shared repository configuration
+   - Use [Paper Plugin](/tools/gradle-plugin/paper-plugin) for Paper server plugins
+   - Use [Velocity Plugin](/tools/gradle-plugin/velocity-plugin) for Velocity proxy plugins
+3. [Configure](/tools/gradle-plugin/configuration) plugin settings as needed

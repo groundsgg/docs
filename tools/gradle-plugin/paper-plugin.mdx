@@ -1,0 +1,147 @@
+---
+title: "Paper Plugin"
+description: "Paper server plugin defaults with repository access and shadow packaging"
+---
+
+# Paper Plugin (gg.grounds.paper)
+
+The `gg.grounds.paper` plugin provides pre-configured defaults for developing Paper server plugins. It sets up Paper repository access, shadow packaging, and Paper API dependencies to streamline plugin development.
+
+## Features
+
+The Paper plugin automatically configures:
+
+- **Paper Repository Access**: Access to Paper's Maven repository for API dependencies
+- **Shadow Packaging**: Fat JAR creation with all dependencies included
+- **Paper API Dependency**: Automatic Paper API dependency management
+- **Server-Specific Build Optimizations**: Optimized build settings for server plugins
+
+## When to Use
+
+Use the Paper plugin when:
+
+- Developing a plugin for Paper servers
+- You need shadow packaging for distribution
+- You want automatic Paper API dependency management
+- You're building a server-side Minecraft plugin
+
+## Usage
+
+Apply the plugin in your `build.gradle.kts`:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.paper") version "0.1.1"
+}
+
+group = "gg.grounds"
+version = "1.0.0"
+```
+
+## Configuration
+
+The Paper plugin supports the `grounds` extension for configuration:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.paper") version "0.1.1"
+}
+
+grounds {
+    addDependencies.set(true) // Default: true
+}
+```
+
+<ParamField body="addDependencies" type="boolean" default="true">
+Controls whether the plugin automatically adds Paper API dependencies. Set to `false` if you want to manage Paper API dependencies manually.
+</ParamField>
+
+## What It Configures
+
+### Paper Repository
+
+Automatically adds Paper's Maven repository:
+
+```kotlin
+repositories {
+    maven("https://repo.papermc.io/repository/maven-public/")
+}
+```
+
+### Shadow Plugin
+
+Configures Shadow plugin for creating fat JARs:
+
+- Relocates dependencies to avoid conflicts
+- Creates a single JAR with all dependencies
+- Configures the JAR task for plugin distribution
+
+### Paper API Dependency
+
+When `addDependencies` is `true` (default), automatically adds:
+
+```kotlin
+dependencies {
+    compileOnly("io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT")
+}
+```
+
+## Example Project
+
+A complete Paper plugin project setup:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.paper") version "0.1.1"
+}
+
+group = "gg.grounds"
+version = "1.0.0"
+
+grounds {
+    addDependencies.set(true)
+}
+
+dependencies {
+    // Your additional dependencies here
+}
+```
+
+## Building Your Plugin
+
+After configuring your plugin, build it with:
+
+```bash
+./gradlew build
+```
+
+The shadow JAR will be created in `build/libs/` and can be directly placed in your Paper server's `plugins` folder.
+
+## Multi-Module Projects
+
+For projects with both root configuration and Paper plugins:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.root") version "0.1.1"
+}
+```
+
+```kotlin paper-plugin/build.gradle.kts
+plugins {
+    id("gg.grounds.paper") version "0.1.1"
+}
+```
+
+## Benefits
+
+- **Quick Setup**: Start developing immediately without manual configuration
+- **Best Practices**: Follows Paper plugin development best practices
+- **Dependency Management**: Automatic handling of Paper API versions
+- **Distribution Ready**: Shadow packaging configured for easy distribution
+
+## Related Documentation
+
+- Learn how to [install the plugins](/tools/gradle-plugin/installation)
+- See [Root Plugin](/tools/gradle-plugin/root-plugin) for shared configuration
+- Configure plugin [settings](/tools/gradle-plugin/configuration)
