@@ -1,0 +1,99 @@
+---
+title: "Repository and Project Naming Conventions"
+description: "Guidelines for naming repositories in the Grounds organization"
+---
+
+## Goal
+
+The goal of this convention is to define clear, concise, and consistent repository names that:
+
+- are easily understandable for new (including external) contributors
+- immediately reveal the role of a repository
+- are not redundant with the existing GitHub organization (grounds)
+- remain scalable in the long term (Services, Plugins, Libraries, Infra, Minestom)
+
+## General Naming Schema
+
+### Format
+
+- `<type>-<name>`
+- kebab-case
+- lowercase
+- no additional grounds- prefix, as the GitHub organization already has this name
+
+## Repository Types
+
+| Type | Meaning |
+|------|---------|
+| `service` | Backend microservices (e.g., gRPC / REST APIs) |
+| `plugin` | Minecraft plugins (Velocity, Paper, or both) |
+| `minestom` | Minestom-based server logic (e.g., Lobby) |
+| `library` | Reusable libraries (e.g., gRPC Contracts, SDKs) |
+
+## Examples
+
+### Services
+
+- `service-player`
+- `service-status`
+
+### Plugins
+
+- `plugin-server-discovery`
+- `plugin-player`
+
+### Minestom
+
+- `minestom-lobby`
+
+### Infrastructure
+
+- `infra-dev`
+- `infra-charts`
+
+### Libraries
+
+- `library-grpc-contracts`
+
+## Plugin Repository Structure
+
+For `plugin-<name>` repositories, the following structure is recommended:
+
+```
+plugin-<name>/
+├── common/
+├── velocity/
+├── paper/
+└── minestom/
+```
+
+- **common**: Shared logic (e.g., Models, Configs, Utilities)
+- **velocity**: Velocity-specific implementation
+- **paper**: Paper/Spigot-specific implementation
+- **minestom**: Minestom-specific implementation
+
+## Architecture Thoughts & Discussion
+
+### Services vs. Libraries
+
+- Services are language-independent and communicate via gRPC (protos are published).
+- Libraries (e.g., Service-Clients) can be used as Gradle/Maven dependencies.
+- Minestom, Plugins, and other server software should consume services, not hardcode logic.
+
+### Minestom
+
+- Minestom is considered standalone "Server Software" (`minestom-*`)
+- Shared logic should be integrated via libraries or service-clients
+
+## Excluded Projects
+
+Some projects are excluded from the general naming conventions. This includes repositories that are intentionally kept generic and intended for broad reuse.
+
+Examples of such projects include:
+
+- [`b3`](/tools/b3/index)
+- [`cockpit`](https://github.com/groundsgg/cockpit)
+- [`containers`](/tools/containers/index)
+- [`charts`](/tools/charts/index)
+
+These repositories follow their own context-dependent naming schemes and are not named according to the usual `<type>-<name>` pattern, as their purpose is cross-project or cross-domain.
