@@ -65,6 +65,12 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Contributing",
+        "pages": [
+          "contributing/naming-conventions"
+        ]
       }
     ],
     "global": {
