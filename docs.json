@@ -13,7 +13,8 @@
       {
         "tab": "Welcome",
         "pages": [
-          "index"
+          "index",
+          "licensing"
         ]
       },
       {
