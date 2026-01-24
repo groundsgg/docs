@@ -1,0 +1,214 @@
+---
+title: "Logging Conventions"
+description: "How we write logs that are clear, consistent, and incident-ready"
+---
+
+## Rules
+
+### Write for humans first (machines second)
+
+Logs are read most often during incidents.
+
+**Good**
+
+```
+Failed to connect to database (host=db01, timeout=5s)
+```
+
+**Bad**
+
+```
+DB error
+```
+
+**Rule of thumb:** If someone sees the log at 3 a.m., they should immediately know what happened, where, and why.
+
+### Always include context
+
+Context turns noise into signal.
+
+Include:
+
+- IDs (`requestId`, `userId`, `orderId`, `correlationId`)
+- Important parameters (never secrets)
+- System state if relevant
+
+**Good**
+
+```
+User authentication failed (userId=42, ip=192.168.1.10)
+```
+
+**Bad**
+
+```
+Authentication failed
+```
+
+### Be explicit about what failed
+
+Avoid vague verbs like "error occurred".
+
+**Good**
+
+```
+Failed to parse JWT token (reason=invalid_signature)
+```
+
+**Bad**
+
+```
+JWT error
+```
+
+### Use consistent structure
+
+Consistency makes logs searchable and parseable.
+
+**Recommended pattern**
+
+```
+<action> <result> (key=value, key=value)
+```
+
+**Example**
+
+```
+Fetched player session successfully (playerId=9c1e..., durationMs=12)
+```
+
+### Match log level to intent
+
+Misused log levels destroy signal.
+
+| Level | When to use |
+| --- | --- |
+| TRACE | Very detailed internal flow (almost never in prod) |
+| DEBUG | Useful for developers, disabled in prod |
+| INFO | Expected, important lifecycle events |
+| WARN | Unexpected but recoverable situations |
+| ERROR | Failed operation, user impact possible |
+| FATAL | App cannot continue |
+
+**Anti-pattern**
+
+```
+ERROR Starting HTTP server on port 8080
+```
+
+### Log once, at the right layer
+
+Do not log the same failure at every level of the stack.
+
+**Rule**
+
+- Log where you can add the most context.
+- Lower layers should throw, higher layers should log.
+
+### Never log secrets or PII
+
+This includes:
+
+- Passwords
+- Tokens (JWT, API keys)
+- Session cookies
+- Personal data (unless legally approved)
+
+**Bad**
+
+```
+Login failed (password=hunter2)
+```
+
+**Good**
+
+```
+Login failed (userId=42)
+```
+
+### Avoid logs that describe the obvious
+
+Code already tells part of the story.
+
+**Bad**
+
+```
+Entering method handleRequest
+Exiting method handleRequest
+```
+
+**Better**
+
+```
+Handled request successfully (method=POST, path=/login)
+```
+
+### Prefer facts over emotions
+
+Logs are not comments.
+
+**Bad**
+
+```
+This should never happen!!!
+```
+
+**Good**
+
+```
+Unexpected state: player already logged in (playerId=...)
+```
+
+### Log outcomes, not intentions
+
+Say what did happen, not what you wanted to happen.
+
+**Bad**
+
+```
+Trying to send email
+```
+
+**Good**
+
+```
+Email sent successfully (messageId=..., recipient=user@example.com)
+```
+
+### Make logs searchable
+
+Think ahead to tools like Elasticsearch, Loki, or Datadog.
+
+- Use stable keys: `requestId`, not `req`
+- Avoid free-form blobs
+- Keep messages short and structured
+
+### Language and tone
+
+- Use English (industry standard for mixed teams)
+- Use present or past tense
+- Be precise, neutral, and professional
+
+### Example: bad vs good
+
+**Bad**
+
+```
+Something went wrong while processing request
+```
+
+**Good**
+
+```
+Failed to process login request (userId=42, reason=invalid_credentials)
+```
+
+## Quick checklist before committing
+
+Ask yourself:
+
+- Can I understand this without reading the code?
+- Does it include enough context?
+- Is the log level correct?
+- Would this help during an incident?
+- Is anything sensitive included?

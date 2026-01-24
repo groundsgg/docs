@@ -77,7 +77,8 @@
       {
         "tab": "Contributing",
         "pages": [
-          "contributing/naming-conventions"
+          "contributing/naming-conventions",
+          "contributing/logging-conventions"
         ]
       }
     ],
