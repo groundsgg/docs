@@ -59,35 +59,65 @@ The `gradlePluginPortal()` should remain in the repositories list to allow Gradl
 
 ## Step 4: Apply the Plugin
 
-Apply the appropriate plugin in your `build.gradle.kts` file based on your project type:
+Apply the base conventions plugin with a version, then add the conventions that match your project type:
 
-### Root Plugin
+### Base Conventions (required)
 
-For root projects or shared configurations:
+Apply once per project (usually in the root project):
 
 ```kotlin build.gradle.kts
 plugins {
-    id("gg.grounds.root") version "0.1.1"
+    id("gg.grounds.base-conventions") version "0.3.0"
 }
 ```
 
-### Paper Plugin
+### Kotlin Conventions
+
+For Kotlin projects (typically shared/common modules):
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.kotlin-conventions")
+}
+```
+
+### Paper Conventions
 
 For Paper server plugin projects:
 
 ```kotlin build.gradle.kts
 plugins {
-    id("gg.grounds.paper") version "0.1.1"
+    id("gg.grounds.paper-conventions")
 }
 ```
 
-### Velocity Plugin
+### Velocity Conventions
 
 For Velocity proxy plugin projects:
 
 ```kotlin build.gradle.kts
 plugins {
-    id("gg.grounds.velocity") version "0.1.1"
+    id("gg.grounds.velocity-conventions")
+}
+```
+
+### Minestom Conventions
+
+For Minestom server plugin projects:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.minestom-conventions")
+}
+```
+
+### gRPC Conventions
+
+For gRPC projects:
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.grpc-conventions")
 }
 ```
 
@@ -99,7 +129,22 @@ Verify the plugin is correctly installed by running:
 ./gradlew tasks --all
 ```
 
-You should see tasks provided by the plugin in the output. For example, with the root plugin, you'll see Spotless formatting tasks.
+You should see tasks provided by the plugin in the output. For example, with base conventions, you'll see Spotless formatting tasks.
+
+## Overriding Paper, Velocity, or Minestom Versions
+
+Your project can request a higher Paper, Velocity, or Minestom version by declaring it in dependencies. Lower versions are not supported.
+
+- Current Paper version: `1.21.11-R0.1-SNAPSHOT`
+- Current Velocity version: `3.4.0-SNAPSHOT`
+- Current Minestom version: `2026.01.08-1.21.11`
+
+```kotlin
+dependencies {
+    // Overrides the Paper version with a higher one
+    compileOnly("io.papermc.paper:paper-api:1.21.12-R0.1-SNAPSHOT")
+}
+```
 
 ## Multi-Module Projects
 
@@ -123,25 +168,31 @@ rootProject.name = "my-project"
 include("paper-plugin", "velocity-plugin")
 ```
 
-Then apply the root plugin in the root `build.gradle.kts`:
+Then apply the base conventions in the root `build.gradle.kts`:
 
 ```kotlin build.gradle.kts
 plugins {
-    id("gg.grounds.root") version "0.1.1"
+    id("gg.grounds.base-conventions") version "0.3.0"
 }
 ```
 
-And apply specific plugins in each subproject's `build.gradle.kts`:
+And apply specific conventions in each subproject's `build.gradle.kts`:
 
 ```kotlin paper-plugin/build.gradle.kts
 plugins {
-    id("gg.grounds.paper") version "0.1.1"
+    id("gg.grounds.paper-conventions")
 }
 ```
 
 ```kotlin velocity-plugin/build.gradle.kts
 plugins {
-    id("gg.grounds.velocity") version "0.1.1"
+    id("gg.grounds.velocity-conventions")
+}
+```
+
+```kotlin grpc-module/build.gradle.kts
+plugins {
+    id("gg.grounds.grpc-conventions")
 }
 ```
 
@@ -165,11 +216,11 @@ If Gradle cannot find the plugin:
 
 ### Version Updates
 
-To update to a newer version, change the version number in your `build.gradle.kts`:
+To update to a newer version, change the version number only on `gg.grounds.base-conventions`:
 
 ```kotlin build.gradle.kts
 plugins {
-    id("gg.grounds.root") version "0.1.1" // Update this version
+    id("gg.grounds.base-conventions") version "0.3.0" // Update this version
 }
 ```
 
