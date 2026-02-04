@@ -5,23 +5,38 @@ description: "How we write logs that are clear, consistent, and incident-ready"
 
 ## Rules
 
-### Write for humans first (machines second)
+### Core rules
 
-Logs are read most often during incidents.
+- Write for humans first (machines second).
+- Always include context.
+- Be explicit about what failed.
+- Use consistent structure.
+- Match log level to intent.
+- Log once, at the right layer.
+- Never log secrets or PII.
+- Avoid logs that describe the obvious.
+- Log outcomes, not intentions.
+- Prefer facts over emotions.
+- Make logs searchable.
+- Use English and a neutral, professional tone.
 
-**Good**
+<Note>Rule of thumb: If someone sees the log at 3 a.m., they should immediately know what happened, where, and why.</Note>
+
+### Logging structure
+
+Consistency makes logs searchable and parseable.
+
+**Recommended pattern**
 
 ```
-Failed to connect to database (host=db01, timeout=5s)
+<action> <result> (key=value, key=value)
 ```
 
-**Bad**
+**Example**
 
 ```
-DB error
+Fetched player session successfully (playerId=9c1e..., durationMs=12)
 ```
-
-**Rule of thumb:** If someone sees the log at 3 a.m., they should immediately know what happened, where, and why.
 
 ### Always include context
 
@@ -61,22 +76,6 @@ Failed to parse JWT token (reason=invalid_signature)
 JWT error
 ```
 
-### Use consistent structure
-
-Consistency makes logs searchable and parseable.
-
-**Recommended pattern**
-
-```
-<action> <result> (key=value, key=value)
-```
-
-**Example**
-
-```
-Fetched player session successfully (playerId=9c1e..., durationMs=12)
-```
-
 ### Match log level to intent
 
 Misused log levels destroy signal.
@@ -89,12 +88,6 @@ Misused log levels destroy signal.
 | WARN | Unexpected but recoverable situations |
 | ERROR | Failed operation, user impact possible |
 | FATAL | App cannot continue |
-
-**Anti-pattern**
-
-```
-ERROR Starting HTTP server on port 8080
-```
 
 ### Log once, at the right layer
 
@@ -113,95 +106,6 @@ This includes:
 - Tokens (JWT, API keys)
 - Session cookies
 - Personal data (unless legally approved)
-
-**Bad**
-
-```
-Login failed (password=hunter2)
-```
-
-**Good**
-
-```
-Login failed (userId=42)
-```
-
-### Avoid logs that describe the obvious
-
-Code already tells part of the story.
-
-**Bad**
-
-```
-Entering method handleRequest
-Exiting method handleRequest
-```
-
-**Better**
-
-```
-Handled request successfully (method=POST, path=/login)
-```
-
-### Prefer facts over emotions
-
-Logs are not comments.
-
-**Bad**
-
-```
-This should never happen!!!
-```
-
-**Good**
-
-```
-Unexpected state: player already logged in (playerId=...)
-```
-
-### Log outcomes, not intentions
-
-Say what did happen, not what you wanted to happen.
-
-**Bad**
-
-```
-Trying to send email
-```
-
-**Good**
-
-```
-Email sent successfully (messageId=..., recipient=user@example.com)
-```
-
-### Make logs searchable
-
-Think ahead to tools like Elasticsearch, Loki, or Datadog.
-
-- Use stable keys: `requestId`, not `req`
-- Avoid free-form blobs
-- Keep messages short and structured
-
-### Language and tone
-
-- Use English (industry standard for mixed teams)
-- Use present or past tense
-- Be precise, neutral, and professional
-
-### Example: bad vs good
-
-**Bad**
-
-```
-Something went wrong while processing request
-```
-
-**Good**
-
-```
-Failed to process login request (userId=42, reason=invalid_credentials)
-```
 
 ## Quick checklist before committing
 
