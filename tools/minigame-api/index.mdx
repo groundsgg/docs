@@ -1,0 +1,56 @@
+---
+title: "Minigame API"
+description: "A standardized framework for building minigames on the Grounds platform"
+---
+
+# Minigame API
+
+The **Minigame API** (`library-minigame-api`) provides a standardized framework for building minigames on the Grounds platform. It abstracts away boilerplate like game state management, team handling, event systems, and statistics tracking — so you can focus on gameplay logic.
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/tools/minigame-api/getting-started">
+    Set up a new minigame project in minutes
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/tools/minigame-api/core-concepts">
+    Lifecycle, teams, events, and stats
+  </Card>
+  <Card title="API Reference" icon="code" href="/tools/minigame-api/api-reference">
+    Full interface and class reference
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/groundsgg/library-minigame-api">
+    Source code and issues
+  </Card>
+</CardGroup>
+
+## Overview
+
+The API is split into two modules:
+
+| Module | Artifact | Description |
+|--------|----------|-------------|
+| **core** | `library-minigame-api-core` | Platform-independent interfaces, events, team management, stats collector |
+| **paper** | `library-minigame-api-paper` | Paper/Bukkit implementation with scheduler-based timers and lifecycle integration |
+
+## What it provides
+
+- **Lifecycle hooks** — Override `onStartingPhase()`, `onRunningPhase()`, `onEndingPhase()` instead of wiring up manual state machines
+- **Team management** — Create teams, assign players, track eliminations
+- **Event bus** — Publish and subscribe to minigame events (kills, phase changes, match end)
+- **Statistics collector** — Track kills, deaths, and custom stats locally, then batch-submit after match end
+- **Timers** — Named, pausable timers with tick and completion callbacks
+
+## Architecture
+
+The Minigame API sits between your gameplay code and the Grounds infrastructure:
+
+```
+┌─────────────────────────────────┐
+│  Your Minigame (e.g. BedWars)   │  ← You write this
+├─────────────────────────────────┤
+│  library-minigame-api (paper)   │  ← Lifecycle, Teams, Events
+├─────────────────────────────────┤
+│  plugin-match                   │  ← Matchmaking, Queue, Allocation
+├─────────────────────────────────┤
+│  plugin-agones                  │  ← Server Lifecycle, K8s
+└─────────────────────────────────┘
+```

@@ -1,0 +1,255 @@
+---
+title: "API Reference"
+description: "Complete reference for all Minigame API interfaces and classes"
+---
+
+# API Reference
+
+## Core Module (`gg.grounds.minigame`)
+
+### Minigame
+
+Abstract base class for all minigames. Extend `PaperMinigame` for Paper implementations.
+
+```kotlin
+abstract class Minigame {
+    abstract val id: String
+    abstract val displayName: String
+    open val variant: GameVariant             // Default: CASUAL
+
+    val stateManager: GameStateManager
+    val teamManager: TeamManager
+    val eventBus: MinigameEventBus
+    val stats: MatchStatsCollector
+
+    // Standard lifecycle
+    open fun onLoad()
+    open fun onEnable()
+    open fun onDisable()
+
+    // Phase entry hooks
+    open fun onWaitingPhase()
+    open fun onStartingPhase()
+    open fun onRunningPhase()
+    open fun onEndingPhase()
+    open fun onShutdownPhase()
+
+    // Phase exit hooks
+    open fun onExitWaiting()
+    open fun onExitStarting()
+    open fun onExitRunning()
+    open fun onExitEnding()
+}
+```
+
+### GamePhase
+
+```kotlin
+enum class GamePhase {
+    WAITING, STARTING, RUNNING, ENDING, SHUTDOWN
+}
+```
+
+### GameVariant
+
+```kotlin
+enum class GameVariant {
+    CASUAL, PRO
+}
+```
+
+### GameStateManager
+
+```kotlin
+interface GameStateManager {
+    val currentPhase: GamePhase
+
+    fun transitionTo(phase: GamePhase)
+    fun startMatch()                          // → RUNNING
+    fun endMatch(winner: Team? = null)        // → ENDING
+
+    fun getTimer(name: String): GameTimer?
+    fun createTimer(name: String, duration: Duration): GameTimer
+}
+```
+
+### GameTimer
+
+```kotlin
+interface GameTimer {
+    val name: String
+    val duration: Duration
+    val remaining: Duration
+    val isRunning: Boolean
+
+    fun start()
+    fun pause()
+    fun resume()
+    fun cancel()
+    fun reset()
+
+    fun onTick(handler: (remaining: Duration) -> Unit): GameTimer
+    fun onComplete(handler: () -> Unit): GameTimer
+}
+```
+
+---
+
+## Teams (`gg.grounds.minigame.team`)
+
+### TeamManager
+
+```kotlin
+interface TeamManager {
+    fun createTeam(id: String, name: String, color: TeamColor? = null): Team
+    fun getTeam(id: String): Team?
+    fun getAllTeams(): List<Team>
+    fun removeTeam(id: String)
+
+    fun assignPlayer(playerId: UUID, team: Team)
+    fun getPlayerTeam(playerId: UUID): Team?
+
+    fun getAlivePlayers(): Set<UUID>
+    fun eliminatePlayer(playerId: UUID)
+    fun isEliminated(playerId: UUID): Boolean
+}
+```
+
+### Team
+
+```kotlin
+interface Team {
+    val id: String
+    val name: String
+    val color: TeamColor?
+
+    fun getPlayers(): Set<UUID>
+    fun addPlayer(playerId: UUID)
+    fun removePlayer(playerId: UUID)
+    fun hasPlayer(playerId: UUID): Boolean
+    fun size(): Int
+
+    fun displayName(): Component
+}
+```
+
+### TeamColor
+
+```kotlin
+enum class TeamColor(val displayName: String, val textColor: TextColor) {
+    RED, BLUE, GREEN, YELLOW, AQUA, WHITE, PINK, GRAY
+}
+```
+
+---
+
+## Events (`gg.grounds.minigame.event`)
+
+### MinigameEventBus
+
+```kotlin
+interface MinigameEventBus {
+    fun <T : MinigameEvent> subscribe(
+        eventClass: KClass<T>,
+        priority: EventPriority = EventPriority.NORMAL,
+        handler: (T) -> Unit,
+    )
+    fun publish(event: MinigameEvent)
+    fun clear()
+}
+
+// Extension function for inline subscription
+inline fun <reified T : MinigameEvent> MinigameEventBus.on(
+    priority: EventPriority = EventPriority.NORMAL,
+    noinline handler: (T) -> Unit,
+)
+```
+
+### Built-in Events
+
+| Event | Properties |
+|-------|-----------|
+| `PhaseChangeEvent` | `previousPhase: GamePhase`, `newPhase: GamePhase` |
+| `PlayerJoinEvent` | `playerId: UUID` |
+| `PlayerLeaveEvent` | `playerId: UUID` |
+| `PlayerDeathEvent` | `playerId: UUID`, `killerId: UUID?`, `cause: String?`, `isFinalKill: Boolean` |
+| `PlayerEliminateEvent` | `playerId: UUID`, `team: Team?` |
+| `TeamEliminateEvent` | `team: Team` |
+| `MatchStartEvent` | — |
+| `MatchEndEvent` | `winnerTeam: Team?`, `winnerPlayer: UUID?` |
+
+### EventPriority
+
+```kotlin
+enum class EventPriority {
+    LOWEST, LOW, NORMAL, HIGH, HIGHEST
+}
+```
+
+---
+
+## Statistics (`gg.grounds.minigame.stats`)
+
+### MatchStatsCollector
+
+```kotlin
+class MatchStatsCollector {
+    fun record(type: String, playerId: UUID, value: Double = 1.0, metadata: Map<String, String> = emptyMap())
+    fun trackKill(killerId: UUID, victimId: UUID, weapon: String? = null, isFinalKill: Boolean = false)
+    fun trackDeath(playerId: UUID, cause: String? = null)
+    fun trackCustom(type: String, playerId: UUID, value: Double = 1.0)
+
+    fun getEntries(): List<StatEntry>
+    fun getPlayerStats(playerId: UUID): List<StatEntry>
+    fun clear()
+}
+```
+
+### StatEntry
+
+```kotlin
+data class StatEntry(
+    val type: String,
+    val playerId: UUID,
+    val value: Double = 1.0,
+    val metadata: Map<String, String> = emptyMap(),
+    val timestamp: Instant = Instant.now(),
+)
+```
+
+---
+
+## Paper Module (`gg.grounds.minigame.paper`)
+
+### PaperMinigame
+
+```kotlin
+abstract class PaperMinigame(val plugin: JavaPlugin) : Minigame() {
+    fun initialize()                    // Set up managers, call onLoad + onEnable
+    fun shutdown()                      // Transition to SHUTDOWN, call onDisable
+
+    fun handlePlayerJoin(playerId: UUID)
+    fun handlePlayerLeave(playerId: UUID)
+    fun handlePlayerDeath(playerId: UUID, killerId: UUID? = null, cause: String? = null)
+}
+```
+
+### PaperGameStateManager
+
+Paper implementation of `GameStateManager`. Automatically calls lifecycle hooks on the `Minigame` when transitioning between phases, and publishes corresponding events to the event bus.
+
+### PaperGameTimer
+
+Paper implementation of `GameTimer` using `BukkitScheduler.scheduleSyncRepeatingTask`. Ticks every second (20 ticks).
+
+---
+
+## Default Implementations
+
+The `core` module includes platform-independent default implementations:
+
+| Class | Implements | Notes |
+|-------|-----------|-------|
+| `SimpleEventBus` | `MinigameEventBus` | Synchronous, priority-ordered dispatch |
+| `SimpleTeam` | `Team` | Thread-safe via `ConcurrentHashMap` |
+| `SimpleTeamManager` | `TeamManager` | Thread-safe, tracks eliminations separately |

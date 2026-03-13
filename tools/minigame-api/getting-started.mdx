@@ -1,0 +1,158 @@
+---
+title: "Getting Started"
+description: "Set up a new minigame project using the Minigame API"
+---
+
+# Getting Started
+
+This guide walks you through creating a new minigame using the Minigame API.
+
+## Prerequisites
+
+<Info>
+  - [Gradle](https://gradle.org/) with the Grounds convention plugins
+  - Access to the [groundsgg GitHub Maven registry](https://github.com/orgs/groundsgg/packages)
+  - Familiarity with Paper plugin development
+</Info>
+
+## Installation
+
+Add the Minigame API to your Paper module's `build.gradle.kts`:
+
+```kotlin
+plugins {
+    id("gg.grounds.paper-conventions")
+}
+
+dependencies {
+    implementation("gg.grounds:library-minigame-api-paper:0.1.0")
+}
+```
+
+The `paper` module transitively includes `core`, so you get all interfaces and implementations automatically.
+
+## Creating your first minigame
+
+<Steps>
+  <Step title="Define your minigame class">
+    Extend `PaperMinigame` and override the lifecycle hooks you need:
+
+    ```kotlin
+    package gg.grounds.minigame.example
+
+    import gg.grounds.minigame.paper.PaperMinigame
+    import org.bukkit.plugin.java.JavaPlugin
+
+    class DuelMinigame(plugin: JavaPlugin) : PaperMinigame(plugin) {
+        override val id = "duel"
+        override val displayName = "1v1 Duel"
+
+        override fun onLoad() {
+            // Set up teams
+            teamManager.createTeam("red", "Red", TeamColor.RED)
+            teamManager.createTeam("blue", "Blue", TeamColor.BLUE)
+        }
+
+        override fun onStartingPhase() {
+            // Teleport players, give items, start countdown
+        }
+
+        override fun onRunningPhase() {
+            // Enable PvP, start game timer
+        }
+
+        override fun onEndingPhase() {
+            // Show winner, submit stats
+        }
+    }
+    ```
+  </Step>
+
+  <Step title="Initialize in your plugin">
+    Create and initialize the minigame in your plugin's `onEnable`:
+
+    ```kotlin
+    class DuelPlugin : JavaPlugin() {
+        private lateinit var minigame: DuelMinigame
+
+        override fun onEnable() {
+            minigame = DuelMinigame(this)
+            minigame.initialize()
+        }
+
+        override fun onDisable() {
+            minigame.shutdown()
+        }
+    }
+    ```
+  </Step>
+
+  <Step title="Handle Bukkit events">
+    Forward relevant Bukkit events to the minigame:
+
+    ```kotlin
+    class DuelListener(private val minigame: DuelMinigame) : Listener {
+        @EventHandler
+        fun onJoin(event: PlayerJoinEvent) {
+            minigame.handlePlayerJoin(event.player.uniqueId)
+        }
+
+        @EventHandler
+        fun onQuit(event: PlayerQuitEvent) {
+            minigame.handlePlayerLeave(event.player.uniqueId)
+        }
+
+        @EventHandler
+        fun onDeath(event: PlayerDeathEvent) {
+            val killer = event.player.killer?.uniqueId
+            minigame.handlePlayerDeath(event.player.uniqueId, killer)
+        }
+    }
+    ```
+  </Step>
+
+  <Step title="Subscribe to minigame events">
+    Use the event bus to react to game events:
+
+    ```kotlin
+    override fun onLoad() {
+        eventBus.on<MatchEndEvent> { event ->
+            val winner = event.winnerTeam
+            if (winner != null) {
+                plugin.server.broadcast(
+                    Component.text("${winner.name} wins!", NamedTextColor.GOLD)
+                )
+            }
+        }
+
+        eventBus.on<PlayerDeathEvent> { event ->
+            stats.trackKill(
+                killerId = event.killerId ?: return@on,
+                victimId = event.playerId
+            )
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Project structure
+
+A typical minigame plugin follows this structure:
+
+```
+plugin-minigame-duel/
+├── settings.gradle.kts
+├── build.gradle.kts
+└── paper/
+    ├── build.gradle.kts
+    └── src/main/kotlin/gg/grounds/minigame/duel/
+        ├── DuelPlugin.kt         # Plugin entry point
+        ├── DuelMinigame.kt       # Minigame implementation
+        └── DuelListener.kt       # Bukkit event forwarding
+```
+
+## Next steps
+
+- Read [Core Concepts](/tools/minigame-api/core-concepts) to understand the lifecycle, team system, and event bus in detail
+- Check the [API Reference](/tools/minigame-api/api-reference) for all available interfaces and methods

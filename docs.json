@@ -71,6 +71,15 @@
               "tools/gradle-plugin/index",
               "tools/gradle-plugin/usage"
             ]
+          },
+          {
+            "group": "Minigame API",
+            "pages": [
+              "tools/minigame-api/index",
+              "tools/minigame-api/getting-started",
+              "tools/minigame-api/core-concepts",
+              "tools/minigame-api/api-reference"
+            ]
           }
         ]
       },

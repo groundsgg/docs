@@ -1,0 +1,236 @@
+---
+title: "Core Concepts"
+description: "Understand the lifecycle, team system, event bus, and statistics collector"
+---
+
+# Core Concepts
+
+The Minigame API is built around four core systems: **Lifecycle**, **Teams**, **Events**, and **Statistics**.
+
+## Game Lifecycle
+
+Every minigame goes through a sequence of phases, managed by the `GameStateManager`:
+
+```
+WAITING → STARTING → RUNNING → ENDING → SHUTDOWN
+```
+
+| Phase | Description |
+|-------|-------------|
+| **WAITING** | Server is waiting for players. Minimum count not yet reached. |
+| **STARTING** | Countdown is running. Players are being teleported, teams assigned. |
+| **RUNNING** | Match is live. Gameplay events are tracked. |
+| **ENDING** | Match is over. Stats are submitted, end screen is shown. |
+| **SHUTDOWN** | Server is shutting down. Players are sent back to the lobby. |
+
+### Lifecycle hooks
+
+Override these methods in your `Minigame` subclass to run code at specific phase transitions:
+
+```kotlin
+class MyMinigame(plugin: JavaPlugin) : PaperMinigame(plugin) {
+    // Called when each phase STARTS
+    override fun onWaitingPhase() { }
+    override fun onStartingPhase() { }
+    override fun onRunningPhase() { }
+    override fun onEndingPhase() { }
+    override fun onShutdownPhase() { }
+
+    // Called when each phase ENDS (before the next one starts)
+    override fun onExitWaiting() { }
+    override fun onExitStarting() { }
+    override fun onExitRunning() { }
+    override fun onExitEnding() { }
+}
+```
+
+### Triggering transitions
+
+Use `stateManager` to move between phases:
+
+```kotlin
+// Transition to a specific phase
+stateManager.transitionTo(GamePhase.STARTING)
+
+// Convenience methods
+stateManager.startMatch()              // → RUNNING + publishes MatchStartEvent
+stateManager.endMatch(winnerTeam)      // → ENDING + publishes MatchEndEvent
+```
+
+### Timers
+
+Create named timers for countdowns, game duration, or custom intervals:
+
+```kotlin
+override fun onStartingPhase() {
+    stateManager.createTimer("countdown", Duration.ofSeconds(10))
+        .onTick { remaining ->
+            broadcast(Component.text("Starting in ${remaining.seconds}s"))
+        }
+        .onComplete {
+            stateManager.startMatch()
+        }
+        .start()
+}
+```
+
+Timers support `start()`, `pause()`, `resume()`, `cancel()`, and `reset()`.
+
+## Team Management
+
+The `TeamManager` handles team creation, player assignment, and elimination tracking.
+
+### Creating teams
+
+```kotlin
+override fun onLoad() {
+    teamManager.createTeam("red", "Red Team", TeamColor.RED)
+    teamManager.createTeam("blue", "Blue Team", TeamColor.BLUE)
+}
+```
+
+### Assigning players
+
+```kotlin
+val team = teamManager.getTeam("red")!!
+teamManager.assignPlayer(playerId, team)
+```
+
+### Querying teams
+
+```kotlin
+// Get a player's team
+val team = teamManager.getPlayerTeam(playerId)
+
+// Get all teams
+val teams = teamManager.getAllTeams()
+
+// Get alive (non-eliminated) players across all teams
+val alive = teamManager.getAlivePlayers()
+```
+
+### Eliminations
+
+```kotlin
+teamManager.eliminatePlayer(playerId)
+teamManager.isEliminated(playerId)  // → true
+```
+
+<Note>
+  Elimination is separate from team membership. An eliminated player still belongs to their team but is excluded from `getAlivePlayers()`. This allows spectating while keeping team affiliation.
+</Note>
+
+## Event Bus
+
+The `MinigameEventBus` provides a publish/subscribe system for game events. Events are processed synchronously in priority order.
+
+### Subscribing to events
+
+```kotlin
+// Using the `on<T>` extension (recommended)
+eventBus.on<PlayerDeathEvent> { event ->
+    logger.info("${event.playerId} died, killed by ${event.killerId}")
+}
+
+// With priority
+eventBus.on<MatchEndEvent>(EventPriority.HIGH) { event ->
+    // Runs before NORMAL priority handlers
+}
+
+// Using the full API
+eventBus.subscribe(PlayerJoinEvent::class, EventPriority.NORMAL) { event ->
+    // ...
+}
+```
+
+### Built-in events
+
+| Event | Published when |
+|-------|---------------|
+| `PhaseChangeEvent` | Game transitions between phases |
+| `PlayerJoinEvent` | A player joins the match |
+| `PlayerLeaveEvent` | A player leaves the match |
+| `PlayerDeathEvent` | A player dies (includes `killerId`, `cause`, `isFinalKill`) |
+| `PlayerEliminateEvent` | A player is eliminated from the match |
+| `TeamEliminateEvent` | An entire team is eliminated |
+| `MatchStartEvent` | Match enters RUNNING phase |
+| `MatchEndEvent` | Match ends (includes `winnerTeam`, `winnerPlayer`) |
+
+### Custom events
+
+Create your own events by extending `MinigameEvent`:
+
+```kotlin
+class BedDestroyedEvent(
+    val team: Team,
+    val destroyedBy: UUID,
+) : MinigameEvent()
+
+// Publish
+eventBus.publish(BedDestroyedEvent(blueTeam, playerId))
+
+// Subscribe
+eventBus.on<BedDestroyedEvent> { event ->
+    broadcast(Component.text("${event.team.name}'s bed was destroyed!"))
+}
+```
+
+### Event priority
+
+Events are delivered in priority order: `LOWEST` → `LOW` → `NORMAL` → `HIGH` → `HIGHEST`.
+
+## Statistics Collector
+
+The `MatchStatsCollector` tracks events locally during a match. Stats are collected in-memory and can be batch-submitted to the analytics service after the match ends.
+
+### Built-in tracking
+
+```kotlin
+// Track a kill (automatically records both kill + death)
+stats.trackKill(killerId, victimId, weapon = "diamond_sword", isFinalKill = true)
+
+// Track a death without a killer
+stats.trackDeath(playerId, cause = "void")
+
+// Track custom stats
+stats.trackCustom("beds_destroyed", playerId)
+stats.trackCustom("blocks_placed", playerId, value = 42.0)
+```
+
+### Retrieving stats
+
+```kotlin
+// All recorded entries
+val allStats = stats.getEntries()
+
+// Stats for a specific player
+val playerStats = stats.getPlayerStats(playerId)
+```
+
+### Submitting stats
+
+Submit stats in your `onEndingPhase()` hook:
+
+```kotlin
+override fun onEndingPhase() {
+    val entries = stats.getEntries()
+    // Submit to analytics service via NATS/gRPC
+    analyticsClient.batchSubmit(matchId, entries)
+}
+```
+
+## Game Variants
+
+Every minigame has a `variant` property that determines the competitive context:
+
+| Variant | MMR | Leaderboard | Use case |
+|---------|-----|-------------|----------|
+| `CASUAL` | Hidden (used for matchmaking) | Optional | Fun, low-pressure matches |
+| `PRO` | Visible ranking | Yes | Competitive, ranked matches |
+
+```kotlin
+class RankedDuel(plugin: JavaPlugin) : PaperMinigame(plugin) {
+    override val variant = GameVariant.PRO
+    // ...
+}
+```
