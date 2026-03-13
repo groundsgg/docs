@@ -74,6 +74,17 @@ override fun onStartingPhase() {
 }
 ```
 
+You can register multiple `onTick` and `onComplete` handlers on the same timer — they are invoked in registration order:
+
+```kotlin
+stateManager.createTimer("countdown", Duration.ofSeconds(10))
+    .onTick { remaining -> updateScoreboard(remaining) }
+    .onTick { remaining -> playTickSound(remaining) }
+    .onComplete { stateManager.startMatch() }
+    .onComplete { broadcast(Component.text("Go!")) }
+    .start()
+```
+
 Timers support `start()`, `pause()`, `resume()`, `cancel()`, and `reset()`.
 
 ## Team Management
@@ -126,9 +137,11 @@ The `MinigameEventBus` provides a publish/subscribe system for game events. Even
 
 ### Subscribing to events
 
+Both `on<T>` and `subscribe()` return a `Subscription` handle you can use to later remove the handler:
+
 ```kotlin
 // Using the `on<T>` extension (recommended)
-eventBus.on<PlayerDeathEvent> { event ->
+val sub = eventBus.on<PlayerDeathEvent> { event ->
     logger.info("${event.playerId} died, killed by ${event.killerId}")
 }
 
@@ -141,6 +154,19 @@ eventBus.on<MatchEndEvent>(EventPriority.HIGH) { event ->
 eventBus.subscribe(PlayerJoinEvent::class, EventPriority.NORMAL) { event ->
     // ...
 }
+```
+
+### Unsubscribing
+
+Call `unsubscribe()` on the returned `Subscription` handle to remove a specific handler. Double-unsubscribe is a safe no-op:
+
+```kotlin
+val subscription = eventBus.on<PlayerDeathEvent> { event ->
+    // handle death
+}
+
+// Later, when you no longer need this handler:
+subscription.unsubscribe()
 ```
 
 ### Built-in events
@@ -178,6 +204,19 @@ eventBus.on<BedDestroyedEvent> { event ->
 ### Event priority
 
 Events are delivered in priority order: `LOWEST` → `LOW` → `NORMAL` → `HIGH` → `HIGHEST`.
+
+## Player Tracking
+
+The base `Minigame` class maintains a thread-safe set of all players currently in the minigame. When you call `handlePlayerJoin` or `handlePlayerLeave` on a `PaperMinigame`, the player is automatically added to or removed from this set.
+
+```kotlin
+// Read-only view of current players
+val currentPlayers: Set<UUID> = minigame.players
+```
+
+<Note>
+  `players` returns an unmodifiable view. For subclasses, the mutable backing set `_players` is available as a `protected` property.
+</Note>
 
 ## Statistics Collector
 

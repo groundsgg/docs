@@ -34,10 +34,11 @@ The API is split into two modules:
 ## What it provides
 
 - **Lifecycle hooks** — Override `onStartingPhase()`, `onRunningPhase()`, `onEndingPhase()` instead of wiring up manual state machines
+- **Player tracking** — Thread-safe set of current players, automatically maintained by the base class
 - **Team management** — Create teams, assign players, track eliminations
-- **Event bus** — Publish and subscribe to minigame events (kills, phase changes, match end)
-- **Statistics collector** — Track kills, deaths, and custom stats locally, then batch-submit after match end
-- **Timers** — Named, pausable timers with tick and completion callbacks
+- **Event bus** — Publish and subscribe to minigame events with unsubscribe support
+- **Statistics collector** — Thread-safe tracking of kills, deaths, and custom stats for batch submission
+- **Timers** — Named, pausable timers with multiple tick and completion handlers
 
 ## Architecture
 

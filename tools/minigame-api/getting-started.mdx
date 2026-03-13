@@ -112,7 +112,7 @@ The `paper` module transitively includes `core`, so you get all interfaces and i
   </Step>
 
   <Step title="Subscribe to minigame events">
-    Use the event bus to react to game events:
+    Use the event bus to react to game events. Subscriptions return a `Subscription` handle you can use to unsubscribe later:
 
     ```kotlin
     override fun onLoad() {

@@ -17,10 +17,11 @@ abstract class Minigame {
     abstract val displayName: String
     open val variant: GameVariant             // Default: CASUAL
 
-    val stateManager: GameStateManager
-    val teamManager: TeamManager
-    val eventBus: MinigameEventBus
+    val stateManager: GameStateManager        // Initialized during PaperMinigame.initialize()
+    val teamManager: TeamManager              // Initialized during PaperMinigame.initialize()
+    val eventBus: MinigameEventBus            // Initialized during PaperMinigame.initialize()
     val stats: MatchStatsCollector
+    val players: Set<UUID>                    // Read-only view of current players
 
     // Standard lifecycle
     open fun onLoad()
@@ -41,6 +42,10 @@ abstract class Minigame {
     open fun onExitEnding()
 }
 ```
+
+<Warning>
+  `stateManager`, `teamManager`, and `eventBus` are initialized during `PaperMinigame.initialize()` and must not be accessed before that call completes (e.g. not in constructors or property initializers).
+</Warning>
 
 ### GamePhase
 
@@ -88,8 +93,8 @@ interface GameTimer {
     fun cancel()
     fun reset()
 
-    fun onTick(handler: (remaining: Duration) -> Unit): GameTimer
-    fun onComplete(handler: () -> Unit): GameTimer
+    fun onTick(handler: (remaining: Duration) -> Unit): GameTimer     // Adds a handler (multiple allowed)
+    fun onComplete(handler: () -> Unit): GameTimer                    // Adds a handler (multiple allowed)
 }
 ```
 
@@ -145,6 +150,14 @@ enum class TeamColor(val displayName: String, val textColor: TextColor) {
 
 ## Events (`gg.grounds.minigame.event`)
 
+### Subscription
+
+```kotlin
+fun interface Subscription {
+    fun unsubscribe()    // Removes the subscription. Subsequent calls are no-ops.
+}
+```
+
 ### MinigameEventBus
 
 ```kotlin
@@ -153,7 +166,7 @@ interface MinigameEventBus {
         eventClass: KClass<T>,
         priority: EventPriority = EventPriority.NORMAL,
         handler: (T) -> Unit,
-    )
+    ): Subscription
     fun publish(event: MinigameEvent)
     fun clear()
 }
@@ -162,7 +175,7 @@ interface MinigameEventBus {
 inline fun <reified T : MinigameEvent> MinigameEventBus.on(
     priority: EventPriority = EventPriority.NORMAL,
     noinline handler: (T) -> Unit,
-)
+): Subscription
 ```
 
 ### Built-in Events
@@ -228,9 +241,10 @@ abstract class PaperMinigame(val plugin: JavaPlugin) : Minigame() {
     fun initialize()                    // Set up managers, call onLoad + onEnable
     fun shutdown()                      // Transition to SHUTDOWN, call onDisable
 
-    fun handlePlayerJoin(playerId: UUID)
-    fun handlePlayerLeave(playerId: UUID)
-    fun handlePlayerDeath(playerId: UUID, killerId: UUID? = null, cause: String? = null)
+    // Tracks player in `players` set, publishes event. Override in subclasses for custom logic.
+    open fun handlePlayerJoin(playerId: UUID)
+    open fun handlePlayerLeave(playerId: UUID)
+    open fun handlePlayerDeath(playerId: UUID, killerId: UUID? = null, cause: String? = null)
 }
 ```
 
@@ -250,6 +264,6 @@ The `core` module includes platform-independent default implementations:
 
 | Class | Implements | Notes |
 |-------|-----------|-------|
-| `SimpleEventBus` | `MinigameEventBus` | Synchronous, priority-ordered dispatch |
+| `SimpleEventBus` | `MinigameEventBus` | Synchronous, priority-ordered dispatch. Sorted on subscribe for efficient publish. |
 | `SimpleTeam` | `Team` | Thread-safe via `ConcurrentHashMap` |
 | `SimpleTeamManager` | `TeamManager` | Thread-safe, tracks eliminations separately |
