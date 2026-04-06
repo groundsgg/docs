@@ -3,19 +3,21 @@ title: "Installation"
 description: "Install and prepare the Keycloak Minecraft identity provider"
 ---
 
-## Prerequisites
-
-Before installing the plugin, ensure you have:
-
-- A running Keycloak instance
-- JDK 21 available locally if you want to build from source
-- A Microsoft Azure App Registration for the brokered login flow
+<Info>
+  **Prerequisites**:
+  - A running Keycloak instance
+  - JDK 21 available locally if you want to build from source
+  - A Microsoft Azure App Registration for the brokered login flow
+</Info>
 
 <Note>
 The provider uses Microsoft's consumer OAuth endpoints. Corporate or `common` tenant configurations are not suitable for this flow because Xbox Live authentication requires the consumer setup.
 </Note>
 
-## Step 1: Create the Azure App Registration
+Follow these steps to install and configure the provider in Keycloak.
+
+<Steps>
+<Step title="Create the Azure App Registration">
 
 Create a Microsoft app registration with these settings:
 
@@ -27,7 +29,9 @@ The redirect URI must use the Keycloak identity provider alias. The default alia
 
 The Keycloak identity provider later uses the Azure app's client ID and client secret.
 
-## Step 2: Check Minecraft API Whitelisting
+</Step>
+
+<Step title="Check Minecraft API Whitelisting">
 
 Some Minecraft authentication scenarios require Mojang or Minecraft API whitelisting in addition to the Azure OAuth setup.
 
@@ -35,7 +39,9 @@ Some Minecraft authentication scenarios require Mojang or Minecraft API whitelis
 
 If the app registration is not allowed to access the relevant Minecraft services, login or entitlement checks can fail even when the Microsoft OAuth setup is correct.
 
-## Step 3: Obtain the Provider JAR
+</Step>
+
+<Step title="Obtain the Provider JAR">
 
 Use the published artifact from GitHub Packages:
 
@@ -50,7 +56,9 @@ Or build it from source:
 
 The build output is a single shaded JAR named `keycloak-minecraft-idp.jar`.
 
-## Step 4: Install the Provider into Keycloak
+</Step>
+
+<Step title="Install the Provider into Keycloak">
 
 Copy the JAR into Keycloak's providers directory:
 
@@ -66,7 +74,9 @@ Then rebuild Keycloak:
 
 Restart Keycloak after the build completes.
 
-## Step 5: Add the Identity Provider
+</Step>
+
+<Step title="Add the Identity Provider">
 
 In the Keycloak admin UI:
 
@@ -75,4 +85,6 @@ In the Keycloak admin UI:
 3. Click `Add provider`.
 4. Select `Minecraft`.
 
-Continue with the [configuration guide](/integrations/keycloak-minecraft/configuration) to fill in the required provider fields.
+Continue with the [configuration guide](/platform/keycloak-minecraft-idp/configuration) to fill in the required provider fields.
+</Step>
+</Steps>

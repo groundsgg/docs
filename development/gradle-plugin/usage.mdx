@@ -5,15 +5,17 @@ description: "Step-by-step guide to install and configure the Gradle plugin bund
 
 The plugins are published to GitHub Packages. To use them, you need to configure your project to access the GitHub Packages Maven repository.
 
-## Prerequisites
+<Info>
+  **Prerequisites**:
+  - Gradle 7.0 or higher
+  - A GitHub account with access to the `groundsgg` organization
+  - A GitHub personal access token with `read:packages` permission
+</Info>
 
-Before installing the plugins, ensure you have:
+Follow these steps to install and configure the Gradle plugin bundle.
 
-- Gradle 7.0 or higher
-- A GitHub account with access to the `groundsgg` organization
-- A GitHub personal access token with `read:packages` permission
-
-## Step 1: Create GitHub Personal Access Token
+<Steps>
+<Step title="Create GitHub Personal Access Token">
 
 1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
 2. Click "Generate new token (classic)"
@@ -25,7 +27,9 @@ Before installing the plugins, ensure you have:
 Store your token securely. You won't be able to see it again after leaving the page.
 </Warning>
 
-## Step 2: Configure Gradle Properties
+</Step>
+
+<Step title="Configure Gradle Properties">
 
 Add your GitHub credentials to `~/.gradle/gradle.properties`:
 
@@ -34,7 +38,9 @@ github.user=your-github-username
 github.token=your-personal-access-token
 ```
 
-## Step 3: Configure Plugin Management
+</Step>
+
+<Step title="Configure Plugin Management">
 
 Add the GitHub Packages repository to your `pluginManagement` block in `settings.gradle.kts`:
 
@@ -57,7 +63,9 @@ pluginManagement {
 The `gradlePluginPortal()` should remain in the repositories list to allow Gradle to resolve other plugins from the Gradle Plugin Portal.
 </Note>
 
-## Step 4: Apply the Plugin
+</Step>
+
+<Step title="Apply the Plugin">
 
 Apply the base conventions plugin with a version, then add the conventions that match your project type:
 
@@ -121,7 +129,9 @@ plugins {
 }
 ```
 
-## Step 5: Verify Installation
+</Step>
+
+<Step title="Verify Installation">
 
 Verify the plugin is correctly installed by running:
 
@@ -130,6 +140,8 @@ Verify the plugin is correctly installed by running:
 ```
 
 You should see tasks provided by the plugin in the output. For example, with base conventions, you'll see Spotless formatting tasks.
+</Step>
+</Steps>
 
 ## Overriding Paper, Velocity, or Minestom Versions
 
