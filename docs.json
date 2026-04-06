@@ -24,6 +24,20 @@
         ]
       },
       {
+        "tab": "Integrations",
+        "pages": [
+          "integrations/index",
+          {
+            "group": "Keycloak Minecraft IDP Plugin",
+            "pages": [
+              "integrations/keycloak-minecraft/index",
+              "integrations/keycloak-minecraft/installation",
+              "integrations/keycloak-minecraft/configuration"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "APIs",
         "pages": [
           "apis/index"
