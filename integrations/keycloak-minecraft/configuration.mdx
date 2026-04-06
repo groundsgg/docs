@@ -1,0 +1,115 @@
+---
+title: "Configuration"
+description: "Configure the Keycloak Minecraft identity provider"
+---
+
+## Required Provider Fields
+
+After adding the `Minecraft` identity provider in Keycloak, configure these fields:
+
+| Field | Required | Description |
+| --- | --- | --- |
+| Client ID | Yes, unless provided through SPI config | Microsoft Azure application client ID |
+| Client Secret | Yes, unless provided through SPI config | Microsoft Azure client secret |
+| Partner Relying Party | Yes | Xbox partner relying party that returns the `ptx` claim used for stable account linking |
+
+<Warning>
+This provider supports only the OAuth client authentication method `client_secret_post`. Do not switch the provider to Basic or JWT-based client authentication.
+</Warning>
+
+## Optional Provider Fields
+
+| Field | Description |
+| --- | --- |
+| Sync Real Name | Imports Microsoft `name`, `given_name`, and `family_name` claims when available |
+| Partner XSTS Private Key | Private key used to decrypt encrypted partner XSTS tokens when `ptx` is not exposed in `DisplayClaims` |
+
+The partner XSTS private key supports these formats:
+
+- Raw PEM content
+- Absolute or relative file paths
+- `file:` URIs
+- `vault:` references resolved through the Keycloak vault
+
+## Partner XSTS Requirement
+
+Stable brokered account linking depends on the Xbox partner `ptx` claim. The provider requests a second partner XSTS token in addition to the Minecraft XSTS token, so your Xbox setup must include a partner relying party that returns `ptx`.
+
+If the selected partner token exposes `ptx` only inside the encrypted XSTS payload, configure `Partner XSTS Private Key` with the matching private key.
+
+## Server-Level Credentials
+
+Instead of storing credentials in the realm database, you can provide them at the Keycloak server level:
+
+```text
+KC_SPI_IDENTITY_PROVIDER_MINECRAFT_CLIENT_ID
+KC_SPI_IDENTITY_PROVIDER_MINECRAFT_CLIENT_SECRET
+KC_SPI_IDENTITY_PROVIDER_MINECRAFT_PARTNER_XSTS_PRIVATE_KEY
+```
+
+Equivalent `kc.sh` flags:
+
+```text
+--spi-identity-provider-minecraft-client-id=<value>
+--spi-identity-provider-minecraft-client-secret=<value>
+--spi-identity-provider-minecraft-partner-xsts-private-key=<value>
+```
+
+Admin UI values take precedence over the server-level defaults when both are configured.
+
+## Vault-Backed Secrets
+
+`Client Secret` and `Partner XSTS Private Key` may reference a Keycloak vault entry by using the `vault:` prefix.
+
+Example:
+
+```text
+vault:keycloak/minecraft
+```
+
+Blank or unresolved vault values are rejected during brokered login.
+
+## Managed User Attributes
+
+On successful login, the provider stores or refreshes these managed attributes on the Keycloak user:
+
+| Attribute | Description |
+| --- | --- |
+| `microsoft_name` | Raw Microsoft OIDC `name` claim when available |
+| `minecraft_login_identity` | `java` or `bedrock`, depending on the resolved login identity |
+| `minecraft_java_owned` | Whether Java entitlement was detected |
+| `minecraft_bedrock_owned` | Whether Bedrock entitlement was detected |
+| `minecraft_java_uuid` | Minecraft UUID when login resolves to Java |
+| `minecraft_java_username` | Minecraft Java username when login resolves to Java |
+| `xbox_gamertag` | Xbox Gamertag when available |
+
+When `Sync Real Name` is enabled, the provider also updates Keycloak `firstName` and `lastName` from Microsoft claims when they are present.
+
+## Identity and Linking Behavior
+
+- The brokered identity uses the resolved Minecraft Java username or Xbox Gamertag as its external username.
+- Initial user import uses that resolved value as the Keycloak username.
+- Existing users keep receiving refreshed managed attributes on login.
+- Brokered account linking uses the Xbox partner `ptx` claim instead of the XSTS `uhs` value because `ptx` is the stable partner-scoped identifier.
+
+## Troubleshooting
+
+### Login fails before Xbox or Minecraft resolution
+
+Check these points first:
+
+- The provider still uses `client_secret_post`
+- `Client ID` and `Client Secret` are present either in the admin UI or via SPI config
+- The Azure app registration has the correct redirect URI
+
+### Login fails during partner token processing
+
+Check these points:
+
+- `Partner Relying Party` points to the correct Xbox partner setup
+- The partner token actually returns `ptx`
+- `Partner XSTS Private Key` is configured when the claim is available only in the encrypted token payload
+
+### Login fails for Java accounts without a profile
+
+The account may own Java entitlement but not yet have a created Java profile. In that case, the user must complete profile creation in the Minecraft Launcher before Java-based login can succeed.
