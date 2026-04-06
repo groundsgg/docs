@@ -3,11 +3,10 @@ title: "Adding a New Container"
 description: "Step-by-step guide to add a new container to the repository"
 ---
 
-# Adding a New Container
+Follow these steps to add a new container to the repository.
 
-To add a new container to this repository, follow these steps:
-
-## Step 1: Create Container Directory
+<Steps>
+<Step title="Create Container Directory">
 
 Create a new directory following the naming convention `{container-name}`:
 
@@ -16,11 +15,15 @@ mkdir your-container-name
 cd your-container-name
 ```
 
-## Step 2: Create Dockerfile
+</Step>
+
+<Step title="Create Dockerfile">
 
 Create a `Dockerfile` with required OCI labels. Use `dev-container-node/Dockerfile` as a reference for the structure and required labels.
 
-## Step 3: Create Container README
+</Step>
+
+<Step title="Create Container README">
 
 Create a `README.md` in your container directory with:
 
@@ -29,7 +32,9 @@ Create a `README.md` in your container directory with:
 - Environment variables
 - Examples
 
-## Step 4: Update Release Please Configuration
+</Step>
+
+<Step title="Update Release Please Configuration">
 
 Add your container to `release-please-config.json`:
 
@@ -48,7 +53,9 @@ Add your container to `release-please-config.json`:
 }
 ```
 
-## Step 5: Update GitHub Workflow
+</Step>
+
+<Step title="Update GitHub Workflow">
 
 Update the container matrix in all workflows so the new container builds:
 
@@ -60,9 +67,13 @@ Add your container to `strategy.matrix.container`. This controls build/push and 
 
 Add your container to `strategy.matrix.container` for CI build validation.
 
-## Step 6: Update Dependabot (Optional)
+</Step>
+
+<Step title="Update Dependabot (Optional)">
 
 If your container has dependencies that need monitoring, update `.github/dependabot.yml` to include your container directory.
+</Step>
+</Steps>
 
 ## Resources
 

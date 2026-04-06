@@ -3,11 +3,10 @@ title: "Adding a New Chart"
 description: "Step-by-step guide to add a new Helm chart to the repository"
 ---
 
-# Adding a New Chart
+Follow these steps to add a new Helm chart to the repository.
 
-To add a new Helm chart to this repository, follow these steps:
-
-## Step 1: Create Chart Directory
+<Steps>
+<Step title="Create Chart Directory">
 
 Create a new directory following the naming convention `{chart-name}`:
 
@@ -16,7 +15,9 @@ mkdir your-chart-name
 cd your-chart-name
 ```
 
-## Step 2: Initialize Helm Chart
+</Step>
+
+<Step title="Initialize Helm Chart">
 
 Use Helm to create a new chart structure:
 
@@ -29,7 +30,9 @@ Or manually create the required files:
 - `values.yaml` - Default configuration values
 - `templates/` - Kubernetes manifest templates
 
-## Step 3: Create Chart README
+</Step>
+
+<Step title="Create Chart README">
 
 Create a `README.md` in your chart directory with:
 
@@ -39,7 +42,9 @@ Create a `README.md` in your chart directory with:
 - Configuration options
 - Examples
 
-## Step 4: Update Repository Index
+</Step>
+
+<Step title="Update Repository Index">
 
 Add your chart to the repository index. This is typically done through CI/CD or manually:
 
@@ -47,14 +52,18 @@ Add your chart to the repository index. This is typically done through CI/CD or 
 helm repo index . --url https://github.com/groundsgg/charts/releases/download/your-chart-name
 ```
 
-## Step 5: Update GitHub Workflow
+</Step>
+
+<Step title="Update GitHub Workflow">
 
 Update the chart matrix in all workflows so the new chart builds and tests:
 
 - `.github/workflows/ci.yml`: add your chart to `strategy.matrix.chart` for CI validation
 - `.github/workflows/release.yml`: add your chart for release automation
 
-## Step 6: Follow Chart Standards
+</Step>
+
+<Step title="Follow Chart Standards">
 
 Ensure your chart follows best practices:
 
@@ -63,6 +72,8 @@ Ensure your chart follows best practices:
 - Document all values in `values.yaml`
 - Include example configurations
 - Follow Kubernetes naming conventions
+</Step>
+</Steps>
 
 ## Resources
 
