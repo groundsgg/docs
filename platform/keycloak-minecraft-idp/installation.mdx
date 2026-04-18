@@ -7,14 +7,14 @@ description: "Install and prepare the Keycloak Minecraft identity provider"
   **Prerequisites**:
   - A running Keycloak instance
   - JDK 21 available locally if you want to build from source
-  - A Microsoft Azure App Registration for the brokered login flow
+  - A Microsoft Azure App Registration for the <Tooltip tip="A sign-in handled by an external identity provider and then mapped back to a Keycloak user.">brokered login</Tooltip> flow
 </Info>
 
 <Note>
 The provider uses Microsoft's consumer OAuth endpoints. Corporate or `common` tenant configurations are not suitable for this flow because Xbox Live authentication requires the consumer setup.
 </Note>
 
-Follow these steps to install and configure the provider in Keycloak.
+Use these steps to install the provider in Keycloak and prepare it for configuration.
 
 <Steps>
 <Step title="Create the Azure App Registration">
@@ -25,7 +25,7 @@ Create a Microsoft app registration with these settings:
 - Delegated API permission: `XboxLive.signin`
 - Client secret: create one under `Certificates & secrets`
 
-The redirect URI must use the Keycloak identity provider alias. The default alias is usually `minecraft`, so the redirect URI is typically `https://your-keycloak-url/realms/{realm}/broker/minecraft/endpoint`. If you change the alias in Keycloak, update the redirect URI to match.
+The redirect URI must use the Keycloak <Tooltip tip="A Keycloak login source that delegates authentication to another system.">identity provider</Tooltip> alias. The default alias is usually `minecraft`, so the redirect URI is typically `https://your-keycloak-url/realms/{realm}/broker/minecraft/endpoint`. If you change the alias in Keycloak, update the redirect URI to match.
 
 The Keycloak identity provider later uses the Azure app's client ID and client secret.
 
@@ -37,8 +37,7 @@ Some Minecraft authentication scenarios require Mojang or Minecraft API whitelis
 
 - Reference: [Minecraft help article](https://help.minecraft.net/hc/en-us/articles/16254801392141)
 
-If the app registration is not allowed to access the relevant Minecraft services, login or entitlement checks can fail even when the Microsoft OAuth setup is correct.
-
+If the app registration is not allowed to access the relevant Minecraft services, login or <Tooltip tip="Ownership checks that confirm whether the account has access to Minecraft Java or Bedrock.">entitlement</Tooltip> checks can fail even when the Microsoft OAuth setup is correct.
 </Step>
 
 <Step title="Obtain the Provider JAR">
@@ -74,6 +73,10 @@ Then rebuild Keycloak:
 
 Restart Keycloak after the build completes.
 
+<Check>
+Verify that Keycloak starts without provider loading errors before you continue.
+</Check>
+
 </Step>
 
 <Step title="Add the Identity Provider">
@@ -86,5 +89,9 @@ In the Keycloak admin UI:
 4. Select `Minecraft`.
 
 Continue with the [configuration guide](/platform/keycloak-minecraft-idp/configuration) to fill in the required provider fields.
+
+<Check>
+Verify that `Minecraft` appears in `Identity Providers` before you move on to configuration.
+</Check>
 </Step>
 </Steps>

@@ -3,15 +3,23 @@ title: "Configuration"
 description: "Configure the Keycloak Minecraft identity provider"
 ---
 
+Use this page after installation to configure a working Minecraft sign-in flow in Keycloak.
+
+If you have not installed the provider yet, complete the [installation guide](/platform/keycloak-minecraft-idp/installation) first.
+
+To complete the required fields, you need the Xbox <Tooltip headline="XSTS" tip="Xbox Secure Token Service tokens used to authorize calls to Xbox and Minecraft services." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-security-tokens?view=gdk-2510">XSTS</Tooltip> flow, the <Tooltip headline="Partner Relying Party" tip="The Xbox audience or service identifier that the partner token is issued for." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/custom-service-config/single-sign-on/live-single-sign-on?view=gdk-2510">Partner Relying Party</Tooltip>, and the <Tooltip headline="ptx claim" tip="A stable partner-scoped Xbox identifier returned in the partner token and used for account linking." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-token-claims?view=gdk-2510"><code>ptx</code> claim</Tooltip> used for stable account linking.
+
+If you supply provider credentials through <Tooltip tip="Keycloak Service Provider Interface settings supplied as environment variables or kc.sh flags.">SPI config</Tooltip>, those values can replace admin UI defaults.
+
 ## Required Provider Fields
 
-After adding the `Minecraft` identity provider in Keycloak, configure these fields:
+After adding the `Minecraft` <Tooltip tip="A Keycloak login source that delegates authentication to another system.">identity provider</Tooltip> in Keycloak, configure these fields:
 
-| Field | Required | Description |
-| --- | --- | --- |
-| Client ID | Yes, unless provided through SPI config | Microsoft Azure application client ID |
-| Client Secret | Yes, unless provided through SPI config | Microsoft Azure client secret |
-| Partner Relying Party | Yes | Xbox partner relying party that returns the `ptx` claim used for stable account linking |
+| Field                 | Required                                | Description                                                                             |
+|-----------------------|-----------------------------------------|-----------------------------------------------------------------------------------------|
+| Client ID             | Yes, unless provided through SPI config | Microsoft Azure application client ID                                                   |
+| Client Secret         | Yes, unless provided through SPI config | Microsoft Azure client secret                                                           |
+| Partner Relying Party | Yes                                     | Xbox partner relying party that returns the `ptx` claim used for stable account linking |
 
 <Warning>
 This provider supports only the OAuth client authentication method `client_secret_post`. Do not switch the provider to Basic or JWT-based client authentication.
@@ -19,27 +27,29 @@ This provider supports only the OAuth client authentication method `client_secre
 
 ## Optional Provider Fields
 
-| Field | Description |
-| --- | --- |
-| Sync Real Name | Imports Microsoft `name`, `given_name`, and `family_name` claims when available |
+| Field                    | Description                                                                                            |
+|--------------------------|--------------------------------------------------------------------------------------------------------|
+| Sync Real Name           | Imports Microsoft `name`, `given_name`, and `family_name` claims when available                        |
 | Partner XSTS Private Key | Private key used to decrypt encrypted partner XSTS tokens when `ptx` is not exposed in `DisplayClaims` |
 
-The partner XSTS private key supports these formats:
+The partner <Tooltip headline="XSTS" tip="Xbox Secure Token Service tokens used to authorize calls to Xbox and Minecraft services." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-security-tokens?view=gdk-2510">XSTS</Tooltip> private key supports these formats:
 
 - Raw PEM content
 - Absolute or relative file paths
 - `file:` URIs
-- `vault:` references resolved through the Keycloak vault
+- <Tooltip tip="A Keycloak vault reference prefix that tells the provider to load the value from the configured vault.">`vault:` references</Tooltip> resolved through the Keycloak vault
 
 ## Partner XSTS Requirement
 
-Stable brokered account linking depends on the Xbox partner `ptx` claim. The provider requests a second partner XSTS token in addition to the Minecraft XSTS token, so your Xbox setup must include a partner relying party that returns `ptx`.
+Stable <Tooltip tip="A sign-in handled by an external identity provider and then mapped back to a Keycloak user.">brokered login</Tooltip> account linking depends on the Xbox partner <Tooltip headline="ptx claim" tip="A stable partner-scoped Xbox identifier returned in the partner token and used for account linking." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-token-claims?view=gdk-2510">ptx claim</Tooltip>.
 
-If the selected partner token exposes `ptx` only inside the encrypted XSTS payload, configure `Partner XSTS Private Key` with the matching private key.
+The provider requests a second partner <Tooltip headline="XSTS" tip="Xbox Secure Token Service tokens used to authorize calls to Xbox and Minecraft services." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-security-tokens?view=gdk-2510">XSTS</Tooltip> token in addition to the Minecraft <Tooltip headline="XSTS" tip="Xbox Secure Token Service tokens used to authorize calls to Xbox and Minecraft services." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-security-tokens?view=gdk-2510">XSTS</Tooltip> token. Your Xbox setup must include a <Tooltip headline="Partner Relying Party" tip="The Xbox audience or service identifier that the partner token is issued for." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/custom-service-config/single-sign-on/live-single-sign-on?view=gdk-2510">partner relying party</Tooltip> that returns the <Tooltip headline="ptx claim" tip="A stable partner-scoped Xbox identifier returned in the partner token and used for account linking." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-token-claims?view=gdk-2510">ptx claim</Tooltip>.
+
+If the selected partner token exposes the <Tooltip headline="ptx claim" tip="A stable partner-scoped Xbox identifier returned in the partner token and used for account linking." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-token-claims?view=gdk-2510">ptx claim</Tooltip> only inside the encrypted <Tooltip headline="XSTS" tip="Xbox Secure Token Service tokens used to authorize calls to Xbox and Minecraft services." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-security-tokens?view=gdk-2510">XSTS</Tooltip> payload, configure `Partner XSTS Private Key` with the matching private key.
 
 ## Server-Level Credentials
 
-Instead of storing credentials in the realm database, you can provide them at the Keycloak server level:
+Instead of storing credentials in the realm database, you can provide them at the Keycloak server level through SPI config:
 
 ```text
 KC_SPI_IDENTITY_PROVIDER_MINECRAFT_CLIENT_ID
@@ -71,26 +81,36 @@ Blank or unresolved vault values are rejected during brokered login.
 
 ## Managed User Attributes
 
-On successful login, the provider stores or refreshes these managed attributes on the Keycloak user:
+On successful login, the provider stores or refreshes these <Tooltip tip="Provider-owned user attributes that are updated on each successful login.">managed attributes</Tooltip> on the Keycloak user:
 
-| Attribute | Description |
-| --- | --- |
-| `microsoft_name` | Raw Microsoft OIDC `name` claim when available |
+| Attribute                  | Description                                                   |
+|----------------------------|---------------------------------------------------------------|
+| `microsoft_name`           | Raw Microsoft OIDC `name` claim when available                |
 | `minecraft_login_identity` | `java` or `bedrock`, depending on the resolved login identity |
-| `minecraft_java_owned` | Whether Java entitlement was detected |
-| `minecraft_bedrock_owned` | Whether Bedrock entitlement was detected |
-| `minecraft_java_uuid` | Minecraft UUID when login resolves to Java |
-| `minecraft_java_username` | Minecraft Java username when login resolves to Java |
-| `xbox_gamertag` | Xbox Gamertag when available |
+| `minecraft_java_owned`     | Whether Java entitlement was detected                         |
+| `minecraft_bedrock_owned`  | Whether Bedrock entitlement was detected                      |
+| `minecraft_java_uuid`      | Minecraft UUID when login resolves to Java                    |
+| `minecraft_java_username`  | Minecraft Java username when login resolves to Java           |
+| `xbox_gamertag`            | Xbox Gamertag when available                                  |
 
 When `Sync Real Name` is enabled, the provider also updates Keycloak `firstName` and `lastName` from Microsoft claims when they are present.
+
+## Verify Configuration
+
+After you save the provider settings, start a test login and confirm these outcomes:
+
+<Check>
+- Keycloak redirects to Microsoft and returns to the realm broker endpoint successfully
+- The user resolves to the Minecraft Java username when a Java profile exists
+- Managed attributes refresh on the Keycloak user after a successful login
+</Check>
 
 ## Identity and Linking Behavior
 
 - The brokered identity uses the resolved Minecraft Java username or Xbox Gamertag as its external username.
 - Initial user import uses that resolved value as the Keycloak username.
 - Existing users keep receiving refreshed managed attributes on login.
-- Brokered account linking uses the Xbox partner `ptx` claim instead of the XSTS `uhs` value because `ptx` is the stable partner-scoped identifier.
+- Brokered account linking uses the Xbox partner <Tooltip headline="ptx claim" tip="A stable partner-scoped Xbox identifier returned in the partner token and used for account linking." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-token-claims?view=gdk-2510">ptx claim</Tooltip> instead of the <Tooltip headline="XSTS" tip="Xbox Secure Token Service tokens used to authorize calls to Xbox and Minecraft services." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-security-tokens?view=gdk-2510">XSTS</Tooltip> `uhs` value because `ptx` is the stable partner-scoped identifier.
 
 ## Troubleshooting
 
@@ -106,10 +126,10 @@ Check these points first:
 
 Check these points:
 
-- `Partner Relying Party` points to the correct Xbox partner setup
-- The partner token actually returns `ptx`
+- The <Tooltip headline="Partner Relying Party" tip="The Xbox audience or service identifier that the partner token is issued for." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/custom-service-config/single-sign-on/live-single-sign-on?view=gdk-2510">Partner Relying Party</Tooltip> points to the correct Xbox partner setup
+- The partner token actually returns the <Tooltip headline="ptx claim" tip="A stable partner-scoped Xbox identifier returned in the partner token and used for account linking." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-token-claims?view=gdk-2510">ptx claim</Tooltip>
 - `Partner XSTS Private Key` is configured when the claim is available only in the encrypted token payload
 
 ### Login fails for Java accounts without a profile
 
-The account may own Java entitlement but not yet have a created Java profile. In that case, the user must complete profile creation in the Minecraft Launcher before Java-based login can succeed.
+The account may own Java <Tooltip tip="Ownership of a game edition as confirmed by Minecraft services.">entitlement</Tooltip> but not yet have a created Java profile. In that case, the user must complete profile creation in the Minecraft Launcher before Java-based login can succeed.

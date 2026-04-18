@@ -3,12 +3,19 @@ title: "Adding a New Chart"
 description: "Step-by-step guide to add a new Helm chart to the repository"
 ---
 
-Follow these steps to add a new Helm chart to the repository.
+<Info>
+  **Prerequisites**:
+  - Helm installed locally
+  - Write access to the charts repository
+  - Familiarity with the existing chart layout and release workflows
+</Info>
+
+Use these steps to add a new Helm chart to the repository.
 
 <Steps>
 <Step title="Create Chart Directory">
 
-Create a new directory following the naming convention `{chart-name}`:
+Create a new directory that matches the chart name:
 
 ```bash
 mkdir your-chart-name
@@ -29,6 +36,10 @@ Or manually create the required files:
 - `Chart.yaml` - Chart metadata
 - `values.yaml` - Default configuration values
 - `templates/` - Kubernetes manifest templates
+
+<Check>
+Verify that the chart directory contains the files your repository workflows expect before you continue.
+</Check>
 
 </Step>
 
@@ -65,13 +76,17 @@ Update the chart matrix in all workflows so the new chart builds and tests:
 
 <Step title="Follow Chart Standards">
 
-Ensure your chart follows best practices:
+Before you open a pull request, make sure the chart follows these standards:
 
 - Use semantic versioning
 - Include proper labels and annotations
 - Document all values in `values.yaml`
 - Include example configurations
 - Follow Kubernetes naming conventions
+
+<Check>
+Verify that the chart builds and that the repository workflows include it in CI and release automation.
+</Check>
 </Step>
 </Steps>
 

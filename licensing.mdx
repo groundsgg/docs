@@ -3,30 +3,27 @@ title: "Licensing Model"
 description: "How Grounds licenses core code, libraries, tooling, documentation, and assets"
 ---
 
-## Overview
+Use this page when you need a quick overview of how Grounds licenses code, tooling, documentation, and assets.
 
-Grounds follows a layered licensing model to balance openness, reuse, and protection of the core platform.
+Grounds uses different licenses for different parts of the ecosystem so you can understand what you may reuse, modify, or redistribute.
 
-## Core Platform (AGPL-3.0)
+## Licensing Summary
 
-All core and production code that makes up the Grounds platform—such as backend services, gameplay logic, proxies, and server components—is licensed under the GNU Affero General Public License v3 (AGPL-3.0). This ensures that the core of Grounds remains open and that modifications must be shared, even when the software is used as a hosted service.
+| Area                           | License                   | What it covers                                                                |
+|--------------------------------|---------------------------|-------------------------------------------------------------------------------|
+| Core platform                  | AGPL-3.0                  | Backend services, gameplay logic, proxies, and other production platform code |
+| Libraries, APIs, and protocols | Apache-2.0                | Reusable libraries, shared utilities, APIs, and protocol definitions          |
+| Developer tooling              | Apache-2.0                | CLI tools, Gradle plugins, development helpers, and similar infrastructure    |
+| Documentation                  | MIT                       | Documentation content and written guidance                                    |
+| Assets                         | CC BY-NC-SA 4.0 or custom | Logos, textures, lore, music, and other creative assets                       |
 
-## Libraries, APIs, and Protocols (Apache-2.0)
+## What This Means
 
-Reusable libraries, shared utilities, APIs, and protocol definitions are licensed under the Apache License 2.0. This allows these components to be freely reused in other projects, including commercial and non-AGPL software, while providing legal clarity through an explicit patent grant.
-
-## Developer Tooling and Infrastructure (Apache-2.0)
-
-Developer tooling and infrastructure, such as CLI tools, Gradle plugins, and development helpers (for example, `grounds-dev`), are also licensed under Apache 2.0. These tools are intended to be easy to adopt and integrate without imposing copyleft requirements.
-
-## Documentation (MIT)
-
-Documentation is licensed under the MIT License to allow unrestricted copying, redistribution, and reuse of knowledge, both inside and outside the Grounds ecosystem.
-
-## Assets (CC BY-NC-SA 4.0 or Custom)
-
-Assets, including logos, textures, lore, music, and other creative content, are licensed separately under either CC BY-NC-SA 4.0 or a custom Grounds Asset License. This keeps the code open while protecting Grounds’ visual identity and creative work.
+- AGPL-3.0 keeps the core platform open, including hosted-service modifications.
+- Apache-2.0 makes reusable libraries and tooling easier to adopt in other projects.
+- MIT lets you copy and reuse the documentation without extra restrictions.
+- Asset licenses stay separate so Grounds can protect its visual identity and other creative work.
 
 <Note>
-Licensing is applied per repository/component. For authoritative terms, always check the `LICENSE` file (and any `NOTICE` or asset-license files) in the relevant repository.
+Licensing is applied per repository or component. Always check the local `LICENSE` file and any related `NOTICE` or asset-license files for the authoritative terms.
 </Note>
