@@ -3,9 +3,13 @@ title: "Overview"
 description: "Keycloak identity provider plugin for Minecraft Java and Bedrock sign-in"
 ---
 
-The `keycloak-minecraft-idp` plugin adds a `Minecraft` identity provider to Keycloak. It uses Microsoft OAuth, exchanges tokens with Xbox Live and Minecraft services, and resolves the brokered login to the Minecraft Java username when available or to the Xbox Gamertag for supported Bedrock logins.
+Use `keycloak-minecraft-idp` when you want players to sign in to Keycloak with Minecraft-backed Microsoft accounts.
+
+The plugin adds a `Minecraft` <Tooltip tip="A Keycloak login source that delegates authentication to another system.">identity provider</Tooltip> to Keycloak. It uses Microsoft OAuth, exchanges tokens with Xbox Live and Minecraft services, and resolves the <Tooltip tip="A sign-in handled by an external identity provider and then mapped back to a Keycloak user.">brokered login</Tooltip> to the Minecraft Java username when available or to the Xbox Gamertag for supported Bedrock logins.
 
 It is a general-purpose Keycloak extension and is not tied to Grounds. You can use it in any Keycloak deployment that needs Minecraft-backed sign-in.
+
+If you are setting up the provider, start with the [installation guide](/platform/keycloak-minecraft-idp/installation) and then continue with the [configuration guide](/platform/keycloak-minecraft-idp/configuration).
 
 ## Quick Links
 
@@ -19,7 +23,7 @@ It is a general-purpose Keycloak extension and is not tied to Grounds. You can u
 </Card>
 
 <Card title="Configuration" icon="sliders" href="/platform/keycloak-minecraft-idp/configuration">
-  Set up partner XSTS, optional vault-backed secrets, and managed user attributes.
+  Set up partner token handling, optional vault-backed secrets, and user attribute updates.
 </Card>
 </CardGroup>
 
@@ -27,23 +31,27 @@ It is a general-purpose Keycloak extension and is not tied to Grounds. You can u
 
 - Supports Minecraft Java Edition sign-in through Keycloak
 - Supports Bedrock logins by falling back to the Xbox Gamertag when applicable
-- Uses the Xbox partner `ptx` claim for stable brokered account linking
-- Stores managed Minecraft and Xbox attributes on the Keycloak user
+- Uses the Xbox partner <Tooltip headline="ptx claim" tip="A stable partner-scoped Xbox identifier used to link the same external account across logins." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-token-claims?view=gdk-2510"><code>ptx</code> claim</Tooltip> for stable brokered account linking
+- Stores <Tooltip tip="Provider-owned user attributes that are updated on each successful login.">managed attributes</Tooltip> on the Keycloak user
 - Optionally synchronizes Microsoft real-name claims into Keycloak profile fields
 
 ## Login Resolution
 
-The provider resolves the final Keycloak login identity with these rules:
+Use these rules to understand which login identity Keycloak will store for the user.
 
-| Account state | Login identity |
-| --- | --- |
-| Java entitlement and Java profile exist | Minecraft Java username and UUID |
-| Bedrock entitlement only | Xbox Gamertag |
-| Java entitlement exists, no Java profile yet, Bedrock entitlement exists | Xbox Gamertag |
-| Java entitlement exists, no Java profile yet, no Bedrock entitlement | Login fails until the Java profile is created in the Minecraft Launcher |
-| No Java or Bedrock entitlement | Login fails |
+An <Tooltip tip="Ownership of a game edition as confirmed by Minecraft services.">entitlement</Tooltip> determines whether the account can continue through Java or Bedrock login resolution.
+
+| Account state                                                            | Login identity                                                          |
+|--------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| Java entitlement and Java profile exist                                  | Minecraft Java username and UUID                                        |
+| Bedrock entitlement only                                                 | Xbox Gamertag                                                           |
+| Java entitlement exists, no Java profile yet, Bedrock entitlement exists | Xbox Gamertag                                                           |
+| Java entitlement exists, no Java profile yet, no Bedrock entitlement     | Login fails until the Java profile is created in the Minecraft Launcher |
+| No Java or Bedrock entitlement                                           | Login fails                                                             |
 
 ## Authentication Flow
+
+The sign-in flow uses Xbox <Tooltip headline="XSTS" tip="Xbox Secure Token Service tokens used to authorize calls to Xbox and Minecraft services." cta="Read Microsoft docs" href="https://learn.microsoft.com/en-us/gaming/gdk/docs/services/fundamentals/s2s-auth-calls/service-authentication/security-tokens/live-security-tokens?view=gdk-2510">XSTS</Tooltip> tokens to resolve Minecraft access and partner-scoped account identity.
 
 ```mermaid
 sequenceDiagram
@@ -68,5 +76,5 @@ sequenceDiagram
 ```
 
 <Note>
-The provider is implemented as a regular Keycloak identity provider. After installation it appears in the Keycloak admin UI as `Minecraft`.
+After installation, the provider appears in the Keycloak admin UI as `Minecraft`.
 </Note>

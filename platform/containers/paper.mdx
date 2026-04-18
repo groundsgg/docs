@@ -3,9 +3,9 @@ title: "Paper"
 description: "Minecraft Paper server container for Grounds.gg infrastructure"
 ---
 
-# Paper
+Use the Paper image when you need a shared Minecraft Paper server container for Grounds infrastructure.
 
-Minecraft Paper server container for Grounds.gg infrastructure.
+This image is designed for Kubernetes-based environments and consistent local and production deployments.
 
 ## Registry
 
@@ -15,22 +15,22 @@ ghcr.io/groundsgg/containers/paper
 
 ## Usage
 
-Pull and use the container:
+Pull the image locally:
 
 ```bash
 docker pull ghcr.io/groundsgg/containers/paper:latest
 ```
 
-Or use it in your `Dockerfile`:
+Use it as a base image in your `Dockerfile`:
 
 ```dockerfile
 FROM ghcr.io/groundsgg/containers/paper:latest
 ```
 
+<Check>
+Verify that the image is available locally with `docker image inspect ghcr.io/groundsgg/containers/paper:latest`.
+</Check>
+
 ## Documentation
 
 For more details, see the [paper directory](https://github.com/groundsgg/containers/tree/main/paper) in the repository.
-
-<Note>
-This container is designed for Kubernetes-based environments and consistent local and production deployments.
-</Note>

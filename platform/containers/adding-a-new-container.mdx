@@ -3,12 +3,19 @@ title: "Adding a New Container"
 description: "Step-by-step guide to add a new container to the repository"
 ---
 
-Follow these steps to add a new container to the repository.
+<Info>
+  **Prerequisites**:
+  - Docker available locally
+  - Write access to the containers repository
+  - Familiarity with the existing image layout and release workflows
+</Info>
+
+Use these steps to add a new container to the repository.
 
 <Steps>
 <Step title="Create Container Directory">
 
-Create a new directory following the naming convention `{container-name}`:
+Create a new directory that matches the container name:
 
 ```bash
 mkdir your-container-name
@@ -20,6 +27,10 @@ cd your-container-name
 <Step title="Create Dockerfile">
 
 Create a `Dockerfile` with required OCI labels. Use `dev-container-node/Dockerfile` as a reference for the structure and required labels.
+
+<Check>
+Verify that the image metadata and labels match the existing repository pattern before you continue.
+</Check>
 
 </Step>
 
@@ -72,6 +83,10 @@ Add your container to `strategy.matrix.container` for CI build validation.
 <Step title="Update Dependabot (Optional)">
 
 If your container has dependencies that need monitoring, update `.github/dependabot.yml` to include your container directory.
+
+<Check>
+Verify that the container is present in the release configuration and CI workflow matrix before you open a pull request.
+</Check>
 </Step>
 </Steps>
 
