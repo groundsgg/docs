@@ -1,0 +1,93 @@
+---
+title: "Runtime Behavior"
+description: "Bootstrap, reconciliation, degraded startup, and best-effort NATS delivery in the Config System"
+---
+
+Use this page when you need to understand how config becomes ready, how changes propagate, and what
+the system guarantees during failures.
+
+## Bootstrap Flow
+
+When `Config Plugin` starts and a consumer plugin registers a definition, the runtime does this for
+that `(app, env)` scope:
+
+1. Track the scope internally
+2. Serialize the definition's local default value to JSON
+3. Call `SyncDefaults` on `Config API`
+4. Subscribe to NATS refresh triggers for the scope
+5. Fetch and apply the current snapshot
+6. Expose the typed value through `ConfigManager` if the binding initializes successfully
+
+This ordering matters: defaults are synced before the first full snapshot load, and NATS
+subscription exists to reduce the time between a service-side write and the next reconciliation.
+
+## Snapshot Reconciliation Is the Correctness Path
+
+`GetSnapshotIfNewer` is the reconciliation path.
+
+The runtime does not apply config state directly from NATS payloads. Instead, NATS tells the client
+that it should refresh sooner, and the client then checks whether the known version is stale.
+
+<Info>
+If you remember only one rule, use this one: NATS is a refresh trigger, while the snapshot version
+and snapshot content define the authoritative client state.
+</Info>
+
+## NATS Is Best Effort
+
+The current contract intentionally treats NATS as a latency optimization.
+
+- events may arrive late
+- events may be duplicated
+- events may be missed entirely
+- payloads are not authoritative config state
+
+This does not violate the system contract, because correctness comes from snapshot reconciliation
+against the service.
+
+<Warning>
+Do not build consumers that infer ordering, durability, or correctness from the NATS subject or
+payload alone.
+</Warning>
+
+## Degraded Startup
+
+`ConfigStartupMode` controls what happens when bootstrap cannot produce a ready current value.
+
+| Mode          | Outcome                                                  |
+|---------------|----------------------------------------------------------|
+| `FAIL_CLOSED` | Registration throws `ConfigRegistrationException`        |
+| `DEGRADED`    | The runtime tries to restore a persisted cached snapshot |
+
+If `DEGRADED` mode finds a cached snapshot and the typed binding initializes from it, registration
+returns status `DEGRADED` with reason `loaded_cached_snapshot`.
+
+If no cached snapshot is available, registration returns `NOT_READY` with reason
+`bootstrap_failed_no_cached_snapshot`.
+
+## Cache Drift and Recovery
+
+Because NATS is best effort, a client can drift temporarily after a missed event. That drift ends
+when the next reconciliation detects a newer snapshot version and applies it.
+
+Operationally, that means:
+
+- missed events affect propagation latency
+- missed events do not replace or corrupt the source of truth
+- cache correctness depends on snapshot refresh, not on event durability
+
+## Readiness and Admin Writes
+
+On the service side, writes commit to Postgres before the NATS publish is attempted. That means:
+
+- a document create, update, or delete can succeed even when no NATS event is delivered
+- default document creation through `SyncDefaults` can also succeed without a delivered event
+- operators must evaluate the service contract in terms of stored state first, then change-hint delivery
+
+## Practical Rules
+
+- Always register definitions before reading them or subscribing to changes
+- Treat `ConfigRegistrationResult` as part of startup control flow
+- Use `DEGRADED` only when your plugin can safely continue with cached state
+- Assume the backend snapshot is correct even when refresh hints are missing
+- Diagnose stale config by checking reconciliation behavior, not only NATS delivery

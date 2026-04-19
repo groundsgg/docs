@@ -1,0 +1,104 @@
+---
+title: "Config API"
+description: "Backend service responsibilities, gRPC surfaces, and operational caveats for the Config API"
+---
+
+Use `Config API` when you need to understand or operate the backend service behind the Grounds
+Config System.
+
+`Config API` is the authoritative backend for config documents. It stores documents in Postgres,
+tracks versions per `app` and `env`, serves snapshots to consumers, and publishes best-effort
+change notifications over NATS after writes complete.
+
+## What the Service Owns
+
+The service owns:
+
+- config document persistence
+- app and environment versioning
+- snapshot reads for consumers
+- default document creation through `SyncDefaults`
+- admin CRUD for stored documents
+
+<Info>
+The service is the source of truth for config state. Client caches and NATS events exist around
+that source of truth, not instead of it.
+</Info>
+
+## gRPC Surface Split
+
+The service exposes two gRPC surfaces with different responsibilities.
+
+### Consumer gRPC Surface
+
+The consumer surface is used by `Config Plugin` and other config consumers.
+
+| Method                 | Purpose                                                                         |
+|------------------------|---------------------------------------------------------------------------------|
+| `GetSnapshot`          | Return the full snapshot for an `app` and `env`                                 |
+| `GetSnapshotIfNewer`   | Return a changed snapshot only when the known version is stale                  |
+| `GetNamespaceSnapshot` | Return a namespace-scoped snapshot                                              |
+| `GetDocument`          | Return a single document                                                        |
+| `SyncDefaults`         | Create missing defaults for an `app` and `env` and return the resulting version |
+
+`SyncDefaults` validates that `defaultContentJson` is valid JSON and creates only missing
+documents. Existing documents remain authoritative.
+
+### Admin gRPC Surface
+
+The admin surface manages stored config documents directly.
+
+| Method           | Purpose                                                                     |
+|------------------|-----------------------------------------------------------------------------|
+| `ListDocuments`  | List all documents for an `app` and `env`, optionally filtered by namespace |
+| `GetDocument`    | Fetch a single document                                                     |
+| `CreateDocument` | Create a new document and increment the app/env version                     |
+| `PutDocument`    | Update an existing document and increment the app/env version               |
+| `DeleteDocument` | Delete a document and increment the app/env version when a delete occurs    |
+
+`PutDocument` supports optimistic write behavior through `expectedVersion`. Invalid JSON is rejected
+at the API layer.
+
+## Document Lifecycle
+
+A typical document lifecycle looks like this:
+
+1. A plugin registers a typed config definition with a local default value.
+2. `Config Plugin` calls `SyncDefaults` for that `(app, env)` scope.
+3. `Config API` creates only the missing documents and increments the version when it creates any.
+4. The plugin fetches the current snapshot and binds documents to typed config definitions.
+5. Operators or admin tools create, update, or delete documents through the admin surface.
+6. Each write increments the version and triggers a best-effort NATS refresh hint.
+
+## Security Caveat
+
+<Warning>
+The admin gRPC API does not enforce application-level authentication or authorization in the
+service today.
+</Warning>
+
+Treat the current service boundary as protected by deployment controls such as:
+
+- private networking
+- mTLS
+- restricted service exposure
+
+This is a current gap, not an implicit security guarantee.
+
+## Operational Caveat
+
+Flyway migration at startup is enabled for convenience today.
+
+That works, but it is not the preferred model for multi-replica production rollouts. The cleaner
+setup is a dedicated migration job or release step that runs before service pods start.
+
+## Change Delivery
+
+After a write succeeds, the service attempts to publish a NATS change notification on
+`config.<app>.<env>.changed`.
+
+That publish happens after the database transaction commits. If NATS is unavailable or the process
+fails after the commit, the stored document is still correct and the event may be missed.
+
+For the full correctness model, continue with
+[Runtime Behavior](/plugins/config-system/runtime-behavior).

@@ -79,11 +79,11 @@ Example of a single code block:
 
 ```javascript config.js
 const apiConfig = {
-  baseURL: 'https://api.example.com',
-  timeout: 5000,
-  headers: {
-    'Authorization': `Bearer ${process.env.API_TOKEN}`
-  }
+    baseURL: 'https://api.example.com',
+    timeout: 5000,
+    headers: {
+        'Authorization': `Bearer ${process.env.API_TOKEN}`
+    }
 };
 ```
 
@@ -337,14 +337,14 @@ API
 Use updates for changelogs:
 
 <Update label="Version 2.1.0" description="Released March 15, 2024">
-## New features
+**New features**
 - Added bulk user import feature
 - Improved error messages with actionable suggestions
 
-## Bug fixes
+**Bug fixes**
 - Fixed pagination issue with large datasets
 - Resolved authentication timeout problems
-  </Update>
+</Update>
 
 ## Required page structure
 

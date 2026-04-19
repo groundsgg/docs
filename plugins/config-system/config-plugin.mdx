@@ -1,0 +1,218 @@
+---
+title: "Config Plugin (Paper/Velocity)"
+description: "Integrate typed runtime configuration into Paper and Velocity plugins with ConfigManager"
+---
+
+Use `Config Plugin (Paper/Velocity)` when your plugin needs typed runtime configuration from the
+Grounds Config System.
+
+The plugin starts the shared config runtime, connects it to `Config API` and NATS, and exposes a
+`ConfigManager` that other plugins can use to register and consume typed config documents.
+
+## Requirements
+
+The plugin requires these environment variables at startup:
+
+| Variable             | Required | Purpose                                       |
+|----------------------|----------|-----------------------------------------------|
+| `CONFIG_GRPC_TARGET` | Yes      | gRPC target for `Config API`                  |
+| `CONFIG_NATS_URL`    | Yes      | NATS connection URL used for refresh triggers |
+
+<Warning>
+`app` and `env` are not environment variables in the plugin runtime. Consumer plugins choose them
+when they register each config definition.
+</Warning>
+
+## What the Plugin Provides
+
+After startup, the plugin:
+
+- creates a `ConfigManager`
+- connects the manager to `Config API` and NATS
+- creates a local snapshot cache under the plugin data directory in `runtime-config-cache`
+- exposes `ConfigManager` to other plugins
+
+Paper exposes `ConfigManager` through Bukkit services. Velocity exposes it through the
+`ConfigManagerService` contract implemented by the `plugin-config` plugin instance.
+
+## Define a Typed Config
+
+Create one `ConfigDefinition<T>` per config document. The definition declares the backend
+`namespace`, the `key`, the Kotlin type, and the local default value.
+
+```kotlin
+data class LobbySettings(
+    val maxPlayers: Int = 20,
+    val motd: String = "Welcome to the lobby!",
+    val allowedGameModes: List<String> = listOf("survival", "adventure"),
+)
+
+object LobbySettingsConfig :
+    ConfigDefinition<LobbySettings>(
+        namespace = "lobby",
+        key = "settings",
+        type = LobbySettings::class.java,
+        defaultValue = LobbySettings(),
+    )
+```
+
+The default value is serialized to JSON during bootstrap and sent to `Config API` through
+`SyncDefaults`.
+
+## Integrate the Manager
+
+<Tabs>
+<Tab title="Paper">
+
+Resolve `ConfigManager` from Bukkit services:
+
+```kotlin
+val configManager =
+    server.servicesManager.load(ConfigManager::class.java)
+        ?: error("ConfigManager service not available — is plugin-config installed?")
+```
+
+</Tab>
+
+<Tab title="Velocity">
+
+Resolve the `plugin-config` plugin and cast it to `ConfigManagerService`:
+
+```kotlin
+val pluginContainer = proxy.pluginManager.getPlugin("plugin-config").orElse(null)
+    ?: error("Velocity config manager lookup failed (pluginId=plugin-config, reason=plugin_not_installed)")
+val pluginInstance = pluginContainer.instance.orElse(null)
+    ?: error("Velocity config manager lookup failed (pluginId=plugin-config, reason=plugin_instance_not_available)")
+val service = pluginInstance as? ConfigManagerService
+    ?: error("Velocity config manager lookup failed (pluginId=plugin-config, reason=service_not_available)")
+
+val configManager = service.configManager()
+```
+
+</Tab>
+</Tabs>
+
+## Register, Read, and Observe Config
+
+<Steps>
+<Step title="Register your definitions">
+
+Register each definition for the `(app, env)` scope it belongs to.
+
+```kotlin
+val lobbyRegistration =
+    configManager.register(
+        LobbySettingsConfig,
+        app = "lobby",
+        env = "prod",
+        startupMode = ConfigStartupMode.FAIL_CLOSED,
+    )
+```
+
+The first registration for a given `(app, env)` scope creates the internal sync scope for that
+pair.
+
+</Step>
+
+<Step title="Choose the startup mode">
+
+Use `FAIL_CLOSED` when the plugin cannot continue without a ready value. Use `DEGRADED` when the
+plugin may continue with a cached snapshot if bootstrap cannot fetch a current one.
+
+- `FAIL_CLOSED`: throws `ConfigRegistrationException` if bootstrap cannot produce a ready value
+- `DEGRADED`: restores a persisted cached snapshot when possible, otherwise returns `NOT_READY`
+
+Inspect the returned `ConfigRegistrationResult` when you allow degraded startup.
+
+```kotlin
+if (!lobbyRegistration.isUsable()) {
+    logger.warning(
+        "Lobby config not ready at startup " +
+            "(status=${lobbyRegistration.status}, reason=${lobbyRegistration.reason})"
+    )
+}
+```
+
+</Step>
+
+<Step title="Read the current value">
+
+Once a definition is registered and ready, read it through indexed access on `ConfigManager`.
+
+```kotlin
+val lobbySettings = configManager[LobbySettingsConfig]
+logger.info(
+    "Lobby settings loaded (maxPlayers=${lobbySettings.maxPlayers}, motd=${lobbySettings.motd})"
+)
+```
+
+</Step>
+
+<Step title="Subscribe to updates">
+
+Register change handlers for live refresh:
+
+```kotlin
+configManager.onChange(LobbySettingsConfig) { settings ->
+    logger.info(
+        "Lobby settings changed (maxPlayers=${settings.maxPlayers}, motd=${settings.motd})"
+    )
+}
+```
+
+The callback receives the updated typed value after reconciliation applies the new snapshot.
+
+</Step>
+</Steps>
+
+## Registration Outcomes
+
+`ConfigManager.register(...)` returns a `ConfigRegistrationResult` with a status:
+
+| Status               | Meaning                                                     |
+|----------------------|-------------------------------------------------------------|
+| `READY`              | A typed value is available immediately                      |
+| `DEGRADED`           | A cached snapshot was restored and the value is usable      |
+| `NOT_READY`          | Registration succeeded, but no typed value is available yet |
+| `ALREADY_REGISTERED` | The same definition was already registered                  |
+| `REJECTED`           | Another definition already owns the same config key         |
+
+## Failure Modes
+
+<AccordionGroup>
+<Accordion title="Accessing an unregistered definition">
+Reading or subscribing to a definition that was never registered throws
+`ConfigDefinitionNotRegisteredException`.
+</Accordion>
+
+<Accordion title="Accessing a definition before it becomes ready">
+Reading a registered definition before a typed value exists throws
+`ConfigDefinitionNotReadyException`.
+</Accordion>
+
+<Accordion title="Conflicting registrations">
+If a second definition tries to claim the same backend key in the same scope, registration is
+rejected with status `REJECTED`.
+</Accordion>
+</AccordionGroup>
+
+## Local Cache Behavior
+
+The runtime stores cached snapshots in `runtime-config-cache` under the plugin data directory:
+
+- Paper: inside the `plugin-config` data folder
+- Velocity: inside the `plugin-config` data directory
+
+The cache exists to support `DEGRADED` startup when the current snapshot cannot be fetched during
+bootstrap.
+
+<Note>
+Cached snapshots improve startup resilience. They do not replace reconciliation through the current
+service snapshot.
+</Note>
+
+## Next Steps
+
+- Read [Config API](/plugins/config-system/config-api) to understand the backend service contract
+- Read [Runtime Behavior](/plugins/config-system/runtime-behavior) before you rely on event-driven
+  updates
