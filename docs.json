@@ -69,6 +69,14 @@
               "platform/keycloak-minecraft-idp/installation",
               "platform/keycloak-minecraft-idp/configuration"
             ]
+          },
+          {
+            "group": "ExternalDNS Bunny Webhook",
+            "pages": [
+              "platform/external-dns-bunny-webhook/index",
+              "platform/external-dns-bunny-webhook/installation",
+              "platform/external-dns-bunny-webhook/configuration"
+            ]
           }
         ]
       },

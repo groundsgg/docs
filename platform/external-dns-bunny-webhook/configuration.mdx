@@ -1,0 +1,171 @@
+---
+title: "Configuration"
+description: "Runtime environment variables and Bunny-specific annotations for the webhook provider"
+---
+
+Use this page when you need to tune the webhook's runtime settings or control Bunny-specific
+record behavior from your Kubernetes sources.
+
+## Runtime Environment Variables
+
+The webhook reads all configuration from environment variables at startup.
+
+| Variable                | Required | Default     | Purpose                                                                     |
+|-------------------------|----------|-------------|-----------------------------------------------------------------------------|
+| `BUNNY_API_KEY`         | Yes      | —           | API key used to authenticate with the Bunny.net API                         |
+| `BUNNY_DRY_RUN`         | No       | `false`     | When `true`, the provider logs intended changes but does not call the API  |
+| `WEBHOOK_HOST`          | No       | `localhost` | Host the webhook endpoint binds to                                          |
+| `WEBHOOK_PORT`          | No       | `8888`      | Port the ExternalDNS controller calls                                       |
+| `WEBHOOK_READ_TIMEOUT`  | No       | `60s`       | Read timeout for the webhook HTTP server                                    |
+| `WEBHOOK_WRITE_TIMEOUT` | No       | `60s`       | Write timeout for the webhook HTTP server                                   |
+| `HEALTH_HOST`           | No       | `0.0.0.0`   | Host the health endpoint binds to                                           |
+| `HEALTH_PORT`           | No       | `8080`      | Port for Kubernetes liveness and readiness probes                           |
+| `HEALTH_READ_TIMEOUT`   | No       | `60s`       | Read timeout for the health HTTP server                                     |
+| `HEALTH_WRITE_TIMEOUT`  | No       | `60s`       | Write timeout for the health HTTP server                                    |
+
+<Tip>
+Use `BUNNY_DRY_RUN=true` when you migrate existing records into ExternalDNS management. The logs
+show exactly which records the webhook would create, update, or delete — without changing Bunny.
+</Tip>
+
+## Bunny-Specific Annotations
+
+Add these annotations to the Kubernetes source (Service, Ingress, Gateway route, and similar) to
+control record behavior inside Bunny.net. All annotations are optional and fall back to safe
+defaults when omitted.
+
+### Record Controls
+
+#### Disable a record
+
+Set `external-dns.alpha.kubernetes.io/webhook-bunny-disabled` to `true` to keep the record
+managed by ExternalDNS but disabled in Bunny. Disabled records do not answer DNS queries but stay
+visible in the dashboard.
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: api.example.com
+    external-dns.alpha.kubernetes.io/webhook-bunny-disabled: "true"
+```
+
+#### Monitor type
+
+Set `external-dns.alpha.kubernetes.io/webhook-bunny-monitor-type` to one of `none`, `http`, or
+`ping` to control Bunny's built-in record monitoring. The default is `none`.
+
+| Value  | Behavior                                               |
+|--------|--------------------------------------------------------|
+| `none` | No monitoring. Standard DNS record                     |
+| `http` | HTTP health check against the record's target          |
+| `ping` | ICMP ping check against the record's target            |
+
+#### Weight
+
+Set `external-dns.alpha.kubernetes.io/webhook-bunny-weight` to an integer between `1` and `100`
+to control record weighting in Bunny. The default is `100`.
+
+<Note>
+Values outside the valid range are clamped to the nearest valid value. Non-integer values are
+rejected and the default is used instead.
+</Note>
+
+### Smart DNS Records
+
+<Tooltip tip="Smart DNS is Bunny's feature for routing DNS answers based on latency or geography.">Smart DNS</Tooltip>
+is supported on `A` and `AAAA` records. To model multiple smart records under the same hostname,
+create one Kubernetes source per record and differentiate them with
+`external-dns.alpha.kubernetes.io/set-identifier`.
+
+The webhook encodes the smart settings into `SetIdentifier` automatically when it reads back
+records from Bunny (`latency:<zone>` or `geo:<lat>,<long>`), so ExternalDNS sees a stable view
+across reconciles.
+
+#### Routing type
+
+Set `external-dns.alpha.kubernetes.io/webhook-bunny-smart-type` to `none`, `latency`, or `geo`.
+Unknown values fall back to `none` and the webhook logs a warning.
+
+#### Latency routing
+
+Required when `smart-type=latency`. Set
+`external-dns.alpha.kubernetes.io/webhook-bunny-smart-latency-zone` to a Bunny zone string —
+typically an ISO country or region code such as `DE`, `US`, or `SG`.
+
+Missing or empty values fall back to non-smart routing with a warning log.
+
+#### Geographic routing
+
+Required when `smart-type=geo`. Set both coordinate annotations:
+
+- `external-dns.alpha.kubernetes.io/webhook-bunny-smart-geo-lat` — latitude between `-90` and `90`
+- `external-dns.alpha.kubernetes.io/webhook-bunny-smart-geo-long` — longitude between `-180` and `180`
+
+Out-of-range or unparseable coordinates fall back to non-smart routing with a warning log.
+
+#### Example: latency routing across regions
+
+```yaml
+# Service in the EU cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-eu
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: api.example.com
+    external-dns.alpha.kubernetes.io/set-identifier: eu
+    external-dns.alpha.kubernetes.io/webhook-bunny-smart-type: latency
+    external-dns.alpha.kubernetes.io/webhook-bunny-smart-latency-zone: "DE"
+---
+# Service in the US cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-us
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: api.example.com
+    external-dns.alpha.kubernetes.io/set-identifier: us
+    external-dns.alpha.kubernetes.io/webhook-bunny-smart-type: latency
+    external-dns.alpha.kubernetes.io/webhook-bunny-smart-latency-zone: "US"
+```
+
+## Interaction With Dashboard-Managed Records
+
+<Warning>
+If you manually created a smart record in the Bunny.net dashboard and there is no matching
+Kubernetes source with the smart annotations, ExternalDNS detects drift and tries to strip the
+smart settings on the next reconcile.
+</Warning>
+
+To avoid unwanted changes, pick one of:
+
+- add matching smart annotations to a Kubernetes source so the webhook treats the record as
+  managed
+- exclude the record from ExternalDNS management through the ownership TXT registry so the
+  controller does not consider it its own
+
+## Troubleshooting
+
+<AccordionGroup>
+<Accordion title="Records do not appear in Bunny.net">
+Check the webhook container logs first:
+
+```shell
+kubectl -n external-dns logs deploy/external-dns -c webhook
+```
+
+Common causes: missing or invalid `BUNNY_API_KEY`, an ExternalDNS `domainFilters` value that does
+not match the hostname, or `policy: sync` required for deletions that is not set on the chart.
+</Accordion>
+
+<Accordion title="Webhook refuses to start">
+Check that the `BUNNY_API_KEY` environment variable is wired from a valid secret and that the
+secret exists in the same namespace as the ExternalDNS release.
+</Accordion>
+
+<Accordion title="Smart record annotation seems to be ignored">
+Unknown `smart-type` values, missing `latency-zone`, and out-of-range coordinates all fall back
+to non-smart routing with a warning log. Look for a warning entry in the webhook logs to confirm
+which annotation was rejected.
+</Accordion>
+</AccordionGroup>
