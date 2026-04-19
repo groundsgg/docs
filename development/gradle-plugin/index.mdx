@@ -63,6 +63,7 @@ graph TB
 - Shadow packaging configuration (Fat JAR)
 - Disables default `jar` task and wires `shadowJar` into `build`
 - Standardized Shadow JAR naming
+- Relocates `com.google.protobuf` to `gg.grounds.shaded.protobuf` in final shaded plugin jars so server-bundled protobuf runtimes do not conflict with plugin-generated protobuf classes
 
 ### Paper Conventions (`gg.grounds.paper-conventions`)
 
