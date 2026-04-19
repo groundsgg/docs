@@ -22,6 +22,15 @@
         "pages": [
           "plugins/index",
           {
+            "group": "Agones Integration",
+            "pages": [
+              "plugins/agones/index",
+              "plugins/agones/velocity",
+              "plugins/agones/paper",
+              "plugins/agones/minestom"
+            ]
+          },
+          {
             "group": "Config System",
             "pages": [
               "plugins/config-system/index",
