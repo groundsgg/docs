@@ -208,6 +208,8 @@ plugins {
 }
 ```
 
+When a module uses the Paper or Velocity conventions, the shared shaded-plugin packaging relocates `com.google.protobuf` to `gg.grounds.shaded.protobuf` in the final jar. That keeps bundled protobuf classes isolated from the server runtime while leaving plain library modules unchanged.
+
 ## Troubleshooting
 
 ### Authentication Errors
