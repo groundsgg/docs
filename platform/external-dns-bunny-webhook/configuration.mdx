@@ -94,6 +94,199 @@ typically an ISO country or region code such as `DE`, `US`, or `SG`.
 
 Missing or empty values fall back to non-smart routing with a warning log.
 
+##### Available Latency Regions
+
+Bunny.net exposes the authoritative list through the public Region API. Use `RegionCode` values
+for the `webhook-bunny-smart-latency-zone` annotation.
+
+```shell
+curl https://api.bunny.net/region | jq '.[] | select(.AllowLatencyRouting) | .RegionCode'
+```
+
+<Note>
+The tables below are a snapshot from April 2026 of regions with `AllowLatencyRouting: true`. Regions
+without latency routing are intentionally omitted. For changes, query the API above.
+</Note>
+
+<AccordionGroup>
+<Accordion title="Europe">
+
+| Region Code | Name                | Country |
+|-------------|---------------------|---------|
+| `AMS`       | Amsterdam           | NL      |
+| `AT`        | Vienna              | AT      |
+| `AT2`       | Vienna 2            | AT      |
+| `BA`        | Novi Travnik        | BA      |
+| `BE`        | Brussels            | BE      |
+| `BG`        | Sofia               | BG      |
+| `BU`        | Bucharest           | RO      |
+| `CH`        | Zurich              | CH      |
+| `CZ`        | Prague              | CZ      |
+| `DD`        | Dusseldorf          | DE      |
+| `DE`        | Frankfurt           | DE      |
+| `DE2`       | Frankfurt 2         | DE      |
+| `DK`        | Copenhagen          | DK      |
+| `ES`        | Madrid              | ES      |
+| `FI`        | Helsinki            | FI      |
+| `FR`        | Paris               | FR      |
+| `GR`        | Athens              | GR      |
+| `HR`        | Zagreb              | HR      |
+| `HU`        | Budapest            | HU      |
+| `IE`        | Dublin              | IE      |
+| `IS`        | Keflavik            | IS      |
+| `IT`        | Milan               | IT      |
+| `KH`        | Khabarovsk          | RU      |
+| `KY`        | Krasnoyarsk         | RU      |
+| `LJ`        | Ljubljana           | SI      |
+| `LT`        | Vilnius             | LT      |
+| `LU`        | Luxembourg          | LU      |
+| `LV`        | Riga                | LV      |
+| `MD`        | Chisinau            | MD      |
+| `MS`        | Marseille           | FR      |
+| `NO`        | Oslo                | NO      |
+| `PL`        | Warsaw              | PL      |
+| `PT`        | Lisbon              | PT      |
+| `RS`        | Belgrade            | RS      |
+| `RU`        | Moscow              | RU      |
+| `SE`        | Stockholm           | SE      |
+| `SK`        | Bratislava          | SK      |
+| `UA`        | Kyiv                | UA      |
+| `UK`        | London              | GB      |
+
+</Accordion>
+
+<Accordion title="North America">
+
+| Region Code | Name              | Country |
+|-------------|-------------------|---------|
+| `ASB`       | Ashburn, VA       | US      |
+| `BO`        | Boston, MA        | US      |
+| `CA`        | Toronto           | CA      |
+| `CLT`       | Charlotte, NC     | US      |
+| `DEN`       | Denver, CO        | US      |
+| `DEN2`      | Denver 2, CO      | US      |
+| `GA`        | Atlanta, GA       | US      |
+| `GA2`       | Atlanta 2, GA     | US      |
+| `HI`        | Honolulu, HI      | US      |
+| `HOU`       | Houston, TX       | US      |
+| `HOU2`      | Houston 2, TX     | US      |
+| `IL`        | Chicago, IL       | US      |
+| `KC`        | Kansas City, MO   | US      |
+| `LA`        | Los Angeles, CA   | US      |
+| `LA2`       | Los Angeles 2, CA | US      |
+| `MI`        | Miami, FL         | US      |
+| `MI2`       | Miami 2, FL       | US      |
+| `MN`        | Montreal          | CA      |
+| `MSP`       | Minneapolis, MN   | US      |
+| `NY`        | New York City, NY | US      |
+| `OG`        | Ogden, UT         | US      |
+| `PB`        | Pittsburgh, PA    | US      |
+| `PHX`       | Phoenix, AZ       | US      |
+| `SIL`       | San Jose, CA      | US      |
+| `TX`        | Dallas, TX        | US      |
+| `VA`        | Vancouver         | CA      |
+| `WA`        | Seattle, WA       | US      |
+
+</Accordion>
+
+<Accordion title="Asia">
+
+| Region Code | Name           | Country |
+|-------------|----------------|---------|
+| `AM`        | Yerevan        | AM      |
+| `AZ`        | Baku           | AZ      |
+| `BD`        | Dhaka          | BD      |
+| `CEN`       | Chennai        | IN      |
+| `CY`        | Nicosia        | CY      |
+| `GEO`       | Tbilisi        | GE      |
+| `GU`        | Hagatna        | GU      |
+| `HK`        | Hong Kong      | HK      |
+| `ID`        | Jakarta        | ID      |
+| `IN`        | Bangalore      | IN      |
+| `ISR`       | Tel Aviv       | IL      |
+| `JP`        | Tokyo          | JP      |
+| `KG`        | Bishkek        | KG      |
+| `KR`        | Seoul          | KR      |
+| `KZ`        | Almaty         | KZ      |
+| `MG`        | Ulaanbaatar    | MN      |
+| `MU`        | Mumbai         | IN      |
+| `MY`        | Kuala Lumpur   | MY      |
+| `ND`        | New Delhi      | IN      |
+| `NP`        | Kathmandu      | NP      |
+| `PH`        | Manila         | PH      |
+| `PK`        | Karachi        | PK      |
+| `PP`        | Phnom Penh     | KH      |
+| `RGN`       | Yangon         | MM      |
+| `SG`        | Singapore      | SG      |
+| `SG2`       | Singapore 2    | SG      |
+| `TH`        | Bangkok        | TH      |
+| `TR`        | Istanbul       | TR      |
+| `TW`        | Taipei         | TW      |
+| `VN`        | Ho Chi Minh    | VN      |
+
+</Accordion>
+
+<Accordion title="Oceania">
+
+| Region Code | Name       | Country |
+|-------------|------------|---------|
+| `ADL`       | Adelaide   | AU      |
+| `AUC`       | Auckland   | NZ      |
+| `BRB`       | Brisbane   | AU      |
+| `MEL`       | Melbourne  | AU      |
+| `PER`       | Perth      | AU      |
+| `SYD`       | Sydney     | AU      |
+
+</Accordion>
+
+<Accordion title="South America and LATAM">
+
+| Region Code | Name              | Country |
+|-------------|-------------------|---------|
+| `AR`        | Buenos Aires      | AR      |
+| `BOL`       | Sucre             | BO      |
+| `BR`        | Sao Paulo         | BR      |
+| `BS`        | Brasilia          | BR      |
+| `CL`        | Santiago          | CL      |
+| `CO`        | Bogota            | CO      |
+| `CR`        | San Pedro         | CR      |
+| `EC`        | Quito             | EC      |
+| `FO`        | Fortaleza         | BR      |
+| `GT`        | Guatemala         | GT      |
+| `LAP`       | La Paz            | BO      |
+| `MX`        | Mexico City       | MX      |
+| `PA`        | Porto Alegre      | BR      |
+| `PE`        | Lima              | PE      |
+| `PR`        | San Juan          | PR      |
+| `RJ`        | Rio de Janeiro    | BR      |
+
+</Accordion>
+
+<Accordion title="Africa and Middle East">
+
+| Region Code | Name             | Country |
+|-------------|------------------|---------|
+| `AE`        | Dubai            | AE      |
+| `AO`        | Luanda           | AO      |
+| `BHR`       | Bahrain          | BH      |
+| `CT`        | Cape Town        | ZA      |
+| `EG`        | Cairo            | EG      |
+| `EG2`       | Cairo 2          | EG      |
+| `FU`        | Fujairah         | AE      |
+| `IQ`        | Baghdad          | IQ      |
+| `IQ2`       | Baghdad 2        | IQ      |
+| `JH`        | Johannesburg     | ZA      |
+| `JO`        | Amman            | JO      |
+| `KE`        | Nairobi          | KE      |
+| `KWI`       | Kuwait City      | KW      |
+| `NG`        | Lagos            | NG      |
+| `RBA`       | Rabat            | MA      |
+| `RI`        | Riyadh           | SA      |
+| `TN`        | Tunis            | TN      |
+
+</Accordion>
+</AccordionGroup>
+
 #### Geographic routing
 
 Required when `smart-type=geo`. Set both coordinate annotations:
