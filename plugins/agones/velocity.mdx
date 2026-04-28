@@ -134,9 +134,9 @@ issue redundant calls to the sidecar.
 <AccordionGroup>
 <Accordion title="Kubernetes client fails to initialize">
 If the plugin cannot build a Kubernetes client at startup, discovery stays disabled for the
-process lifetime. The plugin logs the reason and continues without registering servers. The proxy
-accepts no logins until a lobby is discoverable again — which only happens after a restart with
-a working Kubernetes configuration.
+process lifetime. The plugin logs the reason and continues without unregistering configured
+servers, registering lobby-routing listeners, or polling Kubernetes. Existing `velocity.toml`
+servers remain registered until the proxy restarts with a working Kubernetes configuration.
 </Accordion>
 
 <Accordion title="Agones sidecar unreachable">
