@@ -18,6 +18,13 @@
         ]
       },
       {
+        "tab": "Build",
+        "pages": [
+          "build/index",
+          "build/quickstart"
+        ]
+      },
+      {
         "tab": "Plugins",
         "pages": [
           "plugins/index",

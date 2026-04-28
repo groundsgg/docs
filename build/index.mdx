@@ -1,0 +1,83 @@
+---
+title: "Build for Grounds"
+description: "Ship your Minecraft plugin or game mode to managed Grounds infrastructure — without touching Kubernetes."
+---
+
+Grounds is a developer platform for Minecraft modders. You write a Paper plugin, Velocity plugin, or full game mode; we handle the cluster, the registry, the routing, and the lifecycle.
+
+## What you get
+
+<CardGroup cols={2}>
+<Card title="One-command deploys" icon="rocket">
+  `grounds push --target=dev` builds your JAR, ships it to a private OCI registry, and rolls out a fresh server in your personal namespace.
+</Card>
+
+<Card title="Ephemeral preview environments" icon="flask">
+  `grounds push --target=staging` spins up a throwaway preview env per push with a public URL — perfect for sharing a build with playtesters or your team.
+</Card>
+
+<Card title="Managed Minecraft routing" icon="network-wired">
+  Players connect to `<your-mode>-<handle>.mc.grnds.io` directly — no port forwarding, no proxy config. Service-type workloads get HTTPS at `<name>-<handle>.dev.grnds.io`.
+</Card>
+
+<Card title="Multi-project isolation" icon="folder-tree">
+  Group related deployments under a project. Invite teammates with owner/editor/viewer roles. Each project gets its own resource quotas + network policies.
+</Card>
+</CardGroup>
+
+## Who this is for
+
+You probably want this if you:
+
+- maintain a Paper or Velocity plugin and need a place to test it against real player traffic
+- are building a custom game mode (Minestom, Paper) and want preview links you can share
+- run a small studio/community where multiple devs want to publish their work without each running their own VPS
+
+You probably **don't** want this (yet) if you:
+
+- need control over the host OS or Java runtime version (we pin these)
+- want to run mods that require non-Paper/Velocity bases (the supported `baseImage` set is small today)
+- expect free tier with persistent always-on servers — Grounds auto-pauses idle dev clusters after a few hours
+
+## Get started in five minutes
+
+<Steps>
+<Step title="Install the CLI">
+  ```bash
+  brew install groundsgg/tap/grounds
+  ```
+
+  Linux/Windows + scripts: see [Quickstart → Install](/build/quickstart#install-the-cli).
+</Step>
+
+<Step title="Sign in">
+  ```bash
+  grounds login
+  ```
+
+  Browser opens to Grounds SSO; approve the device code and you're back at the terminal.
+</Step>
+
+<Step title="Push your project">
+  From any Gradle project that has `id("gg.grounds.push")` applied:
+
+  ```bash
+  grounds push --target=dev
+  ```
+
+  Forge builds and signs the OCI image, applies the manifest, and prints the public URL when ready.
+</Step>
+</Steps>
+
+[Full quickstart →](/build/quickstart)
+
+## What's under the hood
+
+Grounds runs on a self-hosted Kubernetes cluster (Talos on bare metal). Key building blocks:
+
+- **forge** — the control-plane API. Receives pushes, runs Kaniko + Cosign, applies manifests, manages dev-cluster lifecycle.
+- **grounds-push Gradle plugin** — packages your JAR + manifest into a multipart upload to forge.
+- **grounds CLI** — thin wrapper for auth, manual push, status, preview env management.
+- **Portal** — web UI at `portal.platform.grnds.io` for browsing pushes, deployments, members, and preview envs.
+
+You don't need to know any of this to ship — but it's there if you want to peek behind the curtain.
