@@ -1,0 +1,90 @@
+---
+title: "Auth"
+description: "Login, logout, doctor — and how the CLI talks to Grounds SSO."
+---
+
+The CLI authenticates against **Grounds SSO** using the OAuth 2.0 [device authorization grant](https://datatracker.ietf.org/doc/html/rfc8628) with PKCE. You don't need a client secret on your machine.
+
+## grounds login
+
+```bash
+grounds login
+```
+
+What happens:
+
+1. The CLI requests a device code from Grounds SSO.
+2. Your browser opens at the verification URL with the code pre-filled.
+3. You sign in (or are already signed in) and approve the device.
+4. The CLI exchanges the code for an access + refresh token.
+5. Tokens are written to your OS-specific config dir.
+
+The access token has a short lifetime (≈5 minutes). The refresh token lives ≈30 days. The CLI **transparently refreshes** the access token before each API call, so you log in once a month at most.
+
+## grounds logout
+
+```bash
+grounds logout
+```
+
+Deletes the credentials file. It does **not** revoke the refresh token at the IdP — it just removes the local copy. If you want a hard revoke, use the **Devices** page in `account.grounds.gg`.
+
+## grounds doctor
+
+```bash
+grounds doctor
+```
+
+Five checks, each reports OK or the failure reason:
+
+| Check | Verifies |
+|---|---|
+| `config` | Config dir is readable |
+| `auth` | Credentials present and the access token can be obtained (refreshes if expired) |
+| `api` | `<api>/healthz` returns 200 |
+| `gradle` | A Gradle wrapper or `gradle` binary is on PATH |
+| `java` | A JVM ≥ 21 is on PATH |
+
+`auth` will say `not logged in` if you've never run `login`, or `session expired (run 'grounds login')` if your refresh token has aged out.
+
+## Auth in CI / scripts
+
+For unattended use, **don't** run `grounds login`. Use a project-scoped service-account token instead:
+
+```bash
+export GROUNDS_TOKEN=gnds_abc123…   # opaque, project-scoped
+grounds push --target=staging
+```
+
+See [CI / service-account tokens](/build/ci-tokens) for how to mint one.
+
+`GROUNDS_TOKEN` overrides credentials from disk. The CLI will **not** try to refresh it (it's not a JWT).
+
+## Credentials on disk
+
+| OS | Path |
+|---|---|
+| Linux | `$XDG_CONFIG_HOME/grounds/credentials.json` (default `~/.config/grounds/credentials.json`) |
+| macOS | `~/Library/Application Support/grounds/credentials.json` |
+| Windows | `%APPDATA%\grounds\credentials.json` |
+
+The file holds the access token, refresh token, expiry timestamps, and a hint of who you are (email, preferred username decoded from the ID token). Permissions are `0600` on POSIX.
+
+<Warning>
+Don't commit this file or copy it to a CI runner. For any non-interactive use, use a service-account token.
+</Warning>
+
+## Multiple accounts / environments
+
+Use `--config <dir>` (or `GROUNDS_CONFIG_DIR`) to keep separate credential stores:
+
+```bash
+grounds --config ~/.config/grounds-prod login
+grounds --config ~/.config/grounds-staging login
+```
+
+The same flag selects which set is used by all subsequent commands.
+
+## API URL override
+
+Set `--api-url <url>` or `GROUNDS_API_URL` to talk to a different forge instance (e.g., a self-hosted preview). Default is `https://platform.grnds.io`.

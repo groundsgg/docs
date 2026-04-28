@@ -1,0 +1,84 @@
+---
+title: "Installing the CLI"
+description: "Install the grounds CLI on macOS, Linux, or Windows."
+---
+
+The `grounds` CLI is a single static Go binary. No JVM, no Node, no system dependencies.
+
+## Install
+
+<Tabs>
+<Tab title="macOS (Homebrew)">
+```bash
+brew install groundsgg/tap/grounds
+```
+
+Upgrade:
+
+```bash
+brew upgrade grounds
+```
+</Tab>
+<Tab title="Linux / WSL (script)">
+```bash
+curl -fsSL https://get.grnds.io/install.sh | sh
+```
+
+This installs to `/usr/local/bin/grounds` (or `~/.local/bin` if you `sh -s -- --prefix=$HOME/.local`).
+
+Upgrade by re-running the same command.
+</Tab>
+<Tab title="Windows (scoop)">
+```powershell
+scoop bucket add groundsgg https://github.com/groundsgg/scoop-bucket
+scoop install grounds
+```
+</Tab>
+<Tab title="Manual download">
+Grab the binary for your OS/arch from the [GitHub releases page](https://github.com/groundsgg/grounds-cli/releases) and put it on your `PATH`.
+
+```bash
+chmod +x grounds
+mv grounds /usr/local/bin/
+```
+</Tab>
+<Tab title="From source">
+```bash
+go install github.com/groundsgg/grounds-cli/cmd/grounds@latest
+```
+
+Requires Go 1.23+.
+</Tab>
+</Tabs>
+
+## Verify
+
+```bash
+grounds version
+grounds doctor
+```
+
+`grounds doctor` runs five checks: `config`, `auth`, `api`, `gradle`, `java`. The `gradle` and `java` checks are advisory — you only need them for actually pushing.
+
+## Shell completion
+
+Generate completion scripts on demand:
+
+```bash
+grounds completion bash > /etc/bash_completion.d/grounds          # bash
+grounds completion zsh  > "${fpath[1]}/_grounds"                  # zsh
+grounds completion fish > ~/.config/fish/completions/grounds.fish # fish
+```
+
+## Updating
+
+The CLI checks for updates lazily and prints a banner when a newer version is published. There is no auto-upgrade — use your installer of choice (brew, scoop, the install script).
+
+## What's where after install
+
+| Path | Purpose |
+|---|---|
+| `~/.config/grounds/` (Linux), `~/Library/Application Support/grounds/` (macOS), `%APPDATA%\grounds\` (Windows) | Config + credentials |
+| `$XDG_CACHE_HOME/grounds/` | Resolved API metadata cache |
+
+Override with `--config <dir>` or `GROUNDS_CONFIG_DIR`.

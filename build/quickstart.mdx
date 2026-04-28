@@ -1,0 +1,142 @@
+---
+title: "Quickstart"
+description: "From zero to a public Minecraft server URL in five minutes."
+---
+
+This guide walks through your first push. By the end you'll have a Paper plugin running on managed infrastructure, reachable at a public `*.mc.grnds.io` address.
+
+## Prerequisites
+
+- A Grounds SSO account (talk to your org admin if you don't have one yet)
+- Java 21+ and Gradle (a Gradle wrapper in your project is fine)
+- macOS, Linux, or Windows (WSL2 works)
+
+## Install the CLI
+
+<Tabs>
+<Tab title="macOS / Linux (Homebrew)">
+```bash
+brew install groundsgg/tap/grounds
+grounds version
+```
+</Tab>
+
+<Tab title="Linux (curl)">
+```bash
+curl -fsSL https://raw.githubusercontent.com/groundsgg/grounds-cli/main/install.sh | sh
+```
+</Tab>
+
+<Tab title="Windows (Scoop)">
+```powershell
+scoop bucket add grounds https://github.com/groundsgg/scoop-bucket
+scoop install grounds
+```
+</Tab>
+</Tabs>
+
+## Sign in
+
+```bash
+grounds login
+```
+
+The CLI opens your browser to Grounds SSO. Approve the device code shown in the terminal — the CLI persists tokens in your OS keyring and you only need to repeat this when the session expires (usually weekly).
+
+Verify with:
+
+```bash
+grounds doctor
+```
+
+You should see green checks on `auth`, `api`, and `gradle wrapper` (if run from a project root).
+
+## Set up the Gradle plugin
+
+Grounds builds straight from Gradle. Add the plugin to your `build.gradle.kts`:
+
+```kotlin
+plugins {
+    `java-library`
+    id("gg.grounds.push") version "0.x" // see Releases for current
+}
+
+groundsPush {
+    // Reads ~/.config/grounds/credentials.json by default; no extra config needed.
+}
+
+dependencies {
+    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+}
+```
+
+Then create a `grounds.yaml` next to `build.gradle.kts`:
+
+```yaml
+name: my-plugin
+type: plugin-paper
+baseImage: paper
+jar: build/libs/my-plugin-0.1.0.jar
+```
+
+<Note>
+The `baseImage` field selects the runtime: `paper`, `velocity`, `minestom`, or `service`. Each maps to a vetted image we keep up to date.
+</Note>
+
+## Your first push
+
+```bash
+grounds push --target=dev
+```
+
+What happens:
+
+1. The Gradle plugin assembles your JAR and uploads it + the manifest to the Grounds API.
+2. **Forge** runs a Kaniko build inside the cluster, pushes the resulting OCI image to the internal registry, and signs it with cosign.
+3. Forge applies a Deployment + Service to your personal namespace (`user-<your-handle>`).
+4. Once the pod is Ready, the CLI prints the public URL.
+
+Output looks like:
+
+```
+✔ Build complete (image sha256:abc…)
+✔ Deploy ready
+  → minecraft://my-plugin-yourname.mc.grnds.io
+```
+
+Connect from any Minecraft client using that address. The first connection cold-starts the server (~15s); after that it stays warm until idle.
+
+## Ephemeral preview env
+
+For sharing a build with playtesters without polluting your dev environment:
+
+```bash
+grounds push --target=staging
+```
+
+This creates a fresh `preview-<id>` namespace with a 7-day TTL. Hostname pattern: `<name>-pr<id>.mc.grnds.io`. Grounds garbage-collects the env automatically once the TTL expires — pin it to keep it longer:
+
+```bash
+grounds preview list           # find the id
+grounds preview pin <id>       # opt out of auto-cleanup
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+<Card title="CLI reference" icon="terminal" href="/build/cli">
+  Every subcommand and flag.
+</Card>
+
+<Card title="Concepts" icon="book" href="/build/concepts">
+  Projects, dev clusters, preview envs — what they are and how they relate.
+</Card>
+
+<Card title="Troubleshooting" icon="bug" href="/build/troubleshooting">
+  Common errors and how to fix them.
+</Card>
+
+<Card title="API reference" icon="code" href="/apis">
+  Forge HTTP API for custom integrations.
+</Card>
+</CardGroup>

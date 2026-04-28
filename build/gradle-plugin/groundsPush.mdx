@@ -1,0 +1,91 @@
+---
+title: "groundsPush"
+description: "The main upload + build + deploy task."
+---
+
+```bash
+./gradlew groundsPush                       # default target
+./gradlew groundsPush --target=staging
+./gradlew groundsPush --target=dev
+```
+
+This is the task the CLI's `grounds push` invokes under the hood. Run it directly when you don't have the CLI on your machine, or from CI.
+
+## What it does
+
+1. **Validate** — parses `grounds.yaml`, checks required fields.
+2. **Resolve JAR** — uses the `jarFile` extension property, or auto-detected `shadowJar`/`jar` output. Builds it if needed (this task `dependsOn` the JAR task).
+3. **Upload** — multipart POST of the JAR + manifest to `<apiUrl>/v1/pushes`. Returns a push ID.
+4. **Stream** — opens an SSE connection to `<apiUrl>/v1/pushes/<id>/logs` and tails until terminal status.
+5. **Exit** — fails the build (non-zero exit) on `build_failed` or `deploy_failed`. Logs the public URL on `ready`.
+
+## Flags
+
+| Flag | Purpose |
+|---|---|
+| `--target=<dev\|staging>` | Override the manifest's target. **Highest precedence**. |
+
+That's it. Everything else is configured via the [`groundsPush` extension](/build/gradle-plugin/setup#the-groundspush-extension) or `grounds.yaml`.
+
+## Output
+
+```
+> Task :groundsPush
+[grounds-push] uploading my-plugin-0.1.0-all.jar (4.2 MB)
+[grounds-push] pushId=018f9c12-…
+[build] step 1/5 …
+[build] step 5/5 done — image registry.platform.grnds.io/my-plugin@sha256:…
+[deploy] reconciling deployment
+[deploy] pod scheduled
+[deploy] pod ready
+[grounds-push] ✔ ready — connect at my-plugin-hendrik.mc.grnds.io
+```
+
+When run via `grounds push`, the CLI re-rendres these messages with colour and progress indicators. As a raw Gradle task it's plaintext.
+
+## Failure handling
+
+The build fails on:
+
+- Manifest parse error (caught locally before upload).
+- Upload error (network, 4xx from forge, file not found).
+- Terminal `build_failed` or `deploy_failed` from the SSE stream.
+- Connection lost for longer than `timeoutMinutes` (default 5).
+- Whitelist warning when `failOnWhitelistError = true` (the default).
+
+Each prints a `GradleException` with the diagnostic from forge. For build/deploy failures, the message includes the push ID so you can re-run with `groundsPushRetry` or fetch logs separately.
+
+## Inputs / outputs (Gradle terms)
+
+| Property | Type | Default |
+|---|---|---|
+| `manifestFile` | `RegularFileProperty` (input) | `<projectDir>/grounds.yaml` |
+| `jarFile` | `RegularFileProperty` (input) | auto from `shadowJar` / `jar` |
+| `apiUrl` | `Property<String>` (input) | from credentials, else `https://platform.grnds.io` |
+| `target` | `Property<String>` (input) | `dev` |
+| `timeoutMinutes` | `Property<Int>` | `5` |
+| `connectTimeoutSeconds` | `Property<Int>` | `20` |
+| `failOnWhitelistError` | `Property<Boolean>` | `true` |
+
+This task has no Gradle outputs and is not cacheable — it always re-runs (a push is by definition not idempotent, even though forge dedupes by content hash).
+
+## Calling from CI
+
+```yaml .github/workflows/push.yml
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: ./gradlew :plugin:groundsPush --target=staging
+        env:
+          GROUNDS_TOKEN: ${{ secrets.GROUNDS_TOKEN }}
+          GITHUB_ACTOR:  ${{ github.actor }}
+          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}      # for plugin pull
+```
+
+`GROUNDS_TOKEN` should be a [service-account token](/build/ci-tokens) scoped to the project. Don't use a personal user token — it has too-broad permissions and can't be rotated independently.
