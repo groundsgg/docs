@@ -1,0 +1,64 @@
+---
+title: "Projects & teams"
+description: "Projects scope everything you do on the platform — pushes, previews, members, tokens."
+---
+
+Every push, preview, and token belongs to a **project**. A project is your collaboration unit: a set of members with roles, working on the same plugin or service.
+
+## Roles
+
+There are three roles, with strictly nested permissions:
+
+| Role | Push | View pushes | Manage previews | Invite / remove members | Mint tokens |
+|---|---|---|---|---|---|
+| `viewer` | — | ✓ | — | — | — |
+| `editor` | ✓ | ✓ | ✓ | — | — |
+| `owner` | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+Roles are project-scoped. You can be an `owner` on one project and a `viewer` on another.
+
+<Note>
+A project must always have at least one owner. Trying to demote or remove the last owner returns a `409 last owner protection` error from forge.
+</Note>
+
+## Default project
+
+When you sign up, a default project is created for you with you as the sole owner. You can create more from the portal or via API.
+
+CLI commands without a project flag use your default project. Pin a different one for a single command:
+
+```bash
+grounds --project <project-id> push
+```
+
+Or for the whole shell session:
+
+```bash
+export GROUNDS_PROJECT=<project-id>
+```
+
+## Inviting members
+
+There are two flows.
+
+### Add by username
+
+Owners can add a known account directly from the portal Members page. The user must have signed in at least once so we have a record of them.
+
+### Invite link
+
+For people who haven't signed up yet, mint a one-time invite link:
+
+1. **Portal** → Project → Members → **Invite link**.
+2. Pick the role (`editor` or `viewer`) and an expiry (default 7 days, max 30).
+3. Send the URL. The recipient signs in via Grounds SSO and is automatically added to the project.
+
+Invite links are **single-use** — redemption is atomic, so simultaneous clicks can't both succeed. They cannot be used to grant `owner` (only existing owners can promote).
+
+## Service-account tokens
+
+For unattended use (CI, scripts, bots) projects can mint long-lived `gnds_*` API tokens scoped to a single project. See [CI / service-account tokens](/build/ci-tokens).
+
+## Audit
+
+Membership and role changes are recorded in the project's audit feed (visible in the portal under Settings → Audit). Token mint and revocation events appear there too.

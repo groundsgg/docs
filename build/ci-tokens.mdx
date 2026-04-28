@@ -1,0 +1,97 @@
+---
+title: "CI / service-account tokens"
+description: "Long-lived, project-scoped API tokens for CI, scripts, and bots."
+---
+
+For unattended use you don't want to log a CI runner into a personal account — passwords expire, MFA breaks scripts, and a personal token would have access to **all** your projects. The platform mints **service-account tokens** instead: opaque, project-scoped, owner-mintable.
+
+## Format
+
+```
+gnds_<8-char-prefix>_<32-char-secret>
+```
+
+The prefix is logged for audit; the secret is shown **once** at mint time and stored as a SHA-256 hash by forge.
+
+## Permissions
+
+A service-account token can do anything an `editor` can do — within the project that minted it. Specifically:
+
+- ✓ Create pushes (`grounds push`)
+- ✓ Retry pushes
+- ✓ List, show, pin, unpin previews
+- ✓ Read deployment logs
+
+What it **cannot** do (privilege-escalation guard):
+
+- ✗ Mint another service-account token
+- ✗ Revoke a service-account token
+- ✗ Add or remove project members
+- ✗ Change member roles
+
+These are reserved for `owner` accounts, which means a leaked token can't be used to entrench itself. Rotate by minting a new one and revoking the old.
+
+## Minting
+
+Only project **owners** can mint.
+
+### Portal
+
+1. Open the project.
+2. **Settings** → **Service accounts**.
+3. Click **New token**, name it (`ci-github-actions`, `release-bot`), pick an expiry.
+4. Copy the secret immediately — you won't see it again.
+
+### CLI (forthcoming)
+
+```bash
+grounds project tokens create --name=ci-github-actions --expires-in=90d
+```
+
+## Using a token
+
+Set `GROUNDS_TOKEN` and the CLI/Gradle plugin will prefer it over `credentials.json`:
+
+```bash
+export GROUNDS_TOKEN=gnds_abc12345_…
+grounds push --target=staging
+```
+
+```yaml .github/workflows/push.yml
+env:
+  GROUNDS_TOKEN: ${{ secrets.GROUNDS_TOKEN }}
+```
+
+The token's project scope is **enforced by forge** — even if you pass `--project <other-id>`, forge ignores it and uses the token's scoped project.
+
+## Listing & revoking
+
+Owners can list active tokens (the secret is never returned, just the prefix and metadata):
+
+```
+PREFIX     NAME                   CREATED      LAST USED   EXPIRES
+gnds_abc1  ci-github-actions      2026-04-12   2026-04-28  2026-07-12
+gnds_def2  release-bot            2026-03-01   2026-04-27  never
+```
+
+Revoke from the portal or via API. Revocation is immediate — the token is rejected on the next request.
+
+## Expiry
+
+Tokens have a creation timestamp, optional expiry, and a `lastUsedAt` updated on every successful API call. The portal will surface tokens unused for >30 days for cleanup.
+
+<Note>
+Tokens never auto-rotate. The platform doesn't refresh them or reissue silently. Plan to rotate on a cadence (90d is a sensible default) by minting new + cutting over CI secrets + revoking old.
+</Note>
+
+## Audit
+
+Every token mint, use, and revocation is recorded in the project's audit feed (portal **Settings** → **Audit**). Useful when investigating a compromise or wondering "who pushed at 3am yesterday".
+
+## What if my token leaks?
+
+1. **Revoke immediately** in the portal. The token stops working on the next API call.
+2. Mint a new one and update CI secrets.
+3. Check the audit feed for unexpected pushes between leak and revocation.
+
+Because tokens are project-scoped and can't escalate, blast radius is limited to that project. A leaked token cannot mint more tokens or grant itself access elsewhere.

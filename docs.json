@@ -21,7 +21,41 @@
         "tab": "Build",
         "pages": [
           "build/index",
-          "build/quickstart"
+          "build/quickstart",
+          {
+            "group": "Concepts",
+            "pages": [
+              "build/concepts/projects-and-teams",
+              "build/concepts/targets",
+              "build/concepts/pushes",
+              "build/concepts/preview-environments"
+            ]
+          },
+          {
+            "group": "CLI",
+            "pages": [
+              "build/cli/installation",
+              "build/cli/auth",
+              "build/cli/push",
+              "build/cli/preview",
+              "build/cli/configuration"
+            ]
+          },
+          "build/manifest",
+          {
+            "group": "Gradle plugin",
+            "pages": [
+              "build/gradle-plugin/setup",
+              "build/gradle-plugin/groundsPush",
+              "build/gradle-plugin/groundsPushRetry",
+              "build/gradle-plugin/groundsTestLocal"
+            ]
+          },
+          "build/ci-tokens",
+          "build/portal",
+          "build/local-development",
+          "build/observability",
+          "build/troubleshooting"
         ]
       },
       {

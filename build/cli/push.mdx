@@ -1,0 +1,108 @@
+---
+title: "grounds push"
+description: "Build with Gradle, upload to forge, deploy to a target."
+---
+
+`grounds push` is the command you'll run dozens of times a day. It's a thin wrapper over the [Gradle plugin](/build/gradle-plugin/setup): the CLI invokes `./gradlew groundsPush` with the right arguments and inherits its stdout.
+
+## Synopsis
+
+```text
+grounds push [--target=dev|staging] [--project <id>]
+grounds push retry <pushId>
+grounds push list [--target T] [--status S] [--limit N]
+```
+
+## push
+
+```bash
+grounds push --target=dev       # default
+grounds push --target=staging
+```
+
+Runs `./gradlew groundsPush --target=<t>` in the current directory. The Gradle plugin handles:
+
+- Resolving the JAR (auto-detects `shadowJar` or `jar`).
+- Reading and validating `grounds.yaml`.
+- Uploading JAR + manifest to forge.
+- Streaming build + deploy logs back to your terminal.
+- Exiting with a non-zero code on any terminal failure.
+
+The CLI exits with the same code Gradle exits with.
+
+## push retry
+
+```bash
+grounds push retry <pushId>
+```
+
+Re-runs the pipeline for a previously failed push. Forge re-uses the server-stored JAR and manifest, so this doesn't re-upload — it goes straight from `pending` to `building`. Use it when:
+
+- A build failed because of a transient infra issue (image pull, registry hiccup).
+- A deploy failed and you want to try again without rebuilding.
+
+The retry creates a **new** push row with its own ID; the original is preserved for history.
+
+## push list
+
+```bash
+grounds push list                          # last 20 in current project
+grounds push list --target=staging
+grounds push list --status=ready
+grounds push list --limit=50
+grounds push list --output=json | jq .
+```
+
+| Flag | Purpose |
+|---|---|
+| `--target` | Filter by target: `dev`, `staging`, `production`. |
+| `--status` | Filter by state: `pending`, `building`, `build_failed`, `build_succeeded`, `deploying`, `deploy_failed`, `ready`. |
+| `--limit` | Max rows to fetch (default 20, server cap 200). |
+| `--output` | `table` (default), `json`, or `yaml`. |
+
+## Common flags
+
+These are all global flags and apply to every subcommand:
+
+| Flag | Env | Purpose |
+|---|---|---|
+| `--project <id>` | `GROUNDS_PROJECT` | Pin the project for this call |
+| `--api-url <url>` | `GROUNDS_API_URL` | Override the forge endpoint |
+| `--config <dir>` | `GROUNDS_CONFIG_DIR` | Override config dir |
+| `--output <fmt>` | — | `table` / `json` / `yaml` |
+| `--verbose` / `-v` | — | Debug logs to stderr |
+| `--no-color` | `NO_COLOR=1` | Disable ANSI colors |
+
+## Reading the output
+
+A successful push looks like:
+
+```
+→ uploading my-cool-plugin-0.1.0.jar (4.2 MB)
+✔ uploaded — pushId=018f9c12-…
+[build] step 1/5 …
+[build] step 5/5 done
+✔ build_succeeded — image registry.platform.grnds.io/my-cool-plugin@sha256:…
+[deploy] reconciling deployment my-cool-plugin in user-hendrik
+[deploy] pod scheduled
+[deploy] pod ready
+✔ ready — connect at my-cool-plugin-hendrik.mc.grnds.io
+```
+
+If the pod ends up `CrashLoopBackOff`, you'll see deploy logs streamed before the CLI gives up and prints `deploy_failed`. Tail the live deployment logs separately at any time:
+
+```bash
+grounds logs deployment my-cool-plugin
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | `ready` reached |
+| 1 | Generic failure (validation, network, config) |
+| 2 | `build_failed` |
+| 3 | `deploy_failed` |
+| 130 | Cancelled by user (Ctrl-C) |
+
+Anything non-zero is safe to fail a CI step on.

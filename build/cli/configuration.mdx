@@ -1,0 +1,81 @@
+---
+title: "Configuration"
+description: "Where the CLI looks for its config — files, env vars, and flag precedence."
+---
+
+The CLI is configured through a small handful of files, environment variables, and command-line flags. They compose with a strict precedence order.
+
+## Precedence
+
+For every setting, the first source that has a value wins:
+
+1. **Command-line flag** (`--api-url`, `--project`, …)
+2. **Environment variable** (`GROUNDS_API_URL`, `GROUNDS_PROJECT`, …)
+3. **Config file** (`config.toml` in the config dir)
+4. **Built-in default** (e.g., `https://platform.grnds.io`)
+
+## Config dir
+
+| OS | Default path | Override |
+|---|---|---|
+| Linux | `$XDG_CONFIG_HOME/grounds/` (default `~/.config/grounds/`) | `--config <dir>` or `GROUNDS_CONFIG_DIR` |
+| macOS | `~/Library/Application Support/grounds/` | same |
+| Windows | `%APPDATA%\grounds\` | same |
+
+What lives there:
+
+| File | Owner |
+|---|---|
+| `credentials.json` | Created by `grounds login`. Refresh + access tokens. `0600`. |
+| `config.toml` | Optional. User-managed defaults. |
+
+## config.toml
+
+Optional. Persistent overrides for things you don't want to type or set every shell.
+
+```toml ~/.config/grounds/config.toml
+api_url = "https://platform.grnds.io"
+project = "01J9K8…"
+output  = "table"
+```
+
+Every field is optional. Missing fields fall back to env or built-in default.
+
+## Environment variables
+
+| Var | Equivalent flag | Purpose |
+|---|---|---|
+| `GROUNDS_API_URL` | `--api-url` | forge endpoint |
+| `GROUNDS_PROJECT` | `--project` | project ID |
+| `GROUNDS_TOKEN` | (none) | Bearer token override (e.g., service-account `gnds_*`) |
+| `GROUNDS_CONFIG_DIR` | `--config` | Config dir |
+| `NO_COLOR` | `--no-color` | Disable ANSI colors |
+
+`GROUNDS_TOKEN` is special: when set, the CLI **skips** reading `credentials.json` entirely and uses the token verbatim. It will not be refreshed. This is the right knob for CI.
+
+## Profiles (advanced)
+
+For switching between multiple Grounds environments (e.g., staging vs prod self-hosted), keep separate config dirs:
+
+```bash
+alias grounds-prod='grounds --config ~/.config/grounds-prod'
+alias grounds-staging='grounds --config ~/.config/grounds-staging'
+
+grounds-prod login
+grounds-staging login
+
+grounds-prod push --target=staging
+```
+
+Each dir has its own `credentials.json` and `config.toml`.
+
+## Resetting
+
+To start completely fresh:
+
+```bash
+grounds logout                    # delete credentials only
+rm -rf ~/.config/grounds          # nuke everything
+```
+
+The CLI will recreate the config dir on next use.
