@@ -1,0 +1,130 @@
+---
+title: "Paper"
+description: "Install plugin-agones on a Paper gameserver to report Agones state from player events"
+---
+
+Use the Paper module of `plugin-agones` when your gamemode runs on Paper inside the Grounds
+Agones-managed cluster. The plugin turns player join and quit events into Agones state transitions
+so the platform learns when your gameserver is actually occupied.
+
+## Requirements
+
+The Paper gameserver must run with an Agones sidecar exposing the SDK on
+`http://localhost:9358`. The Grounds Paper container image ships this configuration, so no plugin
+configuration is needed if you use the standard image.
+
+<Info>
+The plugin does not read any configuration files. Installing the JAR and running with a working
+Agones sidecar is enough.
+</Info>
+
+## What the Plugin Does
+
+Once loaded, the plugin:
+
+- sets the initial Agones state based on `Bukkit.getOnlinePlayers()` at enable time
+- registers a listener for `PlayerJoinEvent`, `PlayerQuitEvent`, and `PlayerKickEvent`
+- runs a Bukkit scheduler task every 10 seconds that reconciles the state from the current player
+  count
+
+The sync semantics are:
+
+| Situation                                    | Resulting Agones state |
+|----------------------------------------------|------------------------|
+| First player joins an empty server           | `Allocated`            |
+| A player joins a server that already has one | State is unchanged     |
+| The last player leaves or is kicked          | `Ready`                |
+| The gameserver starts with no players        | `Ready`                |
+| The gameserver starts with players already on it | `Allocated`        |
+
+The quit and kick path waits one server tick before evaluating, so the online player list is
+accurate even when the event fires before the player is removed.
+
+<Note>
+State transitions are idempotent. The plugin checks the current state through the sidecar before
+it calls `Allocate` or `Ready`, so repeat events do not cause repeat calls.
+</Note>
+
+## Install
+
+<Steps>
+<Step title="Add the plugin JAR">
+
+Drop the Paper module artifact into the `plugins/` directory of your Paper gameserver, next to
+your gamemode plugins.
+
+```text
+plugins/
+├── plugin-agones-paper.jar
+└── your-gamemode.jar
+```
+
+</Step>
+
+<Step title="Deploy with an Agones sidecar">
+
+Make sure your pod template includes the Agones sidecar. The Grounds Paper container images
+include the sidecar configuration out of the box, so this is a no-op if you use them.
+
+<Check>
+On startup, the plugin logs `Started Agones plugin successfully (platform=paper)` when
+initialization succeeds.
+</Check>
+
+</Step>
+
+<Step title="Label your GameServer">
+
+For the Velocity proxy to discover this gameserver, set the `grounds/server-type` label on the
+`GameServer` resource.
+
+```yaml
+apiVersion: agones.dev/v1
+kind: GameServer
+metadata:
+  namespace: games
+  labels:
+    grounds/server-type: game
+```
+
+See the [shared discovery contract](/plugins/agones#gameserver-discovery-contract) for the full
+set of labels and network expectations.
+
+</Step>
+</Steps>
+
+## Integration With Your Gamemode
+
+No code changes are needed in your gamemode plugin. The Agones state is managed entirely by the
+event listener inside `plugin-agones-paper`.
+
+Do not call Agones `Allocate` or `Ready` from your own code. Redundant calls are safe because the
+plugin short-circuits on the current state, but they add noise and make state transitions harder
+to reason about.
+
+<Tip>
+If your gamemode needs to prevent the gameserver from returning to `Ready` while a round is still
+in progress, plan that through Agones allocation handling or player counters instead of bypassing
+the plugin.
+</Tip>
+
+## Failure Modes
+
+<AccordionGroup>
+<Accordion title="Agones sidecar unreachable on startup">
+The plugin starts normally and continues to retry on every player event and on the 10 second
+fallback loop. Errors are logged at severe level with the underlying throwable attached. The
+gameserver keeps whatever state Agones last persisted until the sidecar recovers.
+</Accordion>
+
+<Accordion title="Events fire out of order during server shutdown">
+The 10 second fallback loop backstops missed or re-ordered events. As long as the Paper scheduler
+runs once after the player list settles, the state is reconciled.
+</Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+- Review the [Velocity page](/plugins/agones/velocity) to understand how the proxy discovers this
+  gameserver once its Agones state transitions.
+- Read the [Agones Integration overview](/plugins/agones) for the end-to-end lifecycle picture.

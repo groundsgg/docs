@@ -1,0 +1,162 @@
+---
+title: "Velocity"
+description: "Proxy-side Agones gameserver discovery, lobby routing, and operator command"
+---
+
+Use the Velocity module of `plugin-agones` when you run the Grounds proxy in front of
+Agones-managed gameservers. The plugin replaces the static `velocity.toml` server list with live
+Kubernetes-driven discovery and routes joining players to a lobby.
+
+## Requirements
+
+The plugin assumes the following environment:
+
+- the Velocity pod runs in the `games` namespace alongside its gameservers
+- the pod has read access to the Agones `gameservers.agones.dev` custom resources (`list` verb)
+- an Agones sidecar runs next to the Velocity container and exposes the SDK on
+  `http://localhost:9358`
+
+<Warning>
+The plugin unregisters every server defined in `velocity.toml` during startup. Your `velocity.toml`
+`[servers]` section is effectively ignored once the plugin is loaded.
+</Warning>
+
+## What the Plugin Provides
+
+Once the plugin starts, it runs two responsibilities in parallel on the proxy:
+
+- `GameServerStateManager` syncs the proxy's own Agones state (`Ready` or `Allocated`) with the
+  connected player count
+- `DiscoveryService` polls Kubernetes every two seconds and keeps Velocity's server registry in
+  sync with the running gameservers
+
+Every discovered gameserver is registered under its Kubernetes resource name. The server's role is
+read from the `grounds/server-type` label and cached for routing and the `/agones` command.
+
+## Gameserver Requirements
+
+For a gameserver pod to appear in Velocity, it must satisfy the discovery contract:
+
+<Steps>
+<Step title="Deploy into the games namespace">
+The discovery query is scoped to the `games` namespace. Gameservers outside that namespace are
+ignored.
+</Step>
+
+<Step title="Label the GameServer with a role">
+Set `grounds/server-type` to `lobby`, `game`, or `match` on the `GameServer` resource metadata.
+Unlabeled gameservers are skipped.
+
+```yaml
+apiVersion: agones.dev/v1
+kind: GameServer
+metadata:
+  name: my-lobby
+  namespace: games
+  labels:
+    grounds/server-type: lobby
+```
+</Step>
+
+<Step title="Expose Minecraft on port 25565">
+The proxy registers the pod at `PodIP:25565`. The plugin does not honor Agones allocated ports —
+the gameserver must listen on the default Minecraft port inside the pod.
+</Step>
+
+<Step title="Reach a running Agones state">
+Only gameservers in `Ready`, `Allocated`, or `Reserved` state are registered. Transitions out of
+these states unregister the server on the next poll.
+</Step>
+</Steps>
+
+<Check>
+If your gameserver follows all four steps, it appears in `/agones` on the proxy within two seconds
+of reaching a running state.
+</Check>
+
+## Lobby Routing
+
+The plugin treats `grounds/server-type=lobby` as the entry point for new connections.
+
+| Event                                            | Behavior                                                |
+|--------------------------------------------------|---------------------------------------------------------|
+| Player logs in and at least one lobby is running | Login succeeds and the proxy routes the player to a lobby |
+| Player logs in and no lobby is running           | Login is denied with a user-facing message              |
+| `PlayerChooseInitialServerEvent` with no server  | The plugin sets the first registered lobby as target    |
+
+If another plugin already sets an initial server (for example through a rejoin feature), the
+discovery plugin does not override that choice.
+
+<Note>
+"First registered lobby" is a deterministic but unordered pick from Velocity's internal map. If you
+need priority routing, plan to pair this with party-aware routing later.
+</Note>
+
+## The `/agones` Command
+
+The plugin registers an operator command for inspecting the current proxy state.
+
+```text
+/agones
+```
+
+| Attribute    | Value                       |
+|--------------|-----------------------------|
+| Permission   | `grounds.command.agones`    |
+| Console      | always allowed              |
+| Output scope | all registered proxy servers |
+
+The command prints every registered server with its role, address, and connected player count.
+Roles are color-coded: `lobby` (green), `game` (aqua), `match` (light purple), `unknown` (gray).
+
+Example output:
+
+```text
+--- Agones Servers ---
+ lobby-1 [lobby] 10.42.3.14:25565 (12 players)
+ game-survival-7 [game] 10.42.4.22:25565 (0 players)
+Total: 2 servers, 12 players
+```
+
+## State Sync on the Proxy
+
+The proxy itself runs as an Agones gameserver, so the plugin also manages its own state:
+
+- the plugin calls `Allocate` when the first player logs in
+- the plugin calls `Ready` when the last player disconnects
+- a 10 second fallback loop reconciles the state in case events are missed
+
+The state sync is idempotent: if the proxy is already in the desired state, the plugin does not
+issue redundant calls to the sidecar.
+
+## Failure Modes
+
+<AccordionGroup>
+<Accordion title="Kubernetes client fails to initialize">
+If the plugin cannot build a Kubernetes client at startup, discovery stays disabled for the
+process lifetime. The plugin logs the reason and continues without unregistering configured
+servers, registering lobby-routing listeners, or polling Kubernetes. Existing `velocity.toml`
+servers remain registered until the proxy restarts with a working Kubernetes configuration.
+</Accordion>
+
+<Accordion title="Agones sidecar unreachable">
+The proxy-side state sync logs the failure and keeps trying on its fallback loop. Discovery and
+routing continue to work because they depend on the Kubernetes API, not on the sidecar.
+</Accordion>
+
+<Accordion title="Gameserver missing a PodIP">
+Gameservers without a `PodIP` entry in `status.addresses` are skipped and logged as
+`missing_pod_ip`. This usually clears up on the next poll once Agones populates the status.
+</Accordion>
+
+<Accordion title="Gameserver missing the server-type label">
+Unlabeled gameservers are silently skipped. Check the `GameServer` resource if you expect it to
+appear and it does not.
+</Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+- Read [Paper](/plugins/agones/paper) or [Minestom](/plugins/agones/minestom) to set up gameservers
+  that the Velocity proxy will discover.
+- Review [Agones Integration](/plugins/agones) for the shared discovery contract.
