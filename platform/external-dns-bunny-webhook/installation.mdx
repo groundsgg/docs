@@ -1,0 +1,132 @@
+---
+title: "Installation"
+description: "Deploy external-dns-bunny-webhook alongside ExternalDNS in Kubernetes"
+---
+
+<Info>
+  **Prerequisites**:
+  - A Kubernetes cluster with Helm 3
+  - A Bunny.net account with an API key that can manage DNS zones
+  - The ExternalDNS Helm chart repository added to Helm
+</Info>
+
+Use these steps to deploy the webhook as a sidecar to the official ExternalDNS controller using
+the `kubernetes-sigs/external-dns` Helm chart.
+
+## Add the ExternalDNS Helm Repository
+
+You can skip this step if you already have the repository configured.
+
+```shell
+helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
+helm repo update
+```
+
+## Store the Bunny.net API Key as a Secret
+
+The webhook reads the API key from the `BUNNY_API_KEY` environment variable. The default
+configuration expects a Kubernetes secret named `external-dns-bunny-secret` with a key called
+`api-key`.
+
+```shell
+kubectl create secret generic external-dns-bunny-secret \
+  --namespace external-dns \
+  --from-literal=api-key=<your-bunny-api-key>
+```
+
+<Warning>
+Do not commit the API key to Git. Use a secrets manager, sealed secrets, or your cluster's
+external secret integration in production.
+</Warning>
+
+## Prepare the Helm Values File
+
+Save this values file as `bunny-values.yaml`. The Grounds container image is published to the
+GitHub Container Registry at `ghcr.io/groundsgg/external-dns-bunny-webhook`.
+
+```yaml bunny-values.yaml
+namespace: external-dns
+provider:
+  name: webhook
+  webhook:
+    image:
+      repository: ghcr.io/groundsgg/external-dns-bunny-webhook
+      tag: v0.4.1
+    env:
+      - name: BUNNY_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: external-dns-bunny-secret
+            key: api-key
+```
+
+<Tip>
+Pin the `tag` field to a specific release. Track the
+[latest release](https://github.com/groundsgg/external-dns-bunny-webhook/releases) and bump the
+tag deliberately.
+</Tip>
+
+The ExternalDNS chart wires the webhook container into the same pod as the controller and sets up
+the service accounts, RBAC, and metrics endpoints for you.
+
+## Install the Chart
+
+Install ExternalDNS with the values file. The example pins the chart version for reproducibility.
+
+```shell
+helm upgrade --install external-dns external-dns/external-dns \
+  --namespace external-dns \
+  --create-namespace \
+  --version 1.15.0 \
+  --values bunny-values.yaml
+```
+
+<Check>
+Verify that both containers in the pod report ready before you continue:
+
+```shell
+kubectl -n external-dns get pods
+```
+
+You should see one pod with two ready containers — the ExternalDNS controller and the Bunny
+webhook.
+</Check>
+
+## Verify Record Reconciliation
+
+Create a test service or ingress with an `external-dns.alpha.kubernetes.io/hostname` annotation.
+ExternalDNS picks it up on the next reconcile loop and calls the webhook, which creates the
+Bunny.net DNS record.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  namespace: default
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: hello.example.com
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+  selector:
+    app: hello
+```
+
+Check the logs of the webhook container to confirm that the record was written:
+
+```shell
+kubectl -n external-dns logs deploy/external-dns -c webhook
+```
+
+<Check>
+The webhook logs an `upserted` entry for `hello.example.com` and the record appears in the
+Bunny.net DNS dashboard.
+</Check>
+
+## Next Steps
+
+- See the [configuration guide](/platform/external-dns-bunny-webhook/configuration) for runtime
+  environment variables and the Bunny-specific annotations that let you enable monitoring,
+  weight, or smart DNS routing per record.

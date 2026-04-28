@@ -1,0 +1,364 @@
+---
+title: "Configuration"
+description: "Runtime environment variables and Bunny-specific annotations for the webhook provider"
+---
+
+Use this page when you need to tune the webhook's runtime settings or control Bunny-specific
+record behavior from your Kubernetes sources.
+
+## Runtime Environment Variables
+
+The webhook reads all configuration from environment variables at startup.
+
+| Variable                | Required | Default     | Purpose                                                                     |
+|-------------------------|----------|-------------|-----------------------------------------------------------------------------|
+| `BUNNY_API_KEY`         | Yes      | —           | API key used to authenticate with the Bunny.net API                         |
+| `BUNNY_DRY_RUN`         | No       | `false`     | When `true`, the provider logs intended changes but does not call the API  |
+| `WEBHOOK_HOST`          | No       | `localhost` | Host the webhook endpoint binds to                                          |
+| `WEBHOOK_PORT`          | No       | `8888`      | Port the ExternalDNS controller calls                                       |
+| `WEBHOOK_READ_TIMEOUT`  | No       | `60s`       | Read timeout for the webhook HTTP server                                    |
+| `WEBHOOK_WRITE_TIMEOUT` | No       | `60s`       | Write timeout for the webhook HTTP server                                   |
+| `HEALTH_HOST`           | No       | `0.0.0.0`   | Host the health endpoint binds to                                           |
+| `HEALTH_PORT`           | No       | `8080`      | Port for Kubernetes liveness and readiness probes                           |
+| `HEALTH_READ_TIMEOUT`   | No       | `60s`       | Read timeout for the health HTTP server                                     |
+| `HEALTH_WRITE_TIMEOUT`  | No       | `60s`       | Write timeout for the health HTTP server                                    |
+
+<Tip>
+Use `BUNNY_DRY_RUN=true` when you migrate existing records into ExternalDNS management. The logs
+show exactly which records the webhook would create, update, or delete — without changing Bunny.
+</Tip>
+
+## Bunny-Specific Annotations
+
+Add these annotations to the Kubernetes source (Service, Ingress, Gateway route, and similar) to
+control record behavior inside Bunny.net. All annotations are optional and fall back to safe
+defaults when omitted.
+
+### Record Controls
+
+#### Disable a record
+
+Set `external-dns.alpha.kubernetes.io/webhook-bunny-disabled` to `true` to keep the record
+managed by ExternalDNS but disabled in Bunny. Disabled records do not answer DNS queries but stay
+visible in the dashboard.
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: api.example.com
+    external-dns.alpha.kubernetes.io/webhook-bunny-disabled: "true"
+```
+
+#### Monitor type
+
+Set `external-dns.alpha.kubernetes.io/webhook-bunny-monitor-type` to one of `none`, `http`, or
+`ping` to control Bunny's built-in record monitoring. The default is `none`.
+
+| Value  | Behavior                                               |
+|--------|--------------------------------------------------------|
+| `none` | No monitoring. Standard DNS record                     |
+| `http` | HTTP health check against the record's target          |
+| `ping` | ICMP ping check against the record's target            |
+
+#### Weight
+
+Set `external-dns.alpha.kubernetes.io/webhook-bunny-weight` to an integer between `1` and `100`
+to control record weighting in Bunny. The default is `100`.
+
+<Note>
+Values outside the valid range are clamped to the nearest valid value. Non-integer values are
+rejected and the default is used instead.
+</Note>
+
+### Smart DNS Records
+
+<Tooltip tip="Smart DNS is Bunny's feature for routing DNS answers based on latency or geography.">Smart DNS</Tooltip>
+is supported on `A` and `AAAA` records. To model multiple smart records under the same hostname,
+create one Kubernetes source per record and differentiate them with
+`external-dns.alpha.kubernetes.io/set-identifier`.
+
+The webhook encodes the smart settings into `SetIdentifier` automatically when it reads back
+records from Bunny (`latency:<zone>` or `geo:<lat>,<long>`), so ExternalDNS sees a stable view
+across reconciles.
+
+#### Routing type
+
+Set `external-dns.alpha.kubernetes.io/webhook-bunny-smart-type` to `none`, `latency`, or `geo`.
+Unknown values fall back to `none` and the webhook logs a warning.
+
+#### Latency routing
+
+Required when `smart-type=latency`. Set
+`external-dns.alpha.kubernetes.io/webhook-bunny-smart-latency-zone` to a Bunny zone string —
+typically an ISO country or region code such as `DE`, `US`, or `SG`.
+
+Missing or empty values fall back to non-smart routing with a warning log.
+
+##### Available Latency Regions
+
+Bunny.net exposes the authoritative list through the public Region API. Use `RegionCode` values
+for the `webhook-bunny-smart-latency-zone` annotation.
+
+```shell
+curl https://api.bunny.net/region | jq '.[] | select(.AllowLatencyRouting) | .RegionCode'
+```
+
+<Note>
+The tables below are a snapshot from April 2026 of regions with `AllowLatencyRouting: true`. Regions
+without latency routing are intentionally omitted. For changes, query the API above.
+</Note>
+
+<AccordionGroup>
+<Accordion title="Europe">
+
+| Region Code | Name                | Country |
+|-------------|---------------------|---------|
+| `AMS`       | Amsterdam           | NL      |
+| `AT`        | Vienna              | AT      |
+| `AT2`       | Vienna 2            | AT      |
+| `BA`        | Novi Travnik        | BA      |
+| `BE`        | Brussels            | BE      |
+| `BG`        | Sofia               | BG      |
+| `BU`        | Bucharest           | RO      |
+| `CH`        | Zurich              | CH      |
+| `CZ`        | Prague              | CZ      |
+| `DD`        | Dusseldorf          | DE      |
+| `DE`        | Frankfurt           | DE      |
+| `DE2`       | Frankfurt 2         | DE      |
+| `DK`        | Copenhagen          | DK      |
+| `ES`        | Madrid              | ES      |
+| `FI`        | Helsinki            | FI      |
+| `FR`        | Paris               | FR      |
+| `GR`        | Athens              | GR      |
+| `HR`        | Zagreb              | HR      |
+| `HU`        | Budapest            | HU      |
+| `IE`        | Dublin              | IE      |
+| `IS`        | Keflavik            | IS      |
+| `IT`        | Milan               | IT      |
+| `KH`        | Khabarovsk          | RU      |
+| `KY`        | Krasnoyarsk         | RU      |
+| `LJ`        | Ljubljana           | SI      |
+| `LT`        | Vilnius             | LT      |
+| `LU`        | Luxembourg          | LU      |
+| `LV`        | Riga                | LV      |
+| `MD`        | Chisinau            | MD      |
+| `MS`        | Marseille           | FR      |
+| `NO`        | Oslo                | NO      |
+| `PL`        | Warsaw              | PL      |
+| `PT`        | Lisbon              | PT      |
+| `RS`        | Belgrade            | RS      |
+| `RU`        | Moscow              | RU      |
+| `SE`        | Stockholm           | SE      |
+| `SK`        | Bratislava          | SK      |
+| `UA`        | Kyiv                | UA      |
+| `UK`        | London              | GB      |
+
+</Accordion>
+
+<Accordion title="North America">
+
+| Region Code | Name              | Country |
+|-------------|-------------------|---------|
+| `ASB`       | Ashburn, VA       | US      |
+| `BO`        | Boston, MA        | US      |
+| `CA`        | Toronto           | CA      |
+| `CLT`       | Charlotte, NC     | US      |
+| `DEN`       | Denver, CO        | US      |
+| `DEN2`      | Denver 2, CO      | US      |
+| `GA`        | Atlanta, GA       | US      |
+| `GA2`       | Atlanta 2, GA     | US      |
+| `HI`        | Honolulu, HI      | US      |
+| `HOU`       | Houston, TX       | US      |
+| `HOU2`      | Houston 2, TX     | US      |
+| `IL`        | Chicago, IL       | US      |
+| `KC`        | Kansas City, MO   | US      |
+| `LA`        | Los Angeles, CA   | US      |
+| `LA2`       | Los Angeles 2, CA | US      |
+| `MI`        | Miami, FL         | US      |
+| `MI2`       | Miami 2, FL       | US      |
+| `MN`        | Montreal          | CA      |
+| `MSP`       | Minneapolis, MN   | US      |
+| `NY`        | New York City, NY | US      |
+| `OG`        | Ogden, UT         | US      |
+| `PB`        | Pittsburgh, PA    | US      |
+| `PHX`       | Phoenix, AZ       | US      |
+| `SIL`       | San Jose, CA      | US      |
+| `TX`        | Dallas, TX        | US      |
+| `VA`        | Vancouver         | CA      |
+| `WA`        | Seattle, WA       | US      |
+
+</Accordion>
+
+<Accordion title="Asia">
+
+| Region Code | Name           | Country |
+|-------------|----------------|---------|
+| `AM`        | Yerevan        | AM      |
+| `AZ`        | Baku           | AZ      |
+| `BD`        | Dhaka          | BD      |
+| `CEN`       | Chennai        | IN      |
+| `CY`        | Nicosia        | CY      |
+| `GEO`       | Tbilisi        | GE      |
+| `GU`        | Hagatna        | GU      |
+| `HK`        | Hong Kong      | HK      |
+| `ID`        | Jakarta        | ID      |
+| `IN`        | Bangalore      | IN      |
+| `ISR`       | Tel Aviv       | IL      |
+| `JP`        | Tokyo          | JP      |
+| `KG`        | Bishkek        | KG      |
+| `KR`        | Seoul          | KR      |
+| `KZ`        | Almaty         | KZ      |
+| `MG`        | Ulaanbaatar    | MN      |
+| `MU`        | Mumbai         | IN      |
+| `MY`        | Kuala Lumpur   | MY      |
+| `ND`        | New Delhi      | IN      |
+| `NP`        | Kathmandu      | NP      |
+| `PH`        | Manila         | PH      |
+| `PK`        | Karachi        | PK      |
+| `PP`        | Phnom Penh     | KH      |
+| `RGN`       | Yangon         | MM      |
+| `SG`        | Singapore      | SG      |
+| `SG2`       | Singapore 2    | SG      |
+| `TH`        | Bangkok        | TH      |
+| `TR`        | Istanbul       | TR      |
+| `TW`        | Taipei         | TW      |
+| `VN`        | Ho Chi Minh    | VN      |
+
+</Accordion>
+
+<Accordion title="Oceania">
+
+| Region Code | Name       | Country |
+|-------------|------------|---------|
+| `ADL`       | Adelaide   | AU      |
+| `AUC`       | Auckland   | NZ      |
+| `BRB`       | Brisbane   | AU      |
+| `MEL`       | Melbourne  | AU      |
+| `PER`       | Perth      | AU      |
+| `SYD`       | Sydney     | AU      |
+
+</Accordion>
+
+<Accordion title="South America and LATAM">
+
+| Region Code | Name              | Country |
+|-------------|-------------------|---------|
+| `AR`        | Buenos Aires      | AR      |
+| `BOL`       | Sucre             | BO      |
+| `BR`        | Sao Paulo         | BR      |
+| `BS`        | Brasilia          | BR      |
+| `CL`        | Santiago          | CL      |
+| `CO`        | Bogota            | CO      |
+| `CR`        | San Pedro         | CR      |
+| `EC`        | Quito             | EC      |
+| `FO`        | Fortaleza         | BR      |
+| `GT`        | Guatemala         | GT      |
+| `LAP`       | La Paz            | BO      |
+| `MX`        | Mexico City       | MX      |
+| `PA`        | Porto Alegre      | BR      |
+| `PE`        | Lima              | PE      |
+| `PR`        | San Juan          | PR      |
+| `RJ`        | Rio de Janeiro    | BR      |
+
+</Accordion>
+
+<Accordion title="Africa and Middle East">
+
+| Region Code | Name             | Country |
+|-------------|------------------|---------|
+| `AE`        | Dubai            | AE      |
+| `AO`        | Luanda           | AO      |
+| `BHR`       | Bahrain          | BH      |
+| `CT`        | Cape Town        | ZA      |
+| `EG`        | Cairo            | EG      |
+| `EG2`       | Cairo 2          | EG      |
+| `FU`        | Fujairah         | AE      |
+| `IQ`        | Baghdad          | IQ      |
+| `IQ2`       | Baghdad 2        | IQ      |
+| `JH`        | Johannesburg     | ZA      |
+| `JO`        | Amman            | JO      |
+| `KE`        | Nairobi          | KE      |
+| `KWI`       | Kuwait City      | KW      |
+| `NG`        | Lagos            | NG      |
+| `RBA`       | Rabat            | MA      |
+| `RI`        | Riyadh           | SA      |
+| `TN`        | Tunis            | TN      |
+
+</Accordion>
+</AccordionGroup>
+
+#### Geographic routing
+
+Required when `smart-type=geo`. Set both coordinate annotations:
+
+- `external-dns.alpha.kubernetes.io/webhook-bunny-smart-geo-lat` — latitude between `-90` and `90`
+- `external-dns.alpha.kubernetes.io/webhook-bunny-smart-geo-long` — longitude between `-180` and `180`
+
+Out-of-range or unparseable coordinates fall back to non-smart routing with a warning log.
+
+#### Example: latency routing across regions
+
+```yaml
+# Service in the EU cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-eu
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: api.example.com
+    external-dns.alpha.kubernetes.io/set-identifier: eu
+    external-dns.alpha.kubernetes.io/webhook-bunny-smart-type: latency
+    external-dns.alpha.kubernetes.io/webhook-bunny-smart-latency-zone: "DE"
+---
+# Service in the US cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-us
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: api.example.com
+    external-dns.alpha.kubernetes.io/set-identifier: us
+    external-dns.alpha.kubernetes.io/webhook-bunny-smart-type: latency
+    external-dns.alpha.kubernetes.io/webhook-bunny-smart-latency-zone: "US"
+```
+
+## Interaction With Dashboard-Managed Records
+
+<Warning>
+If you manually created a smart record in the Bunny.net dashboard and there is no matching
+Kubernetes source with the smart annotations, ExternalDNS detects drift and tries to strip the
+smart settings on the next reconcile.
+</Warning>
+
+To avoid unwanted changes, pick one of:
+
+- add matching smart annotations to a Kubernetes source so the webhook treats the record as
+  managed
+- exclude the record from ExternalDNS management through the ownership TXT registry so the
+  controller does not consider it its own
+
+## Troubleshooting
+
+<AccordionGroup>
+<Accordion title="Records do not appear in Bunny.net">
+Check the webhook container logs first:
+
+```shell
+kubectl -n external-dns logs deploy/external-dns -c webhook
+```
+
+Common causes: missing or invalid `BUNNY_API_KEY`, an ExternalDNS `domainFilters` value that does
+not match the hostname, or `policy: sync` required for deletions that is not set on the chart.
+</Accordion>
+
+<Accordion title="Webhook refuses to start">
+Check that the `BUNNY_API_KEY` environment variable is wired from a valid secret and that the
+secret exists in the same namespace as the ExternalDNS release.
+</Accordion>
+
+<Accordion title="Smart record annotation seems to be ignored">
+Unknown `smart-type` values, missing `latency-zone`, and out-of-range coordinates all fall back
+to non-smart routing with a warning log. Look for a warning entry in the webhook logs to confirm
+which annotation was rejected.
+</Accordion>
+</AccordionGroup>
