@@ -1,0 +1,323 @@
+---
+title: "Bundle Reference"
+description: "Field-by-field reference for bundle.yaml and the Engineer-Override-File schema"
+---
+
+Use this when adding a new component to a bundle, debugging an unexpected resolved value, or building tooling that consumes the bundle.
+
+The schema authority is the bundle YAML itself; this page mirrors the TypeScript definitions at `grounds-forge/src/bundle/types.ts`.
+
+## Top-level shape
+
+```yaml
+apiVersion: platform.grnds.io/v1
+kind: PlatformBundle
+metadata:
+  version: 0.4.0
+  description: |
+    Free-form description...
+shared:
+  nats: { ... }
+  postgres: { ... }
+  keycloak: { ... }
+components:
+  velocity: { ... }
+  plugin-social: { ... }
+  ...
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `apiVersion` | string | yes | Must equal `platform.grnds.io/v1`. Forge rejects other values. |
+| `kind` | string | yes | Must equal `PlatformBundle`. |
+| `metadata.version` | semver | yes | Source-of-truth for the bundle's own version. release-please bumps this in lockstep with the git tag. |
+| `metadata.description` | string | no | Human-readable. |
+| `shared` | object | yes | Tailnet-exposed backends shared across all engineer vClusters. |
+| `components` | map | yes | Map of release-name → BundleComponent. |
+
+## `shared`
+
+Backends that **don't** run inside an engineer's vCluster. Each in-vCluster service connects out via Tailscale to these endpoints.
+
+```yaml
+shared:
+  nats:
+    tailnet: nats.dev
+    port: 4222
+    description: NATS JetStream — Cross-Service-Events, KV-Store für Player-Presence
+  postgres:
+    tailnet: postgres.dev
+    port: 5432
+    description: Pro Engineer eine Database (`<handle>_<service>`), shared Server
+  keycloak:
+    tailnet: keycloak.dev
+    port: 443
+    realm: grounds-test
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `<endpoint>.tailnet` | string | yes | MagicDNS hostname. Engineer needs the route enabled in their Tailscale ACL. |
+| `<endpoint>.port` | int | yes | TCP port at the endpoint. |
+| `<endpoint>.description` | string | no | Human-readable. |
+| `keycloak.realm` | string | yes for keycloak | Realm name. Currently `grounds-test`. |
+
+<Note>
+The shared block is informational — forge doesn't push these values into helm values automatically. The component charts are responsible for connecting using the same names (e.g. the in-vCluster `service-config` chart has `NATS_URL=nats://nats.dev:4222` baked into its env).
+</Note>
+
+## `components`
+
+A map: each key is the **Helm release name** (also used as namespace-DNS-label inside the vCluster, so it must be a valid DNS-1123 label — lowercase, hyphens, no underscores). Each value is a `BundleComponent`:
+
+```yaml
+components:
+  plugin-social:
+    type: plugin-velocity
+    chart:
+      url: oci://ghcr.io/groundsgg/charts/plugin-velocity-jar
+      version: 0.1.0
+    image: ghcr.io/groundsgg/plugin-social
+    version: edge
+    optional: false
+    helm:
+      resources:
+        requests: { cpu: 50m, memory: 64Mi }
+    devspace:
+      workflow: jar-sync-pod-restart
+```
+
+### `BundleComponent` fields
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `type` | string | yes | Component-type string. See below. |
+| `chart.url` | string | yes | OCI Helm chart URL. |
+| `chart.version` | semver | yes | Pinned Helm chart version. |
+| `image` | string | yes | Container image without tag. Forge passes this as `image.repository` into helm values. |
+| `version` | string | yes | Image tag — semver, `edge`, or any other ref. Passed as `image.tag`. |
+| `optional` | bool | no, default `false` | When `true`, the component is **not deployed by default**. Override with `enabled: true` to bring it in. |
+| `helm` | map | no | Free-form Helm values. See merging rules below. |
+| `devspace.workflow` | string | no | Selects a DevSpace template when the component is overridden into `gradle-local` mode. |
+
+### Component types
+
+The `type` field is a string for forward-compat, but the platform-test environment understands these values:
+
+| Type | What it is | DevSpace workflow | Iter-Latency |
+|---|---|---|---|
+| `plugin-velocity-base` | The Velocity proxy itself | `jar-sync-pod-restart` | ~10–20 s |
+| `plugin-velocity` | A JAR plugin loaded by Velocity at startup | `jar-sync-pod-restart` | ~10–20 s |
+| `plugin-paper` *(planned)* | A JAR plugin loaded by Paper | `jar-sync-plugin-reload` | ~5–15 s |
+| `gamemode` | Minestom or Paper game-server | `jar-sync-pod-restart` | ~10–20 s |
+| `grpc-service` | Quarkus-based gRPC backend | `quarkus-dev` | ~1–3 s |
+| `utility` | Test/debug tooling (e.g. nats-recorder) | – | – |
+
+Forge uses `type` only for default-behavior decisions (today: which DevSpace workflow template to suggest). Adding a new type is a bundle PR, not a forge PR.
+
+### Helm value merging
+
+The values forge passes to `helm install` for a component are produced by:
+
+<Steps>
+<Step title="Start with the component's helm: block">
+Or `{}` if absent.
+</Step>
+<Step title="Inject image.repository + image.tag">
+Deep-merge `{ image: { repository: <component.image>, tag: <resolved-tag> } }` on top.
+</Step>
+<Step title="Inject DevSpace pickup annotations (when gradle-local)">
+Deep-merge a `podAnnotations` block:
+
+```yaml
+podAnnotations:
+  grounds.gg/devspace-mode: gradle-local
+  grounds.gg/devspace-project: ./plugin-social
+  grounds.gg/devspace-artifact: build/libs/*-all.jar
+  grounds.gg/devspace-reload: pod-restart
+  grounds.gg/devspace-quarkus-dev: "true"   # only when devspace:true
+```
+</Step>
+</Steps>
+
+Deep-merge rules:
+
+- Plain-object values are merged recursively.
+- Arrays are replaced wholesale (no list-merge).
+- Primitives are replaced.
+
+<Warning>
+`helm.image.tag = "0.5.0"` in the bundle is **not** a useful value — forge will overwrite it with the resolved tag. Pin via the `version:` field instead.
+</Warning>
+
+## Override-File schema
+
+Engineers write an override YAML and pass it to `grounds cluster up --bundle X --override ./me.yaml`. Schema:
+
+```yaml
+bundle: 0.4.0    # bundle ref to apply against. --bundle on cmd-line wins.
+
+overrides:
+  <component-name>: <ComponentOverride>
+```
+
+`<ComponentOverride>` is a discriminated union — exactly **one** of these shapes:
+
+<Tabs>
+<Tab title="image (default)">
+
+Use the bundle's image but optionally override the tag.
+
+```yaml
+overrides:
+  velocity:
+    mode: image
+    tag: dev-fix-routing-123    # optional
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `mode` | `"image"` | yes | |
+| `tag` | string | no | Replaces the bundle's `version:` for this component. Omit to keep the default. |
+
+</Tab>
+<Tab title="gradle-local">
+
+Engineer's local gradle project supplies the JAR (or runs Quarkus dev). Forge stamps DevSpace pickup annotations onto the deployed Pod so DevSpace can find the right Pod.
+
+```yaml
+overrides:
+  plugin-social:
+    mode: gradle-local
+    project: ./plugin-social
+    artifact: build/libs/plugin-social-*.jar
+    reload: pod-restart
+```
+
+```yaml
+overrides:
+  service-social:
+    mode: gradle-local
+    project: ./service-social
+    devspace: true   # → quarkus-dev workflow
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `mode` | `"gradle-local"` | yes | |
+| `project` | string | yes | Workspace-relative path. Used by DevSpace, not by forge directly. |
+| `artifact` | string | yes (non-`devspace`) | Glob for the built JAR. Required by `jar-sync-pod-restart`. |
+| `reload` | `"rcon-plugin-reload"` \| `"pod-restart"` | no | How DevSpace re-applies the new JAR. Default `pod-restart`. |
+| `devspace` | bool | no | When `true`, switch to the `quarkus-dev` workflow (sub-second hot-reload). |
+
+</Tab>
+<Tab title="enabled: false">
+
+Skip the component entirely.
+
+```yaml
+overrides:
+  paper-game:
+    enabled: false
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `enabled` | `false` | yes | The literal `false`. |
+
+There's intentionally no `enabled: true` form for non-optional components — they're already on. For components with `optional: true` in the bundle (e.g. `nats-recorder`), `enabled: true` flips them on:
+
+```yaml
+overrides:
+  nats-recorder:
+    enabled: true
+```
+
+</Tab>
+</Tabs>
+
+## Pod annotations
+
+The fields `project`, `artifact`, `reload`, and `devspace` aren't applied by forge — they're echoed as Pod annotations for DevSpace to read on the engineer's laptop. The annotations forge writes:
+
+| Annotation | Value |
+|---|---|
+| `grounds.gg/devspace-mode` | `gradle-local` |
+| `grounds.gg/devspace-project` | the `project` value |
+| `grounds.gg/devspace-artifact` | the `artifact` value |
+| `grounds.gg/devspace-reload` | the `reload` value (only when set) |
+| `grounds.gg/devspace-quarkus-dev` | `"true"` when `devspace: true` |
+
+## Resolution algorithm
+
+When forge gets `(bundle, override-file)`:
+
+<Steps>
+<Step title="Filter components">
+Drop everything where `override.enabled === false`. Drop `optional: true` components that aren't explicitly enabled.
+</Step>
+<Step title="Resolve per remaining component">
+- If override is `mode: image` with `tag`: replace `imageTag` with the override.
+- If override is `mode: gradle-local`: keep image+tag from bundle; mark mode for annotation injection later.
+- If no override: use bundle defaults.
+</Step>
+<Step title="Compute helm values">
+Deep-merge per the rules above.
+</Step>
+<Step title="Helm install">
+Best-effort, parallel-friendly. If one component's chart is missing, the others still go through. Failed components are reported in the response body but don't fail the call.
+</Step>
+</Steps>
+
+## Adding a new component
+
+<Steps>
+<Step title="Ensure the chart exists">
+Make sure the component-type's Helm chart is in `groundsgg/charts` and published as an OCI artifact (or co-publish it in the same PR).
+</Step>
+<Step title="Add a components: entry to bundle.yaml">
+
+```yaml
+plugin-foo:
+  type: plugin-velocity            # or whichever type
+  chart:
+    url: oci://ghcr.io/groundsgg/charts/plugin-velocity-jar
+    version: 0.1.0
+  image: ghcr.io/groundsgg/plugin-foo
+  version: edge
+  devspace:
+    workflow: jar-sync-pod-restart
+```
+
+</Step>
+<Step title="Mark optional if it shouldn't run by default">
+Add `optional: true` and document the opt-in in `examples/`.
+</Step>
+<Step title="Open the PR">
+release-please bumps the bundle version on merge.
+</Step>
+</Steps>
+
+## Versioning
+
+[release-please](https://github.com/googleapis/release-please) drives the bundle version:
+
+| Commit type | Bump |
+|---|---|
+| `feat:` | minor |
+| `fix:` | patch |
+| `feat!:` / `BREAKING CHANGE:` | major |
+
+Engineers pin against bundle versions:
+
+```yaml
+bundle: 0.4.0     # reproducible
+```
+
+`bundle: main` always tracks the latest commit on `main` — useful for daily iteration, not for CI.
+
+## See also
+
+- [Test Environment overview](/platform/test-environment) — engineer onboarding from `grounds login` to a hot-reload loop
+- DevSpace template files: `groundsgg/library-platform-bundle/devspace/` (private repo)
+- Schema source-of-truth: `grounds-forge/src/bundle/types.ts`
