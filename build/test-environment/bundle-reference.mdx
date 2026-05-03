@@ -5,7 +5,7 @@ description: "Field-by-field reference for bundle.yaml and the Engineer-Override
 
 Use this when adding a new component to a bundle, debugging an unexpected resolved value, or building tooling that consumes the bundle.
 
-The schema authority is the bundle YAML itself; this page mirrors the TypeScript definitions at `grounds-forge/src/bundle/types.ts`.
+A **bundle** is a versioned, curated list of platform components and the default versions of each. Engineers pin against a bundle release for reproducible runs (CI), or against the moving edge for daily iteration. Forge resolves a bundle plus an optional override file into a concrete set of Helm releases, then applies them inside your per-engineer vCluster.
 
 ## Top-level shape
 
@@ -39,16 +39,20 @@ components:
 
 Backends that **don't** run inside an engineer's vCluster. Each in-vCluster service connects out via Tailscale to these endpoints.
 
+<Warning>
+The endpoints declared here are only reachable from the **internal Grounds tailnet** — a private Tailscale network for authorized engineers. External contributors won't be able to resolve `nats.dev` / `postgres.dev` / `keycloak.dev`. The bundle composition is still publicly readable; only the runtime is gated.
+</Warning>
+
 ```yaml
 shared:
   nats:
     tailnet: nats.dev
     port: 4222
-    description: NATS JetStream — Cross-Service-Events, KV-Store für Player-Presence
+    description: NATS JetStream — cross-service events and the KV store for player presence
   postgres:
     tailnet: postgres.dev
     port: 5432
-    description: Pro Engineer eine Database (`<handle>_<service>`), shared Server
+    description: One database per engineer (`<handle>_<service>`); shared server
   keycloak:
     tailnet: keycloak.dev
     port: 443
@@ -57,7 +61,7 @@ shared:
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `<endpoint>.tailnet` | string | yes | MagicDNS hostname. Engineer needs the route enabled in their Tailscale ACL. |
+| `<endpoint>.tailnet` | string | yes | MagicDNS hostname on the internal Grounds tailnet. The engineer must be on the tailnet and have the matching dev-routes ACL enabled. |
 | `<endpoint>.port` | int | yes | TCP port at the endpoint. |
 | `<endpoint>.description` | string | no | Human-readable. |
 | `keycloak.realm` | string | yes for keycloak | Realm name. Currently `grounds-test`. |
@@ -318,6 +322,5 @@ bundle: 0.4.0     # reproducible
 
 ## See also
 
-- [Test Environment overview](/platform/test-environment) — engineer onboarding from `grounds login` to a hot-reload loop
-- DevSpace template files: `groundsgg/library-platform-bundle/devspace/` (private repo)
-- Schema source-of-truth: `grounds-forge/src/bundle/types.ts`
+- [Test Environment overview](/build/test-environment) — engineer onboarding from `grounds login` to a hot-reload loop
+- [`groundsgg/charts`](https://github.com/groundsgg/charts) — the Helm charts each component type maps to

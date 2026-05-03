@@ -3,10 +3,16 @@ title: "Platform Test Environment"
 description: "Per-engineer copies of the Grounds platform stack — for iterating on plugins, gamemodes, or services in isolation"
 ---
 
-The platform test environment gives every engineer their own vCluster with the full Grounds stack — Velocity proxy, plugins, lobby, gamemodes, gRPC services — running against shared backends (NATS, Postgres, Keycloak) over the service-tailnet. You override only the components you're actively working on, leave everything else on the bundle's defaults, and iterate with DevSpace's hot-reload loop.
+The platform test environment gives every engineer their own vCluster with the full Grounds stack — Velocity proxy, plugins, lobby, gamemodes, gRPC services — running against shared backends (NATS, Postgres, Keycloak) over the service-tailnet.
+
+You override only the components you're actively working on, leave everything else on the bundle's defaults, and iterate with DevSpace's hot-reload loop.
+
+<Warning>
+This environment is **for authorized Grounds engineers only**. It relies on a private Tailscale network to reach shared backend services (NATS, Postgres, Keycloak); without an invite to the Grounds tailnet you can't follow this guide end-to-end. If you're an external contributor working on a public component, look at the public CI flow instead.
+</Warning>
 
 <Note>
-Source-of-truth: [`groundsgg/library-platform-bundle`](https://github.com/groundsgg/library-platform-bundle). The [`bundle.yaml`](https://github.com/groundsgg/library-platform-bundle/blob/main/bundle.yaml) file is the canonical composition; [`devspace/`](https://github.com/groundsgg/library-platform-bundle/tree/main/devspace) holds the workflow templates referenced below.
+A **bundle** is a versioned, curated list of platform components and their default versions. You pin against a bundle release (for reproducible CI runs) or against the current edge (for daily iteration). The full schema is documented under [Bundle Reference](/build/test-environment/bundle-reference).
 </Note>
 
 ## TL;DR
@@ -25,7 +31,7 @@ devspace dev plugin-social
 
 | Tool | Why | Install |
 |---|---|---|
-| **Tailscale** | NATS / Postgres / Keycloak are exposed only over the service-tailnet | `tailscale up`, accept `nats.dev` / `postgres.dev` / `keycloak.dev` MagicDNS routes |
+| **Tailscale** | NATS / Postgres / Keycloak are exposed only over the **internal Grounds tailnet** (authorized engineers only) | `tailscale up`, accept `nats.dev` / `postgres.dev` / `keycloak.dev` MagicDNS routes after you've been added to the tailnet |
 | **kubectl** | Hand-debug pods inside your vCluster | `brew install kubectl` |
 | **helm** | Occasional raw helm + DevSpace templates do `kubectl rollout restart` | `brew install helm` |
 | **devspace** | The hot-iteration loop | `brew install devspace` |
@@ -63,7 +69,7 @@ A per-engineer host namespace `vcluster-<handle>` (privileged PSA) is created if
 The reconciler polls until the inner API is up and pulls its kubeconfig out of a Secret.
 </Step>
 <Step title="Resolve bundle">
-`bundle.yaml @ 0.4.0` is fetched from `groundsgg/library-platform-bundle` and merged with your override file (if any).
+The forge service fetches `bundle.yaml @ 0.4.0` and merges it with your override file (if any) into a concrete component list.
 </Step>
 <Step title="Deploy components">
 Each component is `helm install`'d into the vCluster, best-effort — a chart-not-found on one component doesn't abort the rest.
@@ -82,7 +88,7 @@ The output tells you which components landed and which ones errored:
 Re-run `grounds cluster up --bundle 0.4.0` after fixing the cause and the reconciler picks up where it left off.
 
 <Tip>
-**Bundle pin vs. `main`** — `--bundle 0.4.0` is reproducible: that exact composition gives the same versions every time. `--bundle main` always uses the latest commit on `library-platform-bundle/main`. Pin in CI, float locally.
+**Bundle pin vs. `main`** — `--bundle 0.4.0` is reproducible: that exact composition gives you the same component versions every time. `--bundle main` always tracks the moving edge. Pin in CI, float locally.
 </Tip>
 
 ## 3. Get your vCluster's kubeconfig
@@ -157,7 +163,7 @@ grounds cluster up --bundle 0.4.0 --override ./overrides/me.yaml
 | `enabled: false` | Skip the component | – |
 | `enabled: true` | Turn on a default-off optional component | – |
 
-See [`examples/override-internal-dev.yaml`](https://github.com/groundsgg/library-platform-bundle/blob/main/examples/override-internal-dev.yaml) for a full example.
+See [Bundle Reference](/build/test-environment/bundle-reference) for the full override schema and field-level documentation.
 
 ## 5. Iterate on a component
 
@@ -165,7 +171,7 @@ The bundle's per-component `devspace.workflow` field selects which template appl
 
 | Component-Type | DevSpace Workflow | Iter-Latency |
 |---|---|---|
-| `plugin-velocity` | `jar-sync-pod-restart` (kein Velocity-Hot-Reload) | ~10–20 s |
+| `plugin-velocity` | `jar-sync-pod-restart` (Velocity has no in-process hot-reload, so the pod is restarted) | ~10–20 s |
 | `gamemode` (Minestom/Paper) | `jar-sync-pod-restart` | ~10–20 s |
 | `grpc-service` (Quarkus) | `quarkus-dev` (Live-Reload sub-second) | ~1–3 s |
 
@@ -250,7 +256,7 @@ grounds cluster delete          # drop the vCluster + namespace entirely
 
 <AccordionGroup>
 <Accordion title="forge says &quot;chart not found&quot; for a component">
-The Helm chart for that component-type isn't published yet. Check [`charts/release-please-config.json`](https://github.com/groundsgg/charts/blob/main/release-please-config.json). The forge response's `failed[]` block tells you exactly which component + which chart URL failed.
+The Helm chart for that component type isn't published yet. The forge response's `failed[]` block tells you exactly which component and which chart URL failed. Either wait for the chart to be released or override the failing component with `enabled: false` so the rest of the stack still comes up.
 </Accordion>
 
 <Accordion title="Pod stuck in Init waiting for fetch-<plugin>">
@@ -262,7 +268,7 @@ The `jar-sync-pod-restart` workflow assumes you set `RESTART_TARGET=velocity` fo
 </Accordion>
 
 <Accordion title="Tailscale can't resolve nats.dev / postgres.dev">
-You're not on the service-tailnet. `tailscale status` should show those endpoints; if not, re-`tailscale up` accepting the dev-routes ACL. (Known TCP-from-Mac issue is tracked separately — `tailscale ping` works, TCP times out — see ops backlog.)
+You're not on the internal Grounds tailnet. This is a private network for authorized engineers — if you haven't been invited yet, ask a maintainer. Once you're on, run `tailscale status` to confirm the routes; if they're missing, re-run `tailscale up` accepting the dev-routes ACL.
 </Accordion>
 
 <Accordion title="409 'cannot apply bundle to platform workspace'">
@@ -274,13 +280,9 @@ You already have a `profile=platform` workspace from the older flow. The bundle 
 </Accordion>
 </AccordionGroup>
 
-## 9. Where things live
+## 9. Reference
 
-| Concern | Repo |
-|---|---|
-| Stack composition | [`groundsgg/library-platform-bundle`](https://github.com/groundsgg/library-platform-bundle) |
-| Forge (control plane) | [`groundsgg/grounds-forge`](https://github.com/groundsgg/grounds-forge) |
-| Helm charts | [`groundsgg/charts`](https://github.com/groundsgg/charts) |
-| CLI | [`groundsgg/grounds-cli`](https://github.com/groundsgg/grounds-cli) |
-| Platform infrastructure | [`groundsgg/grounds-platform`](https://github.com/groundsgg/grounds-platform) |
-| Shared event schemas | [`groundsgg/library-grpc-contracts`](https://github.com/groundsgg/library-grpc-contracts) |
+- [Bundle Reference](/build/test-environment/bundle-reference) — every field of `bundle.yaml` and the override-file schema
+- [`grounds-cli`](https://github.com/groundsgg/grounds-cli) — CLI source + releases
+- [`groundsgg/charts`](https://github.com/groundsgg/charts) — public Helm charts referenced by bundles
+- [`groundsgg/library-grpc-contracts`](https://github.com/groundsgg/library-grpc-contracts) — shared protobuf event schemas
