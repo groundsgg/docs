@@ -104,6 +104,12 @@
             ]
           },
           {
+            "group": "Test Environment",
+            "pages": [
+              "platform/test-environment/index"
+            ]
+          },
+          {
             "group": "Minecraft Identity Provider for Keycloak",
             "pages": [
               "platform/keycloak-minecraft-idp/index",
