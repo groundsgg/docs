@@ -59,12 +59,18 @@ The goal of this convention is to define clear, concise, and consistent reposito
 
 For `plugin-<name>` repositories, the following structure is recommended:
 
-```
-plugin-<name>/
-├── common/
-├── velocity/
-├── paper/
-└── minestom/
+```mermaid
+flowchart TB
+    repo["plugin-<name>/"]
+    common["common/"]
+    velocity["velocity/"]
+    paper["paper/"]
+    minestom["minestom/"]
+
+    repo --> common
+    repo --> velocity
+    repo --> paper
+    repo --> minestom
 ```
 
 - **common**: Shared logic (e.g., Models, Configs, Utilities)

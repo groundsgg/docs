@@ -144,7 +144,7 @@ grounds logs deployment <name>
 
 The hostname only routes to a `ready` pod — during a redeploy or crashloop you'll see 502 from the ingress.
 
-## Auth & SSO
+## Auth & Grounds Account
 
 ### `403 Forbidden` from forge on every call
 
@@ -157,7 +157,7 @@ If you used a service-account token, it's hard-pinned to its minting project —
 
 ### Browser opens to "invalid_redirect_uri"
 
-The CLI's redirect URI must match what's configured at Grounds SSO. If you self-host the IdP or the CLI binary is stale, this can drift. Re-install the CLI.
+The CLI's redirect URI must match what's configured for Grounds Account. If you self-host the identity provider or the CLI binary is stale, this can drift. Re-install the CLI.
 
 ## Where to ask for help
 

@@ -3,7 +3,7 @@ title: "Portal"
 description: "The web UI at portal.platform.grnds.io — projects, members, pushes, previews."
 ---
 
-The portal is the visual side of the platform. Sign in with Grounds SSO at [portal.platform.grnds.io](https://portal.platform.grnds.io); membership in any project lands you on a project switcher.
+The portal is the visual side of the platform. Sign in with your Grounds Account at [portal.platform.grnds.io](https://portal.platform.grnds.io); membership in any project lands you on a project switcher.
 
 The CLI and the portal share the same forge backend — every operation in one is visible in the other.
 
@@ -52,24 +52,13 @@ Project members with roles. Owners can:
 
 Top-right avatar:
 
-- Linked identity (your Grounds SSO email + handle).
+- Linked identity (your Grounds Account email + handle).
 - Theme toggle: System / Light / Dark.
 - Sign out.
 
 ## Theme
 
 The portal supports system, light, and dark themes via the `data-mode` attribute on `<html>`. Your choice is persisted per browser. The CLI is unaffected (it uses your terminal's theme).
-
-## Keyboard shortcuts
-
-| Key | Action |
-|---|---|
-| `g p` | Go to Pushes |
-| `g v` | Go to Previews |
-| `g m` | Go to Members |
-| `?` | Show shortcuts |
-
-Type into an input and shortcuts are suppressed.
 
 ## What it can't do (yet)
 

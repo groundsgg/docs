@@ -9,29 +9,31 @@ A **push** represents one attempt to ship a JAR to a target. Each `grounds push`
 
 A push moves through a small state machine. Forge persists the current state on the row and emits SSE events on transitions.
 
-```
-       upload
-         │
-         ▼
-     ┌────────┐         ┌────────────┐
-     │pending │ ──────► │ building   │
-     └────────┘         └─────┬──────┘
-                              │
-                  ┌───────────┴───────────┐
-                  ▼                       ▼
-          ┌──────────────────┐    ┌──────────────┐
-          │ build_succeeded  │    │ build_failed │
-          └────────┬─────────┘    └──────────────┘
-                   │
-                   ▼
-              ┌──────────┐         ┌────────────────┐
-              │deploying │ ──────► │ deploy_failed  │
-              └────┬─────┘         └────────────────┘
-                   │
-                   ▼
-                ┌──────┐
-                │ready │
-                └──────┘
+```mermaid
+stateDiagram-v2
+    [*] --> pending: upload
+    pending --> building
+    building --> build_succeeded
+    building --> build_failed
+    build_succeeded --> deploying
+    deploying --> deploy_failed
+    deploying --> ready
+
+    build_failed --> [*]
+    deploy_failed --> [*]
+    ready --> [*]
+
+    note right of build_failed
+      Terminal, retryable
+    end note
+
+    note right of deploy_failed
+      Terminal, retryable
+    end note
+
+    note right of ready
+      Terminal happy path
+    end note
 ```
 
 | State | Meaning |

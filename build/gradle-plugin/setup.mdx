@@ -109,15 +109,24 @@ Override `jarFile` only if you have multiple JARs or use a non-standard packagin
 
 The plugin runs **per Gradle project** (per `build.gradle.kts`). For a multi-module repo where only one module is the deployable, apply it only there:
 
-```text
-my-repo/
-├── settings.gradle.kts
-├── shared/
-│   └── build.gradle.kts          ← no grounds-push
-├── plugin/
-│   ├── build.gradle.kts          ← apply gg.grounds.push here
-│   ├── grounds.yaml              ← here
-│   └── src/…
+```mermaid
+flowchart TB
+    repo["my-repo/"]
+    settings["settings.gradle.kts"]
+    shared["shared/"]
+    sharedBuild["build.gradle.kts<br/>no grounds-push"]
+    plugin["plugin/"]
+    pluginBuild["build.gradle.kts<br/>apply gg.grounds.push here"]
+    manifest["grounds.yaml<br/>here"]
+    src["src/..."]
+
+    repo --> settings
+    repo --> shared
+    shared --> sharedBuild
+    repo --> plugin
+    plugin --> pluginBuild
+    plugin --> manifest
+    plugin --> src
 ```
 
 Then run from the repo root:
