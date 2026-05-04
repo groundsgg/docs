@@ -53,94 +53,94 @@
           },
           "build/ci-tokens",
           "build/portal",
-          {
-            "group": "Test Environment",
-            "pages": [
-              "build/test-environment/index",
-              "build/test-environment/bundle-reference"
-            ]
-          },
           "build/local-development",
           "build/observability",
           "build/troubleshooting"
         ]
       },
       {
-        "tab": "Plugins",
+        "tab": "Deploy",
         "pages": [
-          "plugins/index",
-          {
-            "group": "Config System",
-            "pages": [
-              "plugins/config-system/index",
-              "plugins/config-system/config-plugin",
-              "plugins/config-system/config-api",
-              "plugins/config-system/runtime-behavior"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Platform",
-        "pages": [
-          "platform/index",
+          "deploy/index",
           {
             "group": "Containers",
             "pages": [
-              "platform/containers/index",
+              "deploy/containers/index",
               {
                 "group": "Available Containers",
                 "pages": [
-                  "platform/containers/dev-container-node",
-                  "platform/containers/paper",
-                  "platform/containers/velocity"
+                  "deploy/containers/dev-container-node",
+                  "deploy/containers/paper",
+                  "deploy/containers/velocity"
                 ]
               },
-              "platform/containers/adding-a-new-container"
+              "deploy/containers/adding-a-new-container"
             ]
           },
           {
             "group": "Charts",
             "pages": [
-              "platform/charts/index",
+              "deploy/charts/index",
               {
                 "group": "Available Charts",
                 "pages": []
               },
-              "platform/charts/adding-a-new-chart"
+              "deploy/charts/adding-a-new-chart"
             ]
           },
           {
             "group": "Minecraft Identity Provider for Keycloak",
             "pages": [
-              "platform/keycloak-minecraft-idp/index",
-              "platform/keycloak-minecraft-idp/installation",
-              "platform/keycloak-minecraft-idp/configuration"
+              "deploy/keycloak-minecraft-idp/index",
+              "deploy/keycloak-minecraft-idp/installation",
+              "deploy/keycloak-minecraft-idp/configuration"
             ]
           }
         ]
       },
       {
-        "tab": "APIs",
+        "tab": "Internal",
         "pages": [
-          "apis/index"
+          {
+            "group": "Test Environment",
+            "pages": [
+              "internal/test-environment/index",
+              "internal/test-environment/bundle-reference"
+            ]
+          }
         ]
       },
       {
-        "tab": "Development",
+        "tab": "Reference",
         "pages": [
+          "reference/apis/index",
           {
-            "group": "Gradle Plugin",
+            "group": "Plugins SDK",
             "pages": [
-              "development/gradle-plugin/index",
-              "development/gradle-plugin/usage"
+              "reference/plugins/index",
+              {
+                "group": "Config System",
+                "pages": [
+                  "reference/plugins/config-system/index",
+                  "reference/plugins/config-system/config-plugin",
+                  "reference/plugins/config-system/config-api",
+                  "reference/plugins/config-system/runtime-behavior"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Convention plugins",
+            "pages": [
+              "reference/development/gradle-plugin/index",
+              "reference/development/gradle-plugin/usage"
             ]
           },
           {
             "group": "Conventions",
             "pages": [
-              "development/naming-conventions",
-              "development/logging-conventions"
+              "reference/development/naming-conventions",
+              "reference/development/logging-conventions"
             ]
           }
         ]
