@@ -121,6 +121,15 @@
                   "reference/plugins/config-system/config-api",
                   "reference/plugins/config-system/runtime-behavior"
                 ]
+              },
+              {
+                "group": "Agones Integration",
+                "pages": [
+                  "reference/plugins/agones/index",
+                  "reference/plugins/agones/velocity",
+                  "reference/plugins/agones/paper",
+                  "reference/plugins/agones/minestom"
+                ]
               }
             ]
           },
