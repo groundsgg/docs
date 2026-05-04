@@ -3,11 +3,11 @@
   "theme": "mint",
   "name": "Grounds Docs",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#998271",
+    "light": "#C8B8A3",
+    "dark": "#6F5544"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/logo/grounds-icon-128.png",
   "navigation": {
     "tabs": [
       {
@@ -161,8 +161,9 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/grounds-wordmark.webp",
+    "dark": "/logo/grounds-wordmark.webp",
+    "href": "/"
   },
   "navbar": {
     "links": [
