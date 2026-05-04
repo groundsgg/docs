@@ -1,0 +1,93 @@
+---
+title: "Local development"
+description: "Iterate on your plugin without round-tripping through the cloud."
+---
+
+The fastest dev loop is the one that doesn't leave your machine. The `groundsTestLocal` Gradle task spins up a **real** Paper or Velocity server with your plugin pre-loaded — no Grounds infra, no quota, no network round-trip.
+
+## The loop
+
+```bash
+./gradlew groundsTestLocal
+```
+
+That's the entire workflow. The task:
+
+1. Downloads Paper/Velocity from `api.papermc.io` (cached after first run).
+2. Sets up a server directory at `build/grounds-test/<baseImage>-<version>/`.
+3. Drops your build's JAR into `plugins/`.
+4. Starts `java -jar` with stdin/stdout attached.
+
+Connect from your Minecraft client to `localhost:25565` (Paper) or `localhost:25577` (Velocity).
+
+## When local *is* enough
+
+Local is the right loop for:
+
+- Plugin logic in isolation (commands, listeners, persistence).
+- Configuration parsing.
+- Anything you'd test with unit/integration tests in the JVM, but want to see in-game.
+
+## When local is *not* enough
+
+You'll need a cloud `dev` push when:
+
+- Your plugin depends on the **platform's runtime extras** (config plugin, social plugin, match plugin) that we layer on top of the base image in production. Locally you only get vanilla Paper.
+- You're testing **inter-service** behaviour — calls to grounds-forge APIs, Keycloak SSO, Grafana dashboards, Cosign-signed images.
+- You're testing **routing or ingress** — locally is just `localhost`.
+- You're sharing with someone who isn't on your laptop.
+
+The mental model: `groundsTestLocal` answers *"does my plugin work?"*; `grounds push --target=dev` answers *"does my plugin work on the platform?"*.
+
+## A typical day
+
+```bash
+# Edit code
+$ vim src/main/kotlin/...
+
+# Iterate locally — fast
+$ ./gradlew groundsTestLocal
+# Ctrl-C when done, edit again, re-run.
+
+# Once it works, push to dev to verify in-platform
+$ grounds push --target=dev
+
+# Ready to share?
+$ grounds push --target=staging
+# Send the URL to a teammate.
+```
+
+## State that survives between runs
+
+The server dir at `build/grounds-test/<base>-<version>/` persists between runs. That means:
+
+- World chunks survive — your test world isn't reset on restart.
+- `server.properties` edits stick — set difficulty / view-distance once.
+- Plugins you manually drop into `plugins/` survive (only **your** plugin's JAR is re-installed each run).
+
+To wipe state: `./gradlew clean` or `rm -rf build/grounds-test/`.
+
+## Configuration
+
+Override Paper / Velocity versions via the [`groundsPush` extension](/build/gradle-plugin/setup#the-groundspush-extension):
+
+```kotlin build.gradle.kts
+groundsPush {
+    paperVersion.set("1.21.5")
+    velocityVersion.set("3.4.0-SNAPSHOT")
+}
+```
+
+Pull tested versions from PaperMC's [downloads page](https://papermc.io/downloads/paper).
+
+## What about `gamemode` (Minestom) and `service` workloads?
+
+Currently unsupported in `groundsTestLocal`. Use `grounds push --target=dev` for those. They run as plain JVM apps, not Minecraft servers, so we don't ship a generic local runner.
+
+If you want this, ping `#grounds-platform` — there's an open question of whether a Minestom local runner adds enough value over `gradle run` from a Minestom main.
+
+## Network sandboxing
+
+The local server is exposed only on `127.0.0.1` by default — no firewall rules, no port forwarding. Your roommate's Minecraft client on the same Wi-Fi can't reach it (unless they have access to your dev box, which is a different problem).
+
+If you want a teammate elsewhere to play, push to staging.

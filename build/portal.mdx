@@ -1,0 +1,82 @@
+---
+title: "Portal"
+description: "The web UI at portal.platform.grnds.io — projects, members, pushes, previews."
+---
+
+The portal is the visual side of the platform. Sign in with Grounds SSO at [portal.platform.grnds.io](https://portal.platform.grnds.io); membership in any project lands you on a project switcher.
+
+The CLI and the portal share the same forge backend — every operation in one is visible in the other.
+
+## What's where
+
+### Project switcher
+
+Top-left dropdown. Switch active project; affects every page below it. The selected project is remembered in your browser's local storage.
+
+### Pushes
+
+The history list for the current project: status badge, name, type, target, image tag, creation time. Click a row to open the push detail page with the full build + deploy log stream (SSE-tailed if still running, replayed if completed).
+
+Empty state explains how to make your first push if you haven't yet.
+
+### Previews
+
+Active preview environments for the current project. Per-row dropdown menu has:
+
+- **Pin (skip auto-cleanup)** — sets `pinned=true`, env survives past TTL.
+- **Unpin (re-enable cleanup)** — sets `pinned=false`, TTL recomputed from now.
+
+Status badges reflect the underlying push: `ready`, `pending`, `building`, `deploy_failed`, etc. The hostname is a clickable external link when status is `ready`.
+
+### Deployments
+
+The active deployments view (one row per running app, irrespective of which push placed it there). Click into one for live logs. This is the right surface to use when something is **currently broken** — the latest push might have succeeded but the pod is now crashlooping.
+
+### Members
+
+Project members with roles. Owners can:
+
+- **Add member** by handle (works only for already-signed-up users).
+- **Invite link** — generate a single-use URL, pick role + expiry.
+- Per-row: change role (owner/editor/viewer), remove member.
+- Self-removal (Leave project) is allowed for any member; forge enforces last-owner protection.
+
+### Settings
+
+- **Project info** — name, slug.
+- **Service accounts** — list, mint, revoke project-scoped API tokens. See [CI tokens](/build/ci-tokens).
+- **Audit** — recent member, token, and admin events.
+- **Danger zone** — archive / delete the project.
+
+### Account
+
+Top-right avatar:
+
+- Linked identity (your Grounds SSO email + handle).
+- Theme toggle: System / Light / Dark.
+- Sign out.
+
+## Theme
+
+The portal supports system, light, and dark themes via the `data-mode` attribute on `<html>`. Your choice is persisted per browser. The CLI is unaffected (it uses your terminal's theme).
+
+## Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `g p` | Go to Pushes |
+| `g v` | Go to Previews |
+| `g m` | Go to Members |
+| `?` | Show shortcuts |
+
+Type into an input and shortcuts are suppressed.
+
+## What it can't do (yet)
+
+The portal is feature-complete for **observation** and **member/token management**. Things still CLI-only:
+
+- Initiating a push (you upload a JAR, which a browser file picker won't carry well across CI etc.).
+- Promoting a push to production.
+- Bulk operations on pushes or previews.
+
+Most "make changes" workflows go through the CLI; the portal is the read + administer surface.

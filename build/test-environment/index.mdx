@@ -1,0 +1,288 @@
+---
+title: "Platform Test Environment"
+description: "Per-engineer copies of the Grounds platform stack — for iterating on plugins, gamemodes, or services in isolation"
+---
+
+The platform test environment gives every engineer their own vCluster with the full Grounds stack — Velocity proxy, plugins, lobby, gamemodes, gRPC services — running against shared backends (NATS, Postgres, Keycloak) over the service-tailnet.
+
+You override only the components you're actively working on, leave everything else on the bundle's defaults, and iterate with DevSpace's hot-reload loop.
+
+<Warning>
+This environment is **for authorized Grounds engineers only**. It relies on a private Tailscale network to reach shared backend services (NATS, Postgres, Keycloak); without an invite to the Grounds tailnet you can't follow this guide end-to-end. If you're an external contributor working on a public component, look at the public CI flow instead.
+</Warning>
+
+<Note>
+A **bundle** is a versioned, curated list of platform components and their default versions. You pin against a bundle release (for reproducible CI runs) or against the current edge (for daily iteration). The full schema is documented under [Bundle Reference](/build/test-environment/bundle-reference).
+</Note>
+
+## TL;DR
+
+```bash
+grounds login
+grounds cluster up --bundle 0.4.0
+# → spins up your vCluster + deploys the full bundle stack
+
+cp library-platform-bundle/devspace/jar-sync-pod-restart.devspace.yaml plugin-social/devspace.yaml
+cd plugin-social
+devspace dev plugin-social
+```
+
+## 1. Prerequisites
+
+| Tool | Why | Install |
+|---|---|---|
+| **Tailscale** | NATS / Postgres / Keycloak are exposed only over the **internal Grounds tailnet** (authorized engineers only) | `tailscale up`, accept `nats.dev` / `postgres.dev` / `keycloak.dev` MagicDNS routes after you've been added to the tailnet |
+| **kubectl** | Hand-debug pods inside your vCluster | `brew install kubectl` |
+| **helm** | Occasional raw helm + DevSpace templates do `kubectl rollout restart` | `brew install helm` |
+| **devspace** | The hot-iteration loop | `brew install devspace` |
+| **gradle + JDK 25** | Building plugin / service JARs locally | `brew install gradle openjdk@25` |
+| **grounds-cli** | Control plane for your workspace | See [CLI installation](/build/cli/installation) |
+
+Sanity check:
+
+```bash
+grounds doctor
+```
+
+It validates auth, API reachability, and Tailscale routes for `*.dev`.
+
+## 2. Bootstrap your vCluster
+
+```bash
+grounds login                       # OAuth device flow against account.grounds.gg
+grounds cluster up --bundle 0.4.0
+```
+
+What this does:
+
+<Steps>
+<Step title="Resolve project">
+Forge resolves your default project on the platform side.
+</Step>
+<Step title="Ensure host namespace">
+A per-engineer host namespace `vcluster-<handle>` (privileged PSA) is created if missing.
+</Step>
+<Step title="Install vCluster">
+`helm install` of `loft/vcluster`, idempotent — re-runs are no-ops if the vCluster already exists.
+</Step>
+<Step title="Wait for vCluster API">
+The reconciler polls until the inner API is up and pulls its kubeconfig out of a Secret.
+</Step>
+<Step title="Resolve bundle">
+The forge service fetches `bundle.yaml @ 0.4.0` and merges it with your override file (if any) into a concrete component list.
+</Step>
+<Step title="Deploy components">
+Each component is `helm install`'d into the vCluster, best-effort — a chart-not-found on one component doesn't abort the rest.
+</Step>
+</Steps>
+
+The output tells you which components landed and which ones errored:
+
+```
+✔ active — bundle 0.4.0 — vcluster-lusu
+  components: 15 resolved, 14 succeeded, 1 failed
+  failed:
+    - paper-game: chart oci://ghcr.io/groundsgg/charts/grounds-gamemode:0.1.0 not found
+```
+
+Re-run `grounds cluster up --bundle 0.4.0` after fixing the cause and the reconciler picks up where it left off.
+
+<Tip>
+**Bundle pin vs. `main`** — `--bundle 0.4.0` is reproducible: that exact composition gives you the same component versions every time. `--bundle main` always tracks the moving edge. Pin in CI, float locally.
+</Tip>
+
+## 3. Get your vCluster's kubeconfig
+
+For raw `kubectl` / `helm` / `devspace` access to the inner cluster, the kubeconfig lives in a Secret on the host namespace:
+
+```bash
+HANDLE=$(whoami)
+kubectl --context=platform-cluster -n vcluster-$HANDLE \
+  get secret vcluster-$HANDLE -o jsonpath='{.data.config}' \
+  | base64 -d > ~/.kube/config-vcluster-$HANDLE
+export KUBECONFIG=~/.kube/config-vcluster-$HANDLE
+kubectl get pods -n default
+```
+
+Each engineer's vCluster runs separately on the platform cluster — your `default` namespace **inside the vCluster** is your stack.
+
+<Note>
+A first-class `grounds cluster kubeconfig` subcommand is planned but not yet shipped — for now the manual fetch above is the supported path.
+</Note>
+
+## 4. Override a component
+
+Without overrides, every component runs the released image at the version pinned by the bundle. To swap one for your local code, write an override file:
+
+```yaml overrides/me.yaml
+bundle: 0.4.0
+
+overrides:
+
+  # Build plugin-social locally, sync the JAR into the running pod.
+  plugin-social:
+    mode: gradle-local
+    project: ./plugin-social
+    artifact: build/libs/plugin-social-*.jar
+    reload: pod-restart       # rolls Velocity so it picks the new JAR
+
+  # Run service-config in Quarkus dev mode (sub-second hot-reload).
+  service-social:
+    mode: gradle-local
+    project: ./service-social
+    devspace: true            # → quarkus-dev workflow
+
+  # Engineer wants a specific velocity tag, not the bundle default.
+  velocity:
+    mode: image
+    tag: dev-fix-routing-123
+
+  # Skip paper-game entirely in this stack.
+  paper-game:
+    enabled: false
+
+  # Turn on optional test tooling.
+  nats-recorder:
+    enabled: true
+```
+
+Apply it:
+
+```bash
+grounds cluster up --bundle 0.4.0 --override ./overrides/me.yaml
+```
+
+### Override schema
+
+| Mode | When | Required fields |
+|---|---|---|
+| `image` (default) | Run the bundle's default image | – |
+| `image` + `tag: <X>` | Same image, different tag | `tag` |
+| `gradle-local` | Local JAR sync | `project`, `artifact`, `reload` |
+| `gradle-local` + `devspace: true` | Quarkus dev mode | `project` |
+| `enabled: false` | Skip the component | – |
+| `enabled: true` | Turn on a default-off optional component | – |
+
+See [Bundle Reference](/build/test-environment/bundle-reference) for the full override schema and field-level documentation.
+
+## 5. Iterate on a component
+
+The bundle's per-component `devspace.workflow` field selects which template applies:
+
+| Component-Type | DevSpace Workflow | Iter-Latency |
+|---|---|---|
+| `plugin-velocity` | `jar-sync-pod-restart` (Velocity has no in-process hot-reload, so the pod is restarted) | ~10–20 s |
+| `gamemode` (Minestom/Paper) | `jar-sync-pod-restart` | ~10–20 s |
+| `grpc-service` (Quarkus) | `quarkus-dev` (Live-Reload sub-second) | ~1–3 s |
+
+<Tabs>
+<Tab title="Plugin / lobby / gamemode">
+
+Use `jar-sync-pod-restart`:
+
+```bash
+cp library-platform-bundle/devspace/jar-sync-pod-restart.devspace.yaml plugin-social/devspace.yaml
+cd plugin-social
+devspace dev plugin-social \
+  --var COMPONENT_NAME=plugin-social \
+  --var PROJECT_DIR=. \
+  --var JAR_GLOB="build/libs/*-all.jar" \
+  --var RESTART_TARGET=velocity
+```
+
+DevSpace will:
+
+1. Run `./gradlew build` locally.
+2. Sync the produced JAR into the plugin pod's `/shared/plugin.jar`.
+3. `kubectl rollout restart deployment/velocity` — Velocity's init-containers re-fetch your JAR.
+4. Watch `build/libs/` and re-do all of the above on every change.
+
+</Tab>
+<Tab title="gRPC service">
+
+Use `quarkus-dev`:
+
+```bash
+cp library-platform-bundle/devspace/quarkus-dev.devspace.yaml service-social/devspace.yaml
+cd service-social
+devspace dev service-social \
+  --var COMPONENT_NAME=service-social \
+  --var PROJECT_DIR=. \
+  --var GRPC_PORT=9000 \
+  --var HTTP_PORT=8080
+```
+
+DevSpace will:
+
+1. Replace the deployed image with the Quarkus dev shim (`ghcr.io/groundsgg/quarkus-dev-base:25`).
+2. Sync your source tree into `/workspace` in the pod.
+3. Run `./gradlew quarkusDev` inside the pod.
+4. Port-forward `localhost:9000` (gRPC) and `localhost:8080` (HTTP / dev-UI) to the pod.
+
+Edit a `.kt` file → Quarkus reloads in ~1s. Dev-UI at [http://localhost:8080/q/dev](http://localhost:8080/q/dev).
+
+</Tab>
+</Tabs>
+
+## 6. Inspect the event bus
+
+The bundle has an opt-in `nats-recorder` component that subscribes to chosen subjects and emits each message as JSONL on stdout — useful for debugging cross-service events without writing one-off subscribers.
+
+```yaml
+# overrides/me.yaml
+overrides:
+  nats-recorder:
+    enabled: true
+```
+
+After `grounds cluster up`, tail it:
+
+```bash
+kubectl logs -f deployment/nats-recorder | jq .
+```
+
+Subjects it listens on are configured in `bundle.yaml` (default: `config.>`, `player.>`, `friends.>`, `match.>`).
+
+## 7. Tear down
+
+```bash
+grounds cluster down            # pause; resume with `cluster up`
+grounds cluster delete          # drop the vCluster + namespace entirely
+```
+
+`down` is cheap to reverse; `delete` requires re-running the bundle deploys from scratch. To swap one component out without losing state, use overrides — don't delete.
+
+## 8. Troubleshooting
+
+<AccordionGroup>
+<Accordion title="forge says &quot;chart not found&quot; for a component">
+The Helm chart for that component type isn't published yet. The forge response's `failed[]` block tells you exactly which component and which chart URL failed. Either wait for the chart to be released or override the failing component with `enabled: false` so the rest of the stack still comes up.
+</Accordion>
+
+<Accordion title="Pod stuck in Init waiting for fetch-<plugin>">
+The `grounds-velocity` chart's init-containers `curl` each plugin's Service at `http://<plugin>:8080/plugin.jar`. If a plugin pod isn't ready (e.g. its image doesn't exist or it's still pulling), the velocity pod waits. `kubectl get pods` and look for the plugin pods that aren't `Running`.
+</Accordion>
+
+<Accordion title="DevSpace sync writes the JAR but Velocity doesn't pick it up">
+The `jar-sync-pod-restart` workflow assumes you set `RESTART_TARGET=velocity` for plugin-* components. Without the rollout-restart, Velocity keeps the old JAR loaded. Check the `onUpload.execRemote` block in your `devspace.yaml`.
+</Accordion>
+
+<Accordion title="Tailscale can't resolve nats.dev / postgres.dev">
+You're not on the internal Grounds tailnet. This is a private network for authorized engineers — if you haven't been invited yet, ask a maintainer. Once you're on, run `tailscale status` to confirm the routes; if they're missing, re-run `tailscale up` accepting the dev-routes ACL.
+</Accordion>
+
+<Accordion title="409 'cannot apply bundle to platform workspace'">
+You already have a `profile=platform` workspace from the older flow. The bundle workflow uses `profile=platform-bundle` and they're not interchangeable. `grounds cluster delete` first, then re-up with `--bundle`.
+</Accordion>
+
+<Accordion title="A component's helm-install errors after a successful first deploy">
+`grounds cluster up --bundle X` is idempotent and uses `helm install/upgrade`. If a chart's values shape changed between bundle versions, a stale release can block the upgrade. Drop the specific component's release inside the vCluster (`helm uninstall <component>` against the vCluster kubeconfig) and re-run `cluster up`.
+</Accordion>
+</AccordionGroup>
+
+## 9. Reference
+
+- [Bundle Reference](/build/test-environment/bundle-reference) — every field of `bundle.yaml` and the override-file schema
+- [`grounds-cli`](https://github.com/groundsgg/grounds-cli) — CLI source + releases
+- [`groundsgg/charts`](https://github.com/groundsgg/charts) — public Helm charts referenced by bundles
+- [`groundsgg/library-grpc-contracts`](https://github.com/groundsgg/library-grpc-contracts) — shared protobuf event schemas

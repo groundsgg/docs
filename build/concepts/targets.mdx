@@ -1,0 +1,60 @@
+---
+title: "Targets"
+description: "Where a push lands — dev, staging, or production."
+---
+
+Every push is deployed to a **target**. The target picks the namespace, lifecycle, and visibility rules for the resulting deployment.
+
+## dev
+
+```bash
+grounds push --target=dev   # default
+```
+
+- **Lifecycle**: long-lived. Each push to `dev` rolls over the previous one.
+- **Namespace**: your personal namespace, `user-<your-handle>`.
+- **Visibility**: only you can connect. Reachable at `<name>-<your-handle>.mc.grnds.io` (Minecraft) or `<name>-<your-handle>.dev.grnds.io` (HTTPS for `service` workloads).
+- **Use it for**: your own iteration. Cheap, persistent, no public URL.
+
+This is the default and what you'll use most.
+
+## staging
+
+```bash
+grounds push --target=staging
+```
+
+- **Lifecycle**: ephemeral. Each push gets its **own** environment. Auto-deleted after **7 days** unless pinned.
+- **Namespace**: a fresh `preview-<id>` namespace per push.
+- **Visibility**: public. URL pattern `<name>-pr<id>.mc.grnds.io` for Minecraft workloads, `…dev.grnds.io` for `service`.
+- **Use it for**: review apps, sharing a build with a teammate, demoing a PR, end-to-end testing.
+
+Each staging push creates a [preview environment](/build/concepts/preview-environments) you can list with `grounds preview list`.
+
+## production
+
+Production deploys are not initiated by `grounds push`. They are **promoted** from a known-good staging push, with an explicit approval step.
+
+```
+grounds promote <pushId>   # not yet generally available
+```
+
+- **Lifecycle**: long-lived, single deployment per project.
+- **Visibility**: public. Routed via the project's configured production hostname.
+- **Use it for**: the actual customer-facing release.
+
+<Note>
+The `grounds promote` flow is currently restricted while we finalize the approval policy. Reach out in `#grounds-platform` if you need it for an early customer rollout.
+</Note>
+
+## Choosing a target
+
+| Question | Target |
+|---|---|
+| "I want to test my own change quickly." | `dev` |
+| "I want to share a build with a teammate or non-developer." | `staging` |
+| "I want to release to customers." | `production` (via promote) |
+
+## Quotas
+
+Each project has per-target quotas (CPU, memory, concurrent staging envs). You hit them rarely; the portal's project page shows current usage. Bumps are a `#grounds-platform` request away.

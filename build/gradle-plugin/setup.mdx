@@ -1,0 +1,138 @@
+---
+title: "Setup"
+description: "Apply gg.grounds.push to your Gradle project."
+---
+
+The `gg.grounds.push` Gradle plugin is what actually uploads your JAR to forge. The CLI's `grounds push` is a thin wrapper around its tasks.
+
+<Note>
+`gg.grounds.push` is **separate** from the convention-plugin bundle (`gg.grounds.paper-conventions`, `gg.grounds.kotlin-conventions`, …). The conventions plugins shape your build; `push` ships its output. You almost certainly want both.
+</Note>
+
+## Prerequisites
+
+- A GitHub personal access token with `read:packages` scope (the plugin lives on GitHub Packages).
+- Gradle 8+ and JDK 21+.
+- A `shadowJar` or `jar` task that produces the artifact you want to push.
+
+## Add the plugin repository
+
+In `settings.gradle.kts`:
+
+```kotlin settings.gradle.kts
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven {
+            url = uri("https://maven.pkg.github.com/groundsgg/grounds-push")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("github.user").get()
+                password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("github.token").get()
+            }
+        }
+    }
+}
+```
+
+Storing creds in `~/.gradle/gradle.properties`:
+
+```properties ~/.gradle/gradle.properties
+github.user=your-github-handle
+github.token=ghp_…
+```
+
+## Apply the plugin
+
+In your **plugin module's** `build.gradle.kts` (the one that produces the JAR):
+
+```kotlin build.gradle.kts
+plugins {
+    id("gg.grounds.push") version "0.5.0"
+}
+```
+
+That's it. The plugin registers four tasks:
+
+| Task | Purpose |
+|---|---|
+| [`groundsPush`](/build/gradle-plugin/groundsPush) | Upload + build + deploy. |
+| [`groundsPushRetry`](/build/gradle-plugin/groundsPushRetry) | Re-run a failed pipeline using server-stored JAR. |
+| `groundsPromote` | Promote a successful push to a higher target (currently in beta). |
+| [`groundsTestLocal`](/build/gradle-plugin/groundsTestLocal) | Run Paper/Velocity locally with this plugin loaded — offline dev loop. |
+
+## The `groundsPush` extension
+
+For most projects you don't need to touch this — the plugin auto-detects everything. But it's useful for power users:
+
+```kotlin build.gradle.kts
+groundsPush {
+    apiUrl.set("https://platform.grnds.io")     // optional override; default is from credentials.json
+    manifestFile.set(file("grounds.yaml"))      // default: <projectDir>/grounds.yaml
+    jarFile.set(tasks.named<Jar>("shadowJar").flatMap { it.archiveFile })  // auto-detected
+    target.set("dev")                            // overrides grounds.yaml target
+    timeoutMinutes.set(5)                        // SSE inactivity timeout
+    connectTimeoutSeconds.set(20)                // initial HTTP connect timeout
+    failOnWhitelistError.set(true)               // any whitelist warning fails the build
+
+    // groundsTestLocal-only:
+    paperVersion.set("1.21.4")                   // default
+    velocityVersion.set("3.4.0-SNAPSHOT")        // default
+}
+```
+
+All fields are optional. Defaults match what `grounds push` from the CLI uses.
+
+## JAR auto-detection
+
+At `afterEvaluate`, the plugin looks for tasks named (in order) `shadowJar`, `jar`, and wires the first one found as both the JAR source and a build dependency. So:
+
+```kotlin build.gradle.kts
+plugins {
+    id("com.gradleup.shadow") version "8.3.5"
+    id("gg.grounds.push") version "0.5.0"
+}
+
+tasks.shadowJar {
+    archiveClassifier.set("")
+}
+```
+
+is everything you need — `groundsPush` will:
+
+1. Trigger `shadowJar`.
+2. Read its output JAR.
+3. Upload it.
+
+Override `jarFile` only if you have multiple JARs or use a non-standard packaging task.
+
+## Project layout
+
+The plugin runs **per Gradle project** (per `build.gradle.kts`). For a multi-module repo where only one module is the deployable, apply it only there:
+
+```text
+my-repo/
+├── settings.gradle.kts
+├── shared/
+│   └── build.gradle.kts          ← no grounds-push
+├── plugin/
+│   ├── build.gradle.kts          ← apply gg.grounds.push here
+│   ├── grounds.yaml              ← here
+│   └── src/…
+```
+
+Then run from the repo root:
+
+```bash
+./gradlew :plugin:groundsPush --target=staging
+```
+
+Or `cd plugin && grounds push --target=staging`.
+
+## Authentication
+
+The plugin reads a bearer token from, in order:
+
+1. `GROUNDS_TOKEN` environment variable.
+2. The credentials file written by `grounds login`.
+
+For CI, set `GROUNDS_TOKEN` to a [service-account token](/build/ci-tokens). Don't commit `credentials.json`.

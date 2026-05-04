@@ -1,0 +1,51 @@
+---
+title: "groundsPushRetry"
+description: "Re-run a failed pipeline without re-uploading the JAR."
+---
+
+```bash
+./gradlew groundsPushRetry --pushId=<id>
+```
+
+Re-runs the build/deploy pipeline for a previously failed push. Forge already has the JAR and manifest on disk, so this is **upload-free** — straight from `pending` to `building`.
+
+## When to use it
+
+- A build failed because of a transient infra issue (registry timeout, image pull error).
+- A deploy failed and you want to try again without rebuilding the image.
+- You're in CI and want a quick retry without re-running the entire Gradle build.
+
+If you've changed code and want a fresh build, use `groundsPush` instead — `groundsPushRetry` would deploy your old bytes.
+
+## Flags
+
+| Flag | Purpose |
+|---|---|
+| `--pushId=<id>` | The ID of the failed push to retry. **Required.** |
+
+The push must be in a retryable state (`build_failed` or `deploy_failed`). Forge will reject retries against `ready`, `pending`, or `building` pushes with a 409.
+
+## What it does
+
+1. POST to `<apiUrl>/v1/pushes/<pushId>/retry` — forge creates a new push row with the same content hash.
+2. Stream the new push's logs the same way `groundsPush` does.
+3. Exit non-zero on terminal failure of the **retry** push.
+
+## Output
+
+```
+> Task :groundsPushRetry
+[grounds-push] retrying 018f9c12-… as 018f9d04-…
+[build] step 1/5 …
+[build] step 5/5 done
+[deploy] pod ready
+[grounds-push] ✔ ready
+```
+
+## CLI equivalent
+
+```bash
+grounds push retry <pushId>
+```
+
+Same operation. Use whichever is convenient.

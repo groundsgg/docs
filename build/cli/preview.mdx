@@ -1,0 +1,82 @@
+---
+title: "grounds preview"
+description: "List, inspect, and pin staging preview environments."
+---
+
+The `preview` subtree manages [preview environments](/build/concepts/preview-environments) — the ephemeral envs created by `grounds push --target=staging`.
+
+## Synopsis
+
+```text
+grounds preview list   [--include-deleted]
+grounds preview show   <id> [--json]
+grounds preview pin    <id>
+grounds preview unpin  <id>
+```
+
+All preview commands are scoped to the current project (use `--project` or `GROUNDS_PROJECT` to switch).
+
+## preview list
+
+```bash
+grounds preview list
+```
+
+```
+ID        PUSH      NAME          TYPE          STATUS  PINNED  EXPIRES     URL
+abc12345  def67890  my-plugin     plugin-paper  ready   no      2026-05-05  minecraft://my-plugin-prabc12345.mc.grnds.io
+…
+```
+
+| Flag | Purpose |
+|---|---|
+| `--include-deleted` | Show envs the janitor has already swept. Their `STATUS` will read `deleted`. |
+| `--output json` | Machine-readable form. Useful for piping into `jq`. |
+
+## preview show
+
+```bash
+grounds preview show abc12345
+```
+
+```
+ID:        abc12345-…
+PushID:    def67890-…
+Namespace: preview-abc12345
+Name:      my-plugin (plugin-paper)
+Status:    ready
+Pinned:    false
+Expires:   2026-05-05T14:23:00Z
+URL:       minecraft://my-plugin-prabc12345.mc.grnds.io
+```
+
+Add `--json` for the raw API response — useful for scripting or debugging.
+
+## preview pin / unpin
+
+```bash
+grounds preview pin <id>     # skip TTL janitor
+grounds preview unpin <id>   # re-enable TTL sweep
+```
+
+Pinned envs stay alive past their original `expiresAt`. They don't get a new TTL — they just don't have one. Unpin to put it back on the cleanup schedule (the TTL is recomputed from `now() + 7d`).
+
+<Note>
+Pinning is intentionally manual. The platform doesn't auto-pin "interesting" envs, so a forgotten demo doesn't quietly burn cluster resources for weeks.
+</Note>
+
+## What you can't do here (yet)
+
+- Force-delete a non-pinned env (the janitor will get to it within 30 min of expiry, and you can always push a new one).
+- Rename a preview env or change its hostname.
+- Promote a preview to production (that's a separate `grounds promote` flow, currently in beta).
+
+## Equivalents in the portal
+
+The portal's **Previews** tab on a project page has the same operations:
+
+- One row per env with status badge, expiry, public URL, pin indicator.
+- Per-row dropdown: **Pin (skip auto-cleanup)** / **Unpin (re-enable cleanup)**.
+- Click the URL to open the env in a new tab.
+
+Use whichever surface fits your flow — they hit the same forge endpoints.
