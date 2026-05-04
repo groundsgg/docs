@@ -1,47 +1,62 @@
 ---
-title: "Welcome"
-description: "Welcome to the Grounds documentation. Deploy the platform stack, build plugins and services, and reference the APIs and conventions."
+title: "Grounds documentation"
+description: "Build Minecraft workloads, deploy the Grounds platform stack, and reference the APIs, plugins, and engineering conventions."
 ---
 
-Use this documentation to find the Grounds platform resources, supported integrations, APIs, and engineering standards you need.
+<div style={{ display: "flex", justifyContent: "center", margin: "0 0 2rem" }}>
+  <img
+    src="/logo/grounds-hero.webp"
+    alt="Grounds"
+    style={{ width: "min(540px, 100%)", height: "auto" }}
+    noZoom
+  />
+</div>
 
-## Start Here
+Grounds helps teams ship Minecraft plugins, game modes, services, and supporting platform components into managed Kubernetes environments.
 
-Choose the section that matches what you want to do:
+## Start here
 
 <CardGroup cols={2}>
 <Card title="Build for Grounds" icon="rocket" href="/build">
-  Ship a Minecraft plugin or game mode to managed infrastructure — start here if you're a developer.
+  Push plugins, game modes, and services from Gradle to preview or dev environments.
 </Card>
 
 <Card title="Deploy" icon="server" href="/deploy">
-  Containers, Helm charts, and the Keycloak Minecraft identity provider — the building blocks for running the Grounds stack in your own Kubernetes cluster.
+  Run the platform stack with maintained containers, Helm charts, and identity integrations.
 </Card>
 
 <Card title="Reference" icon="code" href="/reference/apis">
-  APIs, Plugins SDK (Config System and Agones Integration), Convention plugins, and naming/logging standards.
+  Browse APIs, plugin SDKs, convention plugins, and engineering standards.
+</Card>
+
+<Card title="Quickstart" icon="play" href="/build/quickstart">
+  Install the CLI, sign in with your Grounds Account, and make your first push.
 </Card>
 </CardGroup>
 
-## Deploy the Grounds platform
+## Common paths
 
-Use these pages when you want to deploy or integrate shared platform components:
+Pick the page that matches the work in front of you:
 
 <CardGroup cols={2}>
+<Card title="CLI installation" icon="terminal" href="/build/cli/installation">
+  Install or update the `grounds` command.
+</Card>
+
+<Card title="Gradle plugin setup" icon="plug" href="/build/gradle-plugin/setup">
+  Wire `gg.grounds.push` into the module that produces your deployable JAR.
+</Card>
+
 <Card title="Containers" icon="box" href="/deploy/containers">
-  Reusable Docker/OCI container images for the Grounds.gg platform.
+  Use the maintained runtime images for Paper, Velocity, and development containers.
 </Card>
 
-<Card title="Charts" icon="chart-line" href="/deploy/charts">
-  Helm charts for deploying Grounds.gg services to Kubernetes.
-</Card>
-
-<Card title="Keycloak Minecraft IDP Plugin" icon="shield-halved" href="/deploy/keycloak-minecraft-idp">
-  General-purpose Keycloak identity provider plugin for Minecraft-backed sign-in.
+<Card title="Plugins SDK" icon="puzzle-piece" href="/reference/plugins">
+  Integrate with Config System and Agones runtime helpers.
 </Card>
 </CardGroup>
 
-## Access via MCP Server
+## MCP access
 
 <Info>
 You can also access this documentation through the MCP server at [https://docs.grounds.gg/mcp](https://docs.grounds.gg/mcp).
