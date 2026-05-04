@@ -55,7 +55,14 @@
           "build/portal",
           "build/local-development",
           "build/observability",
-          "build/troubleshooting"
+          "build/troubleshooting",
+          {
+            "group": "Internal — Grounds engineers only",
+            "pages": [
+              "build/test-environment/index",
+              "build/test-environment/bundle-reference"
+            ]
+          }
         ]
       },
       {
@@ -94,18 +101,6 @@
               "deploy/keycloak-minecraft-idp/index",
               "deploy/keycloak-minecraft-idp/installation",
               "deploy/keycloak-minecraft-idp/configuration"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Internal",
-        "pages": [
-          {
-            "group": "Test Environment",
-            "pages": [
-              "internal/test-environment/index",
-              "internal/test-environment/bundle-reference"
             ]
           }
         ]

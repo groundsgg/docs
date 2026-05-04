@@ -12,7 +12,7 @@ This environment is **for authorized Grounds engineers only**. It relies on a pr
 </Warning>
 
 <Note>
-A **bundle** is a versioned, curated list of platform components and their default versions. You pin against a bundle release (for reproducible CI runs) or against the current edge (for daily iteration). The full schema is documented under [Bundle Reference](/internal/test-environment/bundle-reference).
+A **bundle** is a versioned, curated list of platform components and their default versions. You pin against a bundle release (for reproducible CI runs) or against the current edge (for daily iteration). The full schema is documented under [Bundle Reference](/build/test-environment/bundle-reference).
 </Note>
 
 ## TL;DR
@@ -163,7 +163,7 @@ grounds cluster up --bundle 0.4.0 --override ./overrides/me.yaml
 | `enabled: false` | Skip the component | – |
 | `enabled: true` | Turn on a default-off optional component | – |
 
-See [Bundle Reference](/internal/test-environment/bundle-reference) for the full override schema and field-level documentation.
+See [Bundle Reference](/build/test-environment/bundle-reference) for the full override schema and field-level documentation.
 
 ## 5. Iterate on a component
 
@@ -282,7 +282,7 @@ You already have a `profile=platform` workspace from the older flow. The bundle 
 
 ## 9. Reference
 
-- [Bundle Reference](/internal/test-environment/bundle-reference) — every field of `bundle.yaml` and the override-file schema
+- [Bundle Reference](/build/test-environment/bundle-reference) — every field of `bundle.yaml` and the override-file schema
 - [`grounds-cli`](https://github.com/groundsgg/grounds-cli) — CLI source + releases
 - [`groundsgg/charts`](https://github.com/groundsgg/charts) — public Helm charts referenced by bundles
 - [`groundsgg/library-grpc-contracts`](https://github.com/groundsgg/library-grpc-contracts) — shared protobuf event schemas
