@@ -1,9 +1,9 @@
 ---
 title: "Auth"
-description: "Login, logout, doctor — and how the CLI talks to Grounds SSO."
+description: "Login, logout, doctor — and how the CLI talks to Grounds Account."
 ---
 
-The CLI authenticates against **Grounds SSO** using the OAuth 2.0 [device authorization grant](https://datatracker.ietf.org/doc/html/rfc8628) with PKCE. You don't need a client secret on your machine.
+The CLI authenticates against **Grounds Account** using the OAuth 2.0 [device authorization grant](https://datatracker.ietf.org/doc/html/rfc8628) with PKCE. You don't need a client secret on your machine.
 
 ## grounds login
 
@@ -13,9 +13,9 @@ grounds login
 
 What happens:
 
-1. The CLI requests a device code from Grounds SSO.
+1. The CLI requests a device code from Grounds Account.
 2. Your browser opens at the verification URL with the code pre-filled.
-3. You sign in (or are already signed in) and approve the device.
+3. You sign in with your Grounds Account (or are already signed in) and approve the device.
 4. The CLI exchanges the code for an access + refresh token.
 5. Tokens are written to your OS-specific config dir.
 

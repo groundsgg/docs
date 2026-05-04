@@ -53,10 +53,14 @@ it calls `Allocate` or `Ready`, so repeat events do not cause repeat calls.
 Drop the Paper module artifact into the `plugins/` directory of your Paper gameserver, next to
 your gamemode plugins.
 
-```text
-plugins/
-├── plugin-agones-paper.jar
-└── your-gamemode.jar
+```mermaid
+flowchart TB
+    plugins["plugins/"]
+    agones["plugin-agones-paper.jar"]
+    gamemode["your-gamemode.jar"]
+
+    plugins --> agones
+    plugins --> gamemode
 ```
 
 </Step>
