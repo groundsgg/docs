@@ -131,7 +131,7 @@ sidecar and only sends `Allocate` or `Ready` when it differs. Repeat calls are n
 ## Label Your GameServer
 
 The library only handles state sync. For the Velocity proxy to discover your Minestom gameserver,
-you still need to follow the [discovery contract](/plugins/agones#gameserver-discovery-contract):
+you still need to follow the [discovery contract](/reference/plugins/agones#gameserver-discovery-contract):
 
 - deploy into the `games` namespace
 - add `grounds/server-type: <lobby|game|match>` to the `GameServer` resource metadata
@@ -160,6 +160,6 @@ logs clean.
 
 ## Next Steps
 
-- Read the [Velocity page](/plugins/agones/velocity) to see how the proxy picks up this
+- Read the [Velocity page](/reference/plugins/agones/velocity) to see how the proxy picks up this
   gameserver once it reaches a running Agones state.
-- Review the [Agones Integration overview](/plugins/agones) for the cross-platform picture.
+- Review the [Agones Integration overview](/reference/plugins/agones) for the cross-platform picture.

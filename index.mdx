@@ -1,6 +1,6 @@
 ---
 title: "Welcome"
-description: "Welcome to the Grounds documentation. Here you'll find plugins, platform resources, APIs, and development guidelines."
+description: "Welcome to the Grounds documentation. Deploy the platform stack, build plugins and services, and reference the APIs and conventions."
 ---
 
 Use this documentation to find the Grounds platform resources, supported integrations, APIs, and engineering standards you need.
@@ -10,37 +10,29 @@ Use this documentation to find the Grounds platform resources, supported integra
 Choose the section that matches what you want to do:
 
 <CardGroup cols={2}>
-<Card title="Plugins" icon="puzzle-piece" href="/plugins">
-  Discover Minecraft and proxy plugins.
+<Card title="Deploy" icon="server" href="/deploy">
+  Containers, Helm charts, and the Keycloak Minecraft identity provider — the building blocks for running the Grounds stack in your own Kubernetes cluster.
 </Card>
 
-<Card title="APIs" icon="code" href="/apis">
-  Integrate Grounds into your application using our API and service interfaces.
-</Card>
-
-<Card title="Platform" icon="server" href="/platform">
-  Explore containers, charts, and the Keycloak Minecraft identity provider.
-</Card>
-
-<Card title="Development" icon="gear" href="/development/gradle-plugin">
-  Browse Gradle plugin documentation and engineering conventions.
+<Card title="Reference" icon="code" href="/reference/apis">
+  APIs, Plugins SDK (Config System and Agones Integration), Convention plugins, and naming/logging standards.
 </Card>
 </CardGroup>
 
-## Platform
+## Deploy the Grounds platform
 
 Use these pages when you want to deploy or integrate shared platform components:
 
 <CardGroup cols={2}>
-<Card title="Containers" icon="box" href="/platform/containers">
+<Card title="Containers" icon="box" href="/deploy/containers">
   Reusable Docker/OCI container images for the Grounds.gg platform.
 </Card>
 
-<Card title="Charts" icon="chart-line" href="/platform/charts">
+<Card title="Charts" icon="chart-line" href="/deploy/charts">
   Helm charts for deploying Grounds.gg services to Kubernetes.
 </Card>
 
-<Card title="Keycloak Minecraft IDP Plugin" icon="shield-halved" href="/platform/keycloak-minecraft-idp">
+<Card title="Keycloak Minecraft IDP Plugin" icon="shield-halved" href="/deploy/keycloak-minecraft-idp">
   General-purpose Keycloak identity provider plugin for Minecraft-backed sign-in.
 </Card>
 </CardGroup>
