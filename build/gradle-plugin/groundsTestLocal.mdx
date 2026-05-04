@@ -1,0 +1,81 @@
+---
+title: "groundsTestLocal"
+description: "Run Paper or Velocity locally with your plugin loaded — no cloud, no quota."
+---
+
+```bash
+./gradlew groundsTestLocal
+```
+
+Spins up a Paper or Velocity server **on your laptop** with this build's plugin JAR pre-installed. The cloud equivalent is `grounds push --target=dev`; this is the **offline** development loop — no Grounds infra is touched, no quota is consumed, no cluster is needed.
+
+## When to use it
+
+| Use this when | Use `grounds push --target=dev` when |
+|---|---|
+| Iterating on plugin logic alone. | You need the full forge runtime (eg. config plugin, social plugin) loaded. |
+| Offline / on the train. | You want to share with a teammate. |
+| You don't want to wait for a build + deploy round-trip. | You're testing inter-service interactions. |
+| You're new and not yet authed. | You're testing routing, ingress, or anything network-shaped. |
+
+For pure plugin-logic iteration, `groundsTestLocal` is **5× faster** than a cloud push (no network upload, no Kaniko, no Kube reconcile).
+
+## Requirements
+
+- JDK 21+ on `PATH`.
+- An internet connection on the **first** run (to download Paper / Velocity from `api.papermc.io`). Subsequent runs are fully offline.
+
+## What happens
+
+1. Reads `grounds.yaml`, finds `baseImage`.
+2. If `paper` or `velocity`: downloads the latest stable build of that version from PaperMC's v2 API. Caches under `build/grounds-test/cache/`.
+3. Sets up a server directory at `build/grounds-test/<baseImage>-<version>/`. Persists between runs, so player data + world chunks survive.
+4. For Paper: writes `eula.txt` (signed) and a sane `server.properties` on first run (online-mode=false, view-distance=8, no spawn protection). Edits stick.
+5. Drops your plugin JAR into `plugins/`.
+6. `java -jar` starts the server with stdin/stdout attached. Ctrl-C shuts it down cleanly.
+
+## Output
+
+```
+> Task :groundsTestLocal
+[grounds-test] downloading paper-1.21.4-220.jar from PaperMC
+[grounds-test] installed my-plugin-0.1.0-all.jar into …/plugins
+[grounds-test] starting Paper 1.21.4 in …/build/grounds-test/paper-1.21.4
+[grounds-test] connect with: minecraft://localhost:25565 (paper) or 25577 (velocity)
+[server thread/INFO]: Starting Minecraft server on *:25565
+…
+```
+
+Connect from your client to `localhost:25565` (Paper) or `localhost:25577` (Velocity).
+
+## Configuration
+
+```kotlin build.gradle.kts
+groundsPush {
+    paperVersion.set("1.21.5")              // default 1.21.4
+    velocityVersion.set("3.4.0-SNAPSHOT")   // default
+}
+```
+
+Versions are resolved against PaperMC's v2 API at task run time, so any version they publish is fair game.
+
+## Limitations (v0)
+
+- Only `baseImage: paper` and `baseImage: velocity` are supported. `minestom` and `service` workloads need `grounds push --target=dev` — they're plain JVM apps, not Minecraft servers, and we don't ship a generic local runner.
+- No multi-plugin compose. Only **this build's** JAR gets auto-installed; if you manually drop other JARs into `plugins/`, they'll persist between runs (the task only re-installs its own JAR each time).
+- Local data is just a directory. Wipe with `./gradlew clean` (or `rm -rf build/grounds-test/`) for a fresh world.
+
+## What does *not* happen
+
+- No Kaniko build. Your raw JAR is loaded directly — same as `./gradlew build` then dropping it manually into a Paper server's `plugins/`.
+- No quota / push-history record. This task talks to **no** Grounds infra.
+- No public URL. It's `localhost`. Use `staging` if you need a sharable URL.
+
+## Combining with `groundsPush`
+
+A reasonable inner-to-outer-loop:
+
+1. `./gradlew groundsTestLocal` — iterate locally until it works.
+2. `grounds push --target=dev` — verify it works inside the platform's runtime (config plugin, social plugin, etc.).
+3. `grounds push --target=staging` — share with a teammate.
+4. `grounds promote <pushId>` — release.

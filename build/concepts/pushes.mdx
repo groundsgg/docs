@@ -1,0 +1,90 @@
+---
+title: "Pushes"
+description: "The lifecycle of a push — from upload to running pod."
+---
+
+A **push** represents one attempt to ship a JAR to a target. Each `grounds push` (or portal-initiated build) creates one Push row that you can inspect, retry, and tail logs from.
+
+## States
+
+A push moves through a small state machine. Forge persists the current state on the row and emits SSE events on transitions.
+
+```
+       upload
+         │
+         ▼
+     ┌────────┐         ┌────────────┐
+     │pending │ ──────► │ building   │
+     └────────┘         └─────┬──────┘
+                              │
+                  ┌───────────┴───────────┐
+                  ▼                       ▼
+          ┌──────────────────┐    ┌──────────────┐
+          │ build_succeeded  │    │ build_failed │
+          └────────┬─────────┘    └──────────────┘
+                   │
+                   ▼
+              ┌──────────┐         ┌────────────────┐
+              │deploying │ ──────► │ deploy_failed  │
+              └────┬─────┘         └────────────────┘
+                   │
+                   ▼
+                ┌──────┐
+                │ready │
+                └──────┘
+```
+
+| State | Meaning |
+|---|---|
+| `pending` | Manifest + JAR uploaded, build job not yet started. |
+| `building` | Kaniko is producing the OCI image from your JAR + base image. |
+| `build_failed` | Build error. JAR is still on the server; **retry** is supported. |
+| `build_succeeded` | Image pushed to the in-cluster registry; deployment hasn't started. |
+| `deploying` | Kubernetes is reconciling the new image. |
+| `deploy_failed` | Deployment failed (bad image pull, resource limits, crashloop). |
+| `ready` | Pod is up and serving. Terminal happy-path state. |
+
+`build_failed` and `deploy_failed` are terminal but **retryable**: forge keeps your JAR and manifest, so a retry doesn't re-upload.
+
+## Identity & idempotency
+
+Each push has:
+
+- A UUID (`id`) you'll see referenced everywhere — CLI output, portal URLs, log streams.
+- A **content hash** computed over the JAR + manifest. If you push the exact same bytes twice, forge re-uses the previous build instead of rebuilding from scratch.
+
+## Tailing logs
+
+Two log streams per push:
+
+```bash
+grounds logs <pushId>                   # build logs (kaniko)
+grounds logs deployment <name>          # runtime logs (the pod)
+```
+
+Both are SSE streams that follow until a terminal state, then close. Add `--no-follow` to get a snapshot and exit.
+
+## Retrying
+
+A failed build or failed deploy can be retried without re-uploading:
+
+```bash
+grounds push retry <pushId>
+```
+
+This creates a **new** push row that re-uses the server-stored JAR and manifest, then re-runs the pipeline from `pending`. The original failed push is preserved for history.
+
+## Listing
+
+```bash
+grounds push list                       # last 20 pushes in current project
+grounds push list --target=staging      # filter by target
+grounds push list --status=ready        # filter by terminal state
+```
+
+In the portal, the project's **Pushes** page shows the same list with status badges and clickable detail pages.
+
+## What survives a push
+
+- The previous deployment for `dev` is **replaced**. State (world chunks, plugin data files) survives because the volume is attached at the namespace level — but anything in-memory is lost.
+- For `staging`, each push creates a new preview env, so nothing survives across pushes; that's the point.

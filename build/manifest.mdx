@@ -1,0 +1,120 @@
+---
+title: "Manifest reference"
+description: "Every field in grounds.yaml, what it does, and what's optional."
+---
+
+`grounds.yaml` lives at the root of your project and tells forge **what** you're pushing. It's read by both the Gradle plugin (to upload it) and forge (to build + deploy it).
+
+## Minimal example
+
+```yaml grounds.yaml
+name: my-plugin
+type: plugin-paper
+baseImage: paper
+```
+
+## Full example
+
+```yaml grounds.yaml
+name: my-plugin
+type: plugin-paper
+baseImage: paper
+jar: build/libs/my-plugin-*-all.jar
+target: dev          # optional default; CLI/Gradle override wins
+resources:
+  cpu: 500m
+  memory: 1Gi
+```
+
+## Fields
+
+### `name` (required)
+
+The logical app name. Used as:
+
+- The Kubernetes `Deployment` name (so it has to match `[a-z0-9-]{1,40}`).
+- The hostname prefix for staging previews (`<name>-pr<id>.mc.grnds.io` for Minecraft workloads, `…dev.grnds.io` for `service`).
+- The display name in the portal.
+
+Once you've pushed, **don't rename** — that creates a new app from forge's perspective and orphans the previous one. Rename via portal or contact `#grounds-platform` if you need to migrate state.
+
+### `type` (required)
+
+What kind of workload this is. One of:
+
+| Type | Workload | Base image options |
+|---|---|---|
+| `plugin-paper` | Bukkit/Paper plugin JAR | `paper` |
+| `plugin-velocity` | Velocity plugin JAR | `velocity` |
+| `gamemode` | Custom JAR running on Minestom | `minestom` |
+| `service` | Plain JVM app (no Minecraft runtime) | `service` |
+
+`type` drives quotas, resource defaults, port mappings, and which container our renderer wires up.
+
+### `baseImage` (required)
+
+The container base your JAR is layered onto. Must be one of the base images allowed for your `type`:
+
+| `baseImage` | Provided by | What it gives you |
+|---|---|---|
+| `paper` | `ghcr.io/groundsgg/paper` | A Paper server with sane defaults, your JAR auto-loaded into `plugins/`. |
+| `velocity` | `ghcr.io/groundsgg/velocity` | A Velocity proxy with your JAR in `plugins/`. |
+| `minestom` | `ghcr.io/groundsgg/minestom` | A bare Minestom runner that executes your JAR's `main`. |
+| `service` | `ghcr.io/groundsgg/jvm-service` | Generic JVM runner — your JAR's `main` is the entrypoint, no Minecraft runtime. |
+
+`paper` and `velocity` versions are pinned by the base-image release. To bump (e.g., from 1.21.4 → 1.21.5), bump the base-image tag, not your manifest.
+
+### `jar` (optional, default `build/libs/*.jar`)
+
+A glob pointing at the JAR to upload, **relative to the project root**. The Gradle plugin auto-detects `shadowJar` or `jar` and sets this for you, so you usually don't need to write it.
+
+When to set it explicitly:
+
+- You produce multiple JARs and want to ensure the right one is picked.
+- You build with something other than `shadowJar` / `jar`.
+
+### `target` (optional)
+
+A default target if neither the CLI flag nor the Gradle extension overrides it. Order of precedence:
+
+1. CLI flag: `grounds push --target=staging`
+2. Gradle extension: `groundsPush { target.set("staging") }`
+3. `grounds.yaml: target: ...`
+4. Fallback: `dev`
+
+You almost never want this in version control — it makes "what does pushing actually do?" non-obvious for teammates. Prefer the CLI flag.
+
+### `resources` (optional)
+
+CPU/memory request hints. They're **suggestions** — forge clamps them to the per-type minimums (e.g., `plugin-paper` is at least `250m` CPU and `1Gi` memory) and to per-project quota maxima. If your value falls inside the legal range, it's used as-is.
+
+```yaml
+resources:
+  cpu: 500m       # Kubernetes resource units: 500m = 0.5 vCPU
+  memory: 1Gi
+```
+
+Quirks worth knowing:
+
+- We always set `requests == limits`. Pods are deterministic and don't burst.
+- Below the minimum: silently raised to the minimum.
+- Above the project quota: push fails at admission with a quota error.
+
+### Other fields
+
+`grounds.yaml` is **strict**. Unknown top-level fields are rejected at parse time so typos don't silently get ignored. If you need something not covered here, open a `#grounds-platform` ticket — the parser only knows what's listed above.
+
+## Validation
+
+The Gradle plugin parses `grounds.yaml` before upload. Common errors:
+
+| Error | Fix |
+|---|---|
+| `missing required field 'name'` | Add `name`. |
+| `field 'name' must be a string` | Quote numeric-looking names. |
+| `'resources' must be a mapping` | Make sure it's `resources:\n  cpu: …` not `resources: 500m`. |
+| `unknown baseImage 'forge'` | Use one of the supported base images above. |
+
+## Editor support
+
+There's no JSON Schema for `grounds.yaml` yet. On the roadmap; for now use this page as the reference. The Gradle plugin's parse error messages name the offending field and line number.

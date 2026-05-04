@@ -1,0 +1,166 @@
+---
+title: "Troubleshooting"
+description: "Symptoms you'll hit, and what to check first."
+---
+
+## CLI
+
+### `not logged in`
+
+```
+✗ auth   not logged in
+```
+
+Run `grounds login`. The CLI didn't find a `credentials.json` (or `GROUNDS_TOKEN`).
+
+### `session expired`
+
+```
+✗ auth   session expired (run 'grounds login')
+```
+
+Your refresh token has aged out (≈30 days of inactivity). Run `grounds login` to start fresh.
+
+### `api  Get "https://platform.grnds.io/healthz": …`
+
+The CLI can't reach forge. Check:
+
+- Network connectivity (can you `curl https://platform.grnds.io/healthz`?).
+- Are you on a VPN that blocks the domain? Try with VPN off.
+- Did you set `--api-url` or `GROUNDS_API_URL` to a typo? Unset it.
+- [status.grounds.gg](https://status.grounds.gg) for ongoing platform issues.
+
+### `gradle wrapper not found`
+
+```
+✗ not a Gradle project? Run 'grounds init' to scaffold, or cd to your project root
+```
+
+You're running `grounds push` outside a Gradle project. `cd` to the directory with `gradlew` / `build.gradle.kts`.
+
+## Manifest
+
+### `grounds.yaml: missing required field 'name'`
+
+Add the missing field. Required fields are `name`, `type`, `baseImage` — see [manifest reference](/build/manifest).
+
+### `grounds.yaml: 'resources' must be a mapping`
+
+You wrote `resources: 500m` instead of:
+
+```yaml
+resources:
+  cpu: 500m
+  memory: 1Gi
+```
+
+### `groundsTestLocal only supports baseImage=paper|velocity`
+
+Local mode only runs Paper and Velocity. Use `grounds push --target=dev` for `minestom` / `service` workloads.
+
+## Build (`build_failed`)
+
+### `kaniko: failed to push to registry`
+
+Transient registry hiccup. Retry:
+
+```bash
+grounds push retry <pushId>
+```
+
+If it persists, check `#grounds-platform` for a registry incident.
+
+### `kaniko: COPY failed: no source files were found`
+
+Your manifest's `jar:` glob doesn't match any file. Check:
+
+- `./gradlew shadowJar` produces something at `build/libs/`.
+- The glob in `grounds.yaml` (or auto-detected) matches it.
+- The Gradle plugin successfully built before upload (look at the build output).
+
+### Build hangs in `building` for >5 minutes
+
+The pipeline's hard timeout is 30 minutes per step; the CLI's SSE inactivity timeout is 5 minutes. If the latter triggers, the build is still running on the cluster — re-attach by tailing logs:
+
+```bash
+grounds logs <pushId>
+```
+
+If the build itself is genuinely stuck, that's a platform issue — ping `#grounds-platform`.
+
+## Deploy (`deploy_failed`)
+
+### `ImagePullBackOff`
+
+Most often: the build "succeeded" but the image isn't actually at the registry. Symptoms align with a registry that ran out of disk or the image push happened-after the deploy started.
+
+Retry: `grounds push retry <pushId>`. If it keeps failing, the registry needs platform attention.
+
+### `CrashLoopBackOff`
+
+Your pod is starting and immediately exiting. Look at the deployment logs:
+
+```bash
+grounds logs deployment <name>
+```
+
+Common causes:
+
+- Plugin throws on `onEnable` — fix the code, push again.
+- Java version mismatch (you compiled for 22, base image runs 21).
+- Missing dependency at runtime (you assumed a library would be present that isn't).
+
+### `OOMKilled`
+
+Pod exceeded its memory limit. Bump `resources.memory` in `grounds.yaml` (within project quota), or shrink your heap. Check Grafana for the JVM heap usage that led up to the OOM.
+
+### Quota exceeded at admission
+
+```
+push failed: project quota exceeded — 5/5 staging environments active
+```
+
+Either delete some old previews (or unpin them and wait for the janitor), or request a quota bump in `#grounds-platform`.
+
+## Preview environments
+
+### "My preview was working yesterday and now it's gone"
+
+Default TTL is 7 days. Check:
+
+```bash
+grounds preview list --include-deleted
+```
+
+If it's there with a `deleted` status, the janitor swept it. Push again or pin the new one.
+
+### Public URL returns 502
+
+The pod isn't `ready`. Tail deployment logs:
+
+```bash
+grounds logs deployment <name>
+```
+
+The hostname only routes to a `ready` pod — during a redeploy or crashloop you'll see 502 from the ingress.
+
+## Auth & SSO
+
+### `403 Forbidden` from forge on every call
+
+You're authenticated but not a member of the project the request targets. Check:
+
+- The project ID in `--project` / `GROUNDS_PROJECT` / `config.toml`.
+- Your role in the portal (Settings → Members).
+
+If you used a service-account token, it's hard-pinned to its minting project — you cannot use it elsewhere.
+
+### Browser opens to "invalid_redirect_uri"
+
+The CLI's redirect URI must match what's configured at Grounds SSO. If you self-host the IdP or the CLI binary is stale, this can drift. Re-install the CLI.
+
+## Where to ask for help
+
+1. **`#grounds-platform`** Slack channel — fastest path. Include push ID, manifest, and last 30 lines of logs.
+2. **GitHub issue** at [groundsgg/grounds-platform](https://github.com/groundsgg/grounds-platform) — for reproducible bugs.
+3. **status.grounds.gg** — to confirm whether it's a known incident before reporting.

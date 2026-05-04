@@ -1,0 +1,75 @@
+---
+title: "Preview environments"
+description: "Ephemeral, public, per-push environments — the result of every staging deploy."
+---
+
+Every `grounds push --target=staging` creates a **preview environment**: a fresh namespace, a fresh deployment, and a public URL. They're built for sharing — review apps, demos, end-to-end test runs against a real cluster.
+
+## Anatomy of a preview env
+
+| Property | Value |
+|---|---|
+| Namespace | `preview-<short-id>` (auto-generated) |
+| Hostname | `<manifest-name>-pr<short-id>.mc.grnds.io` (Minecraft) or `…dev.grnds.io` (`service` workloads) |
+| TTL | 7 days from creation, sweep runs every 30 min |
+| Quota | One ResourceQuota per env, defaults to project-level limits |
+| Network | Default-deny NetworkPolicy + explicit allows for ingress + DNS |
+
+The TTL clock starts at preview creation, not at push completion. A pinned preview has no TTL.
+
+## Listing your previews
+
+```bash
+grounds preview list
+```
+
+```
+ID        PUSH      NAME          TYPE          STATUS  PINNED  EXPIRES     URL
+abc12345  def67890  my-plugin     plugin-paper  ready   no      2026-05-05  minecraft://my-plugin-prabc12345.mc.grnds.io
+…
+```
+
+Add `--include-deleted` to see envs that were swept by the janitor.
+
+```bash
+grounds preview show <id>     # one env in detail
+grounds preview show <id> --json
+```
+
+## Pinning
+
+Pinning skips the TTL janitor — the env stays alive until you unpin or delete it explicitly. Useful for long-running demos or a staging environment a non-developer is using.
+
+```bash
+grounds preview pin <id>
+grounds preview unpin <id>
+```
+
+In the portal, the Previews page has a per-row dropdown with **Pin (skip auto-cleanup)** / **Unpin (re-enable cleanup)**.
+
+<Warning>
+Pinning indefinitely costs cluster resources. Pin sparingly — for demos that have an end date — and unpin when done. The platform team will follow up on long-pinned envs that look forgotten.
+</Warning>
+
+## Lifecycle internals
+
+When you push to `staging`, forge:
+
+1. Builds your image (same as `dev`).
+2. Creates a `PreviewEnv` row with a generated short ID.
+3. Provisions a `preview-<id>` namespace with quota + default-deny NetworkPolicy.
+4. Deploys the workload into that namespace.
+5. Configures an ingress at `<name>-pr<id>.mc.grnds.io` (Minecraft workloads) or `…dev.grnds.io` (`service` workloads).
+
+The `PreviewJanitor` runs every 30 minutes:
+
+- Lists all `PreviewEnv` rows where `expiresAt < now() AND deletedAt IS NULL AND pinned = false`.
+- Deletes the namespace (which cascades the deployment, ingress, etc.).
+- Sets `deletedAt` on the row so it stops being considered.
+
+Deleted preview envs remain in the database for audit; the portal hides them by default but `grounds preview list --include-deleted` will show them.
+
+## When *not* to use staging
+
+- Inner-loop iteration on your own machine — use `groundsTestLocal` instead. It's offline, free, and 5 seconds per cycle. See [Local development](/build/local-development).
+- Long-lived dev environments for one person — that's what `--target=dev` is for. It doesn't burn a fresh namespace per push.

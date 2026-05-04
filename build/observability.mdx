@@ -1,0 +1,111 @@
+---
+title: "Observability"
+description: "Where to look when something is wrong — logs, metrics, traces."
+---
+
+Every workload pushed to the platform is wired into our LGTM stack:
+
+- **Loki** — logs from build steps and running pods.
+- **Mimir** — Prometheus metrics from base images and platform components.
+- **Tempo** — distributed traces (where instrumentation exists).
+- **Grafana** — the dashboarding + exploration front-end.
+
+Sign in with Grounds SSO at [grafana.platform.grnds.io](https://grafana.platform.grnds.io). Your project membership translates to which logs/metrics you can see.
+
+## Logs
+
+There are two distinct streams.
+
+### Build logs
+
+The build pipeline (Kaniko + push to in-cluster registry). Useful for diagnosing `build_failed`.
+
+```bash
+grounds logs <pushId>
+```
+
+In Grafana: **Explore** → Loki → query `{namespace="grounds-forge", app="kaniko"} |= "<pushId>"`.
+
+### Deployment logs
+
+The actual stdout/stderr of your running pod. Useful for everything else.
+
+```bash
+grounds logs deployment <name>           # tail until terminal/Ctrl-C
+grounds logs deployment <name> --no-follow
+```
+
+In the portal: **Deployments** → click into your app → **Logs** tab.
+
+In Grafana: filter by your namespace.
+
+```logql
+{namespace="user-<your-handle>", app="<name>"}
+```
+
+For staging previews: namespace is `preview-<id>`.
+
+## Metrics
+
+Standard JVM + base-image metrics are exposed automatically:
+
+- JVM heap / GC / thread pool (via `-javaagent` in the base image).
+- HTTP request rates and latencies for `service`-type workloads with our standard middleware.
+- Paper-specific tick rates for `plugin-paper`.
+
+Find them in Grafana under the **Workloads** folder. The default dashboard for your app is at:
+
+```
+https://grafana.platform.grnds.io/d/workload-overview?var-namespace=user-<handle>&var-app=<name>
+```
+
+The portal's deployment detail page links directly to this.
+
+### Custom metrics
+
+If your plugin or service exposes a `/metrics` endpoint (Prometheus format), add a `ServiceMonitor` to scrape it. We don't auto-discover arbitrary endpoints — explicit ServiceMonitors keep the cardinality budget under control.
+
+Examples and the `gnds_*` metric naming convention live in `tools/observability` (coming soon).
+
+## Traces
+
+If your code emits OTLP traces, they're forwarded to Tempo via an Alloy collector that runs as a sidecar in `service`-type pods. Traces are tied back to logs via the standard `trace_id` field — Grafana auto-links between them.
+
+Tracing for `plugin-paper` / `gamemode` workloads is opt-in (we don't auto-instrument the Bukkit / Minestom event bus by default). Reach out in `#grounds-platform` if you want this for your plugin.
+
+## Alerts
+
+Alert routing is platform-managed:
+
+- **Platform-level alerts** (cluster, ingress, base-image health) page the platform team.
+- **Project-level alerts** can be defined per-project in Grafana. The default is none — you opt in by writing rules.
+
+There's no SMS / phone integration. Alert destinations are Slack channels per project, configured by an owner.
+
+## Common queries
+
+| What | Where |
+|---|---|
+| "Why did my push fail?" | `grounds logs <pushId>` |
+| "Why is my pod crashlooping?" | `grounds logs deployment <name>` |
+| "Is the platform itself broken?" | [status.grounds.gg](https://status.grounds.gg) |
+| "What's the platform-level latency right now?" | Grafana → Platform → Latency dashboard |
+| "Did anyone push to this project today?" | Portal → project → Pushes |
+
+## Dashboards as code
+
+Project-specific Grafana dashboards can be checked in alongside your code:
+
+```yaml my-app-dashboard.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-app-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  dashboard.json: |-
+    { … }
+```
+
+Apply it to your app's namespace and the Grafana sidecar will pick it up. JSON dashboard exports from the Grafana UI work as a starting point.
