@@ -46,7 +46,7 @@ What kind of workload this is. One of:
 |---|---|---|
 | `plugin-paper` | Bukkit/Paper plugin JAR | `paper` |
 | `plugin-velocity` | Velocity plugin JAR | `velocity` |
-| `gamemode` | Custom JAR running on Minestom | `minestom` |
+| `gamemode` | Bukkit/Paper plugin JAR running as an Agones-managed gameserver | `paper-gamemode` |
 | `service` | Plain JVM app (no Minecraft runtime) | `service` |
 
 `type` drives quotas, resource defaults, port mappings, and which container our renderer wires up.
@@ -57,12 +57,12 @@ The container base your JAR is layered onto. Must be one of the base images allo
 
 | `baseImage` | Provided by | What it gives you |
 |---|---|---|
-| `paper` | `ghcr.io/groundsgg/paper` | A Paper server with sane defaults, your JAR auto-loaded into `plugins/`. |
+| `paper` | `ghcr.io/groundsgg/paper` | A Paper server with sane defaults, your JAR auto-loaded into `plugins/`. Use with `type: plugin-paper`. |
+| `paper-gamemode` | `ghcr.io/groundsgg/paper-gamemode` | Same as `paper`, but pre-bundled with `plugin-agones-paper` so the SDK sidecar (injected on every Fleet pod) reports Allocated/Ready from player events. Use with `type: gamemode`. |
 | `velocity` | `ghcr.io/groundsgg/velocity` | A Velocity proxy with your JAR in `plugins/`. |
-| `minestom` | `ghcr.io/groundsgg/minestom` | A bare Minestom runner that executes your JAR's `main`. |
 | `service` | `ghcr.io/groundsgg/jvm-service` | Generic JVM runner — your JAR's `main` is the entrypoint, no Minecraft runtime. |
 
-`paper` and `velocity` versions are pinned by the base-image release. To bump (e.g., from 1.21.4 → 1.21.5), bump the base-image tag, not your manifest.
+`paper`, `paper-gamemode`, and `velocity` versions are pinned by the base-image release. To bump (e.g., from 1.21.4 → 1.21.5), bump the base-image tag, not your manifest.
 
 ### `jar` (optional, default `build/libs/*.jar`)
 
