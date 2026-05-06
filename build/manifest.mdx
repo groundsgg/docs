@@ -100,6 +100,21 @@ Quirks worth knowing:
 - Below the minimum: silently raised to the minimum.
 - Above the project quota: push fails at admission with a quota error.
 
+### `agones` (optional, `gamemode` only)
+
+Agones-specific knobs. Only meaningful for `type: gamemode`, where the renderer wraps your workload in an Agones `Fleet`. Other types ignore the block.
+
+```yaml
+agones:
+  replicas: 3
+```
+
+| Field | Default | Range | What it does |
+|---|---|---|---|
+| `replicas` | `1` | `1`–`20` | Number of `GameServer` replicas the Fleet keeps Ready. mc-router load-balances Minecraft traffic across them via the workload's Service. Raise this when one game server can't hold the player count you need; values above 20 require a platform-side quota bump. |
+
+The Agones SDK sidecar is injected by the cluster's mutating webhook on every Fleet-managed pod, so `plugin-agones-paper` (and the Minestom/Velocity equivalents) can talk to `localhost:9358` and report Allocated/Ready state from player events.
+
 ### Other fields
 
 `grounds.yaml` is **strict**. Unknown top-level fields are rejected at parse time so typos don't silently get ignored. If you need something not covered here, open a `#grounds-platform` ticket — the parser only knows what's listed above.
