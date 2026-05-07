@@ -77,32 +77,47 @@ When to set it explicitly:
 
 ### `plugins` (optional)
 
-A list of 2–10 JAR paths bundled into a single Paper / Velocity / gamemode server. Useful when you want to test plugin interaction (economy + chat + teams) on one running instance instead of pushing each plugin as its own server.
+A list of 2–10 plugin sources bundled into a single Paper / Velocity / gamemode server. Useful when you want to test plugin interaction (economy + chat + teams) on one running instance instead of pushing each plugin as its own server.
+
+Each entry is one of four source kinds, distinguished by prefix:
 
 ```yaml
 name: combo
 type: plugin-paper
 baseImage: paper
 plugins:
-  - sub-projects/economy/build/libs/economy.jar
-  - sub-projects/chat/build/libs/chat.jar
-  - sub-projects/teams/build/libs/teams.jar
+  - modules/economy/build/libs/economy.jar           # local (relative)
+  - /opt/jars/legacy.jar                             # local (absolute)
+  - :chat                                            # Gradle project
+  - github:groundsgg/plugin-teams@v0.3.0             # GitHub release, first .jar asset
+  - github:groundsgg/plugin-shop@v1.4.2:shop-all.jar # GitHub release, named asset
 ```
 
-The Gradle plugin packs the listed JARs into a tar.gz and forge unpacks them into `/app/plugins/` in manifest order (a numeric prefix preserves load order, since Paper's `pluginsFolder` scan is filesystem-ordered).
+| Kind | Form | Resolved by |
+| --- | --- | --- |
+| Local | a path | `groundsPush` reads from disk |
+| Gradle project | `:project` (or `:nested:project`) | `groundsPush` looks up the project's `shadowJar` / `jar` task and depends on it automatically |
+| GitHub release | `github:<owner>/<repo>@<tag>[:<asset>]` | `groundsPush` downloads from the GitHub Releases API into `~/.gradle/caches/grounds-push/` |
 
-Constraints:
+The Gradle plugin packs all resolved JARs into a `tar.gz` and forge unpacks them into `/app/plugins/` in manifest order (a numeric prefix preserves load order, since Paper's `pluginsFolder` scan is filesystem-ordered).
+
+#### GitHub source rules
+
+- **Owner allowlist** — only `groundsgg/*` is accepted. Other owners are rejected at parse time on the client *and* re-validated server-side at push admission. Hard security boundary, not configurable.
+- **Tag pinning** — the tag must be a SemVer-shaped tag (`v1.4.2`, optional pre-release / build metadata) or a 40-char commit SHA. `latest`, branch names, and partial SHAs are intentionally rejected so bundles stay reproducible.
+- **Asset filter** — the asset must end in `.jar`. No source tarballs, no zips. If you don't name an asset, the first `.jar` on the release is used.
+- **SHA256 verification** — when a release ships a `<asset>.sha256` sidecar, `groundsPush` fetches it and verifies before caching. Releases without one are accepted unchanged.
+- **Auth** — public repos work without auth; private repos read `GITHUB_TOKEN` from the environment. A 404 with no token in scope surfaces a hint about it.
+
+Cache key is `<owner>-<repo>-<tag>-<asset>.jar`. Because tags are immutable pins, a cache hit means the same bytes as before — no re-download per push.
+
+#### Constraints
 
 - Mutually exclusive with `jar:` — pick one shape per manifest.
 - Forbidden for `type: service` (services have a single-jar `ENTRYPOINT`; multi-plugin has no meaningful semantics there).
-- 2 minimum (single-plugin uses `jar:`), 10 maximum, 50 MB total upload (same cap as a single JAR).
-- All listed paths must already exist when `groundsPush` runs. If your JARs come from sub-projects, depend on their build tasks:
-
-```kotlin build.gradle.kts
-tasks.named("groundsPush") {
-    dependsOn(":economy:jar", ":chat:jar", ":teams:jar")
-}
-```
+- 2 minimum (single-plugin uses `jar:`), 10 maximum, 50 MB total upload after resolution.
+- For Gradle project refs the subproject must apply a Jar-producing plugin (`java`, `com.gradleup.shadow`, etc.). `groundsPush` discovers `shadowJar` first, then falls back to `jar`.
+- Absolute local paths still work but log a "non-portable manifest" warning, because CI won't see your machine's filesystem.
 
 ### `target` (optional)
 
