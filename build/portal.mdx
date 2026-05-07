@@ -28,9 +28,19 @@ Active preview environments for the current project. Per-row dropdown menu has:
 
 Status badges reflect the underlying push: `ready`, `pending`, `building`, `deploy_failed`, etc. The hostname is a clickable external link when status is `ready`.
 
-### Deployments
+### Apps
 
-The active deployments view (one row per running app, irrespective of which push placed it there). Click into one for live logs. This is the right surface to use when something is **currently broken** — the latest push might have succeeded but the pod is now crashlooping.
+One row per running app (irrespective of which push placed it there). Click into one to drill into per-app surfaces:
+
+- **Logs** — live pod logs, SSE-tailed.
+- **Pushes** — every push that targeted this app, newest first. Per-row actions:
+  - **Roll back** — re-deploys an earlier push's image without re-building. Lands in seconds and creates a fresh push row pointing at the same `imageTag`, so the audit log records it.
+  - **Promote** — on a `ready` push that targeted `staging`, copies the built image into a new `dev` push. Skips the rebuild and ships the staging artifact you just verified.
+- **Previews** — preview environments scoped to this app.
+- **Env** — per-app environment variables. Stored on the deployment row in forge, injected after the built-in `GROUNDS_*` keys (which the API rejects up front, so user values can't shadow platform context). Saving triggers a rolling restart.
+- **Settings** — resource overrides (CPU + memory) that override the type-default for this app. Persisted on the deployment row and live-patched onto the running pod, so changes take effect without a re-push. Plus the Danger Zone "Delete app" flow (tears down the Service + Deployment; the image stays in the registry).
+
+This is the right surface to use when something is **currently broken** — the latest push might have succeeded but the pod is now crashlooping, or the new release introduced a bug you want to roll back.
 
 ### Members
 
@@ -40,6 +50,8 @@ Project members with roles. Owners can:
 - **Invite link** — generate a single-use URL, pick role + expiry.
 - Per-row: change role (owner/editor/viewer), remove member.
 - Self-removal (Leave project) is allowed for any member; forge enforces last-owner protection.
+
+The same page hosts the **Minecraft whitelist** card — the list of Mojang accounts your project's `paper` / `paper-gamemode` servers will let join. Add/remove by gamertag; forge resolves each entry against Mojang and surfaces the validation result inline (so a typo'd name fails at edit time, not at server-join time). The list is pushed live to every running Paper pod via `plugin-grounds-platform`.
 
 ### Settings
 
@@ -62,10 +74,9 @@ The portal supports system, light, and dark themes via the `data-mode` attribute
 
 ## What it can't do (yet)
 
-The portal is feature-complete for **observation** and **member/token management**. Things still CLI-only:
+Things still CLI-only:
 
 - Initiating a push (you upload a JAR, which a browser file picker won't carry well across CI etc.).
-- Promoting a push to production.
 - Bulk operations on pushes or previews.
 
-Most "make changes" workflows go through the CLI; the portal is the read + administer surface.
+Day-to-day operations after the initial push — rolling back, promoting a staging push to dev, editing env vars, adjusting resources, managing the whitelist — all live in the portal.

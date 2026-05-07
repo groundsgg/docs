@@ -24,8 +24,9 @@ This is the task the CLI's `grounds push` invokes under the hood. Run it directl
 | Flag | Purpose |
 |---|---|
 | `--target=<dev\|staging>` | Override the manifest's target. **Highest precedence**. |
+| `--force` | Skip forge's content-hash dedup and force a fresh build. Use when the upstream base image moved under a stable tag, or when you want to re-observe the build flow. |
 
-That's it. Everything else is configured via the [`groundsPush` extension](/build/gradle-plugin/setup#the-groundspush-extension) or `grounds.yaml`.
+Everything else is configured via the [`groundsPush` extension](/build/gradle-plugin/setup#the-groundspush-extension) or `grounds.yaml`.
 
 ## Output
 

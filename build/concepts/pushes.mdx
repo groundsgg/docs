@@ -86,6 +86,14 @@ grounds push list --status=ready        # filter by terminal state
 
 In the portal, the project's **Pushes** page shows the same list with status badges and clickable detail pages.
 
+## Rolling back
+
+If a successful push introduced a bug and you need the previous image back, open the app's **Pushes** tab in the portal and click **Roll back** on the prior push. Forge re-deploys that push's already-built image without re-running kaniko, so the rollback lands in seconds. The rollback creates a fresh push row pointing at the same `imageTag`, so the audit log records the action.
+
+## Promoting a staging push
+
+For pushes that targeted `staging` and reached `ready`, the portal's **Pushes** tab also shows a **Promote** action. Promote copies the built image into a new push targeting `dev` — no rebuild, no kaniko run. Use it to ship the exact artifact you just verified in a preview env, instead of re-running the build pipeline and risking a different image (e.g., upstream base-image drift).
+
 ## What survives a push
 
 - The previous deployment for `dev` is **replaced**. State (world chunks, plugin data files) survives because the volume is attached at the namespace level — but anything in-memory is lost.

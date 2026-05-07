@@ -26,6 +26,8 @@ resources:
   memory: 1Gi
 ```
 
+Multi-plugin servers ship multiple JARs onto one Paper / Velocity / gamemode workload — see [`plugins`](#plugins-optional) below.
+
 ## Fields
 
 ### `name` (required)
@@ -72,6 +74,35 @@ When to set it explicitly:
 
 - You produce multiple JARs and want to ensure the right one is picked.
 - You build with something other than `shadowJar` / `jar`.
+
+### `plugins` (optional)
+
+A list of 2–10 JAR paths bundled into a single Paper / Velocity / gamemode server. Useful when you want to test plugin interaction (economy + chat + teams) on one running instance instead of pushing each plugin as its own server.
+
+```yaml
+name: combo
+type: plugin-paper
+baseImage: paper
+plugins:
+  - sub-projects/economy/build/libs/economy.jar
+  - sub-projects/chat/build/libs/chat.jar
+  - sub-projects/teams/build/libs/teams.jar
+```
+
+The Gradle plugin packs the listed JARs into a tar.gz and forge unpacks them into `/app/plugins/` in manifest order (a numeric prefix preserves load order, since Paper's `pluginsFolder` scan is filesystem-ordered).
+
+Constraints:
+
+- Mutually exclusive with `jar:` — pick one shape per manifest.
+- Forbidden for `type: service` (services have a single-jar `ENTRYPOINT`; multi-plugin has no meaningful semantics there).
+- 2 minimum (single-plugin uses `jar:`), 10 maximum, 50 MB total upload (same cap as a single JAR).
+- All listed paths must already exist when `groundsPush` runs. If your JARs come from sub-projects, depend on their build tasks:
+
+```kotlin build.gradle.kts
+tasks.named("groundsPush") {
+    dependsOn(":economy:jar", ":chat:jar", ":teams:jar")
+}
+```
 
 ### `target` (optional)
 
