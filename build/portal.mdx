@@ -1,6 +1,6 @@
 ---
 title: "Portal"
-description: "The web UI at portal.platform.grnds.io — projects, members, pushes, previews."
+description: "The web UI at portal.platform.grnds.io — projects, apps, members, Minecraft access, pushes, and previews."
 ---
 
 The portal is the visual side of the platform. Sign in with your Grounds Account at [portal.platform.grnds.io](https://portal.platform.grnds.io); membership in any project lands you on a project switcher.
@@ -13,11 +13,28 @@ The CLI and the portal share the same forge backend — every operation in one i
 
 Top-left dropdown. Switch active project; affects every page below it. The selected project is remembered in your browser's local storage.
 
+If you open a direct link to an app or other resource that belongs to another project you can access, the portal switches to that project and shows the resource instead of leaving you on a 404.
+
+### Apps
+
+The apps overview shows current deployments grouped by manifest name. Each app row shows type, status, latest activity, and whether the workspace is paused.
+
+Open an app to drill into per-app surfaces:
+
+- **Overview** — status, runtime metrics, active deployment, and quick actions.
+- **Logs** — live pod logs, SSE-tailed.
+- **Pushes** — every push that targeted this app, newest first.
+- **Previews** — preview environments scoped to this app.
+- **Env** — per-app environment variables. User-defined values cannot shadow platform-managed `GROUNDS_*` keys.
+- **Settings** — runtime resource overrides, Minecraft access for Minecraft app types, and the app delete flow.
+
 ### Pushes
 
-The history list for the current project: status badge, name, type, target, image tag, creation time. Click a row to open the push detail page with the full build + deploy log stream (SSE-tailed if still running, replayed if completed).
+The history list for the current project: status badge, name, type, target, short push hash, and creation time. Click a row to open the push detail page with the full build + deploy log stream (SSE-tailed if still running, replayed if completed).
 
 Empty state explains how to make your first push if you haven't yet.
+
+From a push detail page you can retry a failed push, promote ready staging pushes, and roll back an app to a previously deployed push when the action is available.
 
 ### Previews
 
@@ -26,21 +43,24 @@ Active preview environments for the current project. Per-row dropdown menu has:
 - **Pin (skip auto-cleanup)** — sets `pinned=true`, env survives past TTL.
 - **Unpin (re-enable cleanup)** — sets `pinned=false`, TTL recomputed from now.
 
-Status badges reflect the underlying push: `ready`, `pending`, `building`, `deploy_failed`, etc. The hostname is a clickable external link when status is `ready`.
+Status badges reflect the underlying push: `ready`, `received`, `building`, `deploy_failed`, etc. The hostname is a clickable external link when status is `ready` for web services. Minecraft previews show the server address to paste into Minecraft.
 
-### Apps
+### Deployments
 
-One row per running app (irrespective of which push placed it there). Click into one to drill into per-app surfaces:
+The active deployments view shows one row per running app, regardless of which push placed it there. Click into a deployment for live logs and runtime details.
 
-- **Logs** — live pod logs, SSE-tailed.
-- **Pushes** — every push that targeted this app, newest first. Per-row actions:
-  - **Roll back** — re-deploys an earlier push's image without re-building. Lands in seconds and creates a fresh push row pointing at the same `imageTag`, so the audit log records it.
-  - **Promote** — on a `ready` push that targeted `staging`, copies the built image into a new `dev` push. Skips the rebuild and ships the staging artifact you just verified.
-- **Previews** — preview environments scoped to this app.
-- **Env** — per-app environment variables. Stored on the deployment row in forge, injected after the built-in `GROUNDS_*` keys (which the API rejects up front, so user values can't shadow platform context). Saving triggers a rolling restart.
-- **Settings** — resource overrides (CPU + memory) that override the type-default for this app. Persisted on the deployment row and live-patched onto the running pod, so changes take effect without a re-push. Plus the Danger Zone "Delete app" flow (tears down the Service + Deployment; the image stays in the registry).
+### App details and actions
 
-This is the right surface to use when something is **currently broken** — the latest push might have succeeded but the pod is now crashlooping, or the new release introduced a bug you want to roll back.
+Use the app detail pages when something is **currently broken** — the latest push might have succeeded but the pod is now crashlooping, or the new release introduced a bug you want to roll back.
+
+Available app actions include:
+
+- **Retry** — re-run a failed push using the server-stored JAR and manifest.
+- **Roll back** — redeploy an earlier push image without rebuilding.
+- **Promote** — copy a ready staging artifact into a new `dev` push.
+- **Push command** — copy the Gradle command to upload a new push from your terminal.
+- **Runtime overrides** — override CPU and memory without editing `grounds.yaml`.
+- **Delete app** — tear down the app Service and Deployment. The image remains in the registry.
 
 ### Members
 
@@ -51,14 +71,37 @@ Project members with roles. Owners can:
 - Per-row: change role (owner/editor/viewer), remove member.
 - Self-removal (Leave project) is allowed for any member; forge enforces last-owner protection.
 
-The same page hosts the **Minecraft whitelist** card — the list of Mojang accounts your project's `paper` / `paper-gamemode` servers will let join. Add/remove by gamertag; forge resolves each entry against Mojang and surfaces the validation result inline (so a typo'd name fails at edit time, not at server-join time). The list is pushed live to every running Paper pod via `plugin-grounds-platform`.
+The Members page also manages project-wide Minecraft access:
 
-### Settings
+- **Linked members** — project members with a linked Minecraft Java account inherit access to Minecraft apps in the project.
+- **Project-wide players** — Minecraft usernames added directly to the project whitelist. These players can join Minecraft apps without being project members.
+- Owners and editors can add or remove project-wide players. Linked member entries are read-only in the whitelist list; update the member or their linked identity instead.
 
-- **Project info** — name, slug.
-- **Service accounts** — list, mint, revoke project-scoped API tokens. See [CI tokens](/build/ci-tokens).
-- **Audit** — recent member, token, and admin events.
-- **Danger zone** — archive / delete the project.
+### Minecraft access
+
+Minecraft apps combine three access sources:
+
+| Source | Where it is managed | Applies to |
+|---|---|---|
+| Linked member | Members page | Every Minecraft app in the project |
+| Project-wide | Members page → Minecraft whitelist | Every Minecraft app in the project |
+| App-specific | App settings → Minecraft whitelist | One Minecraft app |
+
+On an app settings page, the **Minecraft access** card shows the effective list for that app. Inherited linked member and project-wide entries are shown as read-only. App-specific entries can be added or removed there by owners and editors.
+
+When you add a player, enter the Minecraft Java username. Forge resolves it to a Mojang UUID when the entry is created, so later username changes do not break access.
+
+### API tokens
+
+Project owners can create, filter, and revoke project-scoped API tokens from the **API tokens** page. See [CI tokens](/build/ci-tokens).
+
+### Audit
+
+The **Audit** page shows recent project activity, including member, token, project, deployment, push, and Minecraft whitelist events.
+
+### Account settings
+
+The account settings page shows your Grounds Account identity, linked Minecraft Java username and UUID, theme selector, kubeconfig shortcut, and sign-out button.
 
 ### Account
 
@@ -74,9 +117,9 @@ The portal supports system, light, and dark themes via the `data-mode` attribute
 
 ## What it can't do (yet)
 
-Things still CLI-only:
+The portal is feature-complete for **observation**, **member/token management**, and Minecraft access management. Things still CLI-only:
 
-- Initiating a push (you upload a JAR, which a browser file picker won't carry well across CI etc.).
+- Uploading a new push artifact. The portal can show the push command, but the upload still runs from the CLI or Gradle plugin.
 - Bulk operations on pushes or previews.
 
 Day-to-day operations after the initial push — rolling back, promoting a staging push to dev, editing env vars, adjusting resources, managing the whitelist — all live in the portal.
