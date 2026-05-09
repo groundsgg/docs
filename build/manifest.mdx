@@ -44,7 +44,7 @@ Once you've pushed, **don't rename** — that creates a new app from forge's per
 
 What kind of workload this is. One of:
 
-| Type | Workload | Base image options |
+| Type | Workload | Base image source keys |
 |---|---|---|
 | `plugin-paper` | Bukkit/Paper plugin JAR | `paper` |
 | `plugin-velocity` | Velocity plugin JAR | `velocity` |
@@ -55,16 +55,20 @@ What kind of workload this is. One of:
 
 ### `baseImage` (required)
 
-The container base your JAR is layered onto. Must be one of the base images allowed for your `type`:
+The catalog source key for the runtime image your JAR is layered onto. Must be one of the base image sources allowed for your `type`:
 
-| `baseImage` | Provided by | What it gives you |
+| `baseImage` | Catalog source | What it gives you |
 |---|---|---|
 | `paper` | `ghcr.io/groundsgg/paper` | A Paper server with sane defaults, your JAR auto-loaded into `plugins/`. Use with `type: plugin-paper`. |
 | `paper-gamemode` | `ghcr.io/groundsgg/paper-gamemode` | Same as `paper`, but pre-bundled with `plugin-agones-paper` so the SDK sidecar (injected on every Fleet pod) reports Allocated/Ready from player events. Use with `type: gamemode`. |
 | `velocity` | `ghcr.io/groundsgg/velocity` | A Velocity proxy with your JAR in `plugins/`. |
 | `service` | `ghcr.io/groundsgg/jvm-service` | Generic JVM runner — your JAR's `main` is the entrypoint, no Minecraft runtime. |
 
-`paper`, `paper-gamemode`, and `velocity` versions are pinned by the base-image release. To bump (e.g., from 1.21.4 → 1.21.5), bump the base-image tag, not your manifest.
+Forge resolves the source key to the current stable version in the [base image catalog](/build/concepts/base-images) when it builds your push. Do not put an OCI tag or digest in `grounds.yaml`; promote a new catalog version instead.
+
+<Note>
+The valid source keys come from the platform catalog. The table above lists the standard sources, but self-hosted or internal environments may expose additional sources.
+</Note>
 
 ### `jar` (optional, default `build/libs/*.jar`)
 

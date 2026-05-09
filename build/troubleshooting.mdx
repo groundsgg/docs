@@ -58,6 +58,35 @@ resources:
 
 Local mode only runs Paper and Velocity. Use `grounds push --target=dev` for `minestom` / `service` workloads.
 
+### `unknown baseImage`
+
+Your manifest references a base image source key that Forge does not know, or that is not allowed for the selected `type`.
+
+Check:
+
+- The spelling in `grounds.yaml`.
+- The allowed source keys for your workload type in the [manifest reference](/build/manifest#baseimage-required).
+- Whether a platform admin recently renamed or deleted a source in the base image catalog.
+
+### No stable base image version
+
+Forge found the source key, but there is no stable version to build from.
+
+Ask a platform admin to open **Platform → Base images**, select the source, and promote an available version to stable. If the version list is empty, sync the source or add a version manually.
+
+### Base image source sync failed
+
+Manual or automatic source sync failed in Portal.
+
+Common causes:
+
+- Forge cannot reach the registry or GitHub release API from the cluster.
+- The registry requires credentials that are not configured for the source.
+- The discovery configuration points at the wrong repository, release, or tag pattern.
+- The registry returns HTML or an auth challenge instead of OCI registry JSON.
+
+Existing versions stay visible after a failed sync. Fix the source settings, then sync again from **Platform → Base images → Sources**.
+
 ## Build (`build_failed`)
 
 ### `kaniko: failed to push to registry`

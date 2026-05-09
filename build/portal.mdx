@@ -1,6 +1,6 @@
 ---
 title: "Portal"
-description: "The web UI at portal.platform.grnds.io — projects, apps, members, Minecraft access, pushes, and previews."
+description: "The web UI at portal.platform.grnds.io — projects, apps, members, Minecraft access, pushes, previews, and platform base images."
 ---
 
 The portal is the visual side of the platform. Sign in with your Grounds Account at [portal.platform.grnds.io](https://portal.platform.grnds.io); membership in any project lands you on a project switcher.
@@ -45,9 +45,16 @@ Active preview environments for the current project. Per-row dropdown menu has:
 
 Status badges reflect the underlying push: `ready`, `received`, `building`, `deploy_failed`, etc. The hostname is a clickable external link when status is `ready` for web services. Minecraft previews show the server address to paste into Minecraft.
 
-### Deployments
+### Base images
 
-The active deployments view shows one row per running app, regardless of which push placed it there. Click into a deployment for live logs and runtime details.
+Platform admins can manage the runtime catalog under **Platform → Base images**.
+
+- **Overview** — source cards for each runtime family, including the source key, workload type, registry repository, sync status, and version count.
+- **Source detail** — paginated version list for one source.
+- **Sources** — add, edit, delete, and manually sync source definitions.
+- **Version actions** — add a version, promote it to stable, deprecate it, undeprecate it, or delete it when no channel uses it.
+
+Developers reference source keys in `grounds.yaml`, for example `baseImage: paper`. Forge resolves the source to the stable catalog version during push. See [Base images](/build/concepts/base-images).
 
 ### App details and actions
 
@@ -97,7 +104,7 @@ Project owners can create, filter, and revoke project-scoped API tokens from the
 
 ### Audit
 
-The **Audit** page shows recent project activity, including member, token, project, deployment, push, and Minecraft whitelist events.
+The **Audit** page shows recent project activity, including member, token, project, deployment, push, Minecraft whitelist, and base image catalog events.
 
 ### Account settings
 
