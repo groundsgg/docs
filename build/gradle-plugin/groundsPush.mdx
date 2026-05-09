@@ -13,18 +13,20 @@ This is the task the CLI's `grounds push` invokes under the hood. Run it directl
 
 ## What it does
 
-1. **Validate** — parses `grounds.yaml`, checks required fields.
+1. **Validate** — parses `grounds.yaml`, checks required fields, and verifies that `baseImage` is a source key allowed for the selected workload type.
 2. **Resolve JAR** — uses the `jarFile` extension property, or auto-detected `shadowJar`/`jar` output. Builds it if needed (this task `dependsOn` the JAR task).
 3. **Upload** — multipart POST of the JAR + manifest to `<apiUrl>/v1/pushes`. Returns a push ID.
 4. **Stream** — opens an SSE connection to `<apiUrl>/v1/pushes/<id>/logs` and tails until terminal status.
 5. **Exit** — fails the build (non-zero exit) on `build_failed` or `deploy_failed`. Logs the public URL on `ready`.
+
+Forge performs the final runtime image selection server-side from the [base image catalog](/build/concepts/base-images). The Gradle plugin sends the manifest source key, not an OCI tag or digest.
 
 ## Flags
 
 | Flag | Purpose |
 |---|---|
 | `--target=<dev\|staging>` | Override the manifest's target. **Highest precedence**. |
-| `--force` | Skip forge's content-hash dedup and force a fresh build. Use when the upstream base image moved under a stable tag, or when you want to re-observe the build flow. |
+| `--force` | Skip forge's content-hash dedup and force a fresh build. Use after a base image catalog promotion when the manifest and JAR bytes did not change, or when you want to re-observe the build flow. |
 
 Everything else is configured via the [`groundsPush` extension](/build/gradle-plugin/setup#the-groundspush-extension) or `grounds.yaml`.
 

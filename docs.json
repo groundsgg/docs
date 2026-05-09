@@ -28,6 +28,7 @@
               "build/concepts/projects-and-teams",
               "build/concepts/targets",
               "build/concepts/pushes",
+              "build/concepts/base-images",
               "build/concepts/preview-environments"
             ]
           },

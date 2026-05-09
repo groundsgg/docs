@@ -1,0 +1,127 @@
+---
+title: "Base images"
+description: "How Grounds selects, syncs, and audits runtime images for pushes."
+---
+
+A **base image** is the runtime container that Forge layers your JAR onto during a push. Your `grounds.yaml` selects a base image source by key, such as `paper` or `velocity`; Forge resolves that key to the current stable catalog version when it builds the final workload image.
+
+The catalog keeps runtime selection server-side. Developers choose the runtime family in the manifest, while platform admins manage which OCI image versions are available, stable, deprecated, or removed.
+
+## How it fits into a push
+
+```yaml grounds.yaml
+name: my-plugin
+type: plugin-paper
+baseImage: paper
+jar: build/libs/my-plugin-0.1.0.jar
+```
+
+When you run `grounds push`, this happens:
+
+1. The CLI or Gradle plugin validates the manifest and uploads it to Forge.
+2. Forge checks that `baseImage` is allowed for the selected `type`.
+3. Forge loads the matching catalog source, for example `paper`.
+4. Forge selects the source's stable version and resolves its OCI tag or digest.
+5. Forge builds your app image from that runtime image and deploys the result.
+
+<Info>
+The manifest stores the source key, not a registry tag. This lets platform admins update the stable Paper, Velocity, gamemode, or service runtime without asking every project to edit `grounds.yaml`.
+</Info>
+
+## Catalog model
+
+| Term | Meaning |
+| --- | --- |
+| Source | A named runtime family, such as `paper`, `paper-gamemode`, `velocity`, or `service`. This is the value used in `grounds.yaml: baseImage`. |
+| Version | One discovered or manually added OCI image tag for a source, such as `0.8.2`. |
+| Stable channel | The version Forge uses for new pushes that select this source. Each source has one stable version. |
+| Available version | A version that can be promoted or selected by future platform tooling. |
+| Deprecated version | A version kept for history but hidden from normal selection. Deprecation does not delete existing deployed images. |
+
+## Sources
+
+A source describes where Forge discovers runtime image versions.
+
+Common fields are:
+
+| Field | Purpose |
+| --- | --- |
+| Key | Stable identifier used by manifests, for example `paper`. |
+| Display name | Human-readable name shown in Portal. |
+| Manifest type | Workload type this source supports, for example `plugin-paper`. |
+| Registry host | OCI registry host, for example `ghcr.io`. |
+| Repository | OCI repository path, for example `groundsgg/paper`. |
+| Discovery kind | How Forge finds versions, such as GitHub releases or OCI tags. |
+| Sync interval | How often Forge should refresh the source when auto sync is enabled. |
+
+Sources can point at any OCI registry that Forge can reach. GitHub release discovery is supported for images published from GitHub releases, and OCI tag discovery is supported for registries that expose tags through the standard registry API.
+
+<Warning>
+Changing a source's key changes the value developers must put in `grounds.yaml`. Prefer adding a new source when you need a new runtime family.
+</Warning>
+
+## Versions
+
+Each version belongs to one source and records the OCI tag or digest Forge verified during import.
+
+Platform admins can:
+
+- **Add** a version manually when a registry tag exists but discovery should not be used.
+- **Promote** a version to stable so new pushes use it.
+- **Deprecate** a version to keep it visible for history but discourage use.
+- **Undeprecate** a version when it should become available again.
+- **Delete** a version when it is not used by a channel.
+
+Promoting a version updates the stable channel for future builds. It does not rebuild existing app images. Push again, retry, or roll back through a push action when you want a workload to use a different runtime image.
+
+## Syncing
+
+Syncing imports new versions from the source's configured discovery provider.
+
+There are two sync paths:
+
+- **Manual sync** — a platform admin starts sync from Portal.
+- **Auto sync** — Forge periodically refreshes enabled sources based on their configured interval.
+
+Sync results include how many versions were imported and skipped. A failed sync does not remove the existing source or versions from Portal; it records the failure so the source can be fixed and synced again.
+
+<Tip>
+Use manual sync immediately after publishing a runtime image release when you want to promote it without waiting for the next scheduled refresh.
+</Tip>
+
+## Portal management
+
+Portal exposes the catalog under **Platform → Base images**.
+
+- **Overview** shows all sources as cards, including the source key, supported workload type, and version count.
+- **Source detail** shows the paginated version list for one source.
+- **Sources** lets platform admins add, edit, delete, and sync sources.
+- **Version actions** live on the source detail page: add version, promote, deprecate, undeprecate, and delete.
+
+Only platform admins can manage catalog sources and versions. Regular project members only see the effect through manifest validation and push behavior.
+
+## Audit log
+
+Base image catalog changes are written to the project audit feed with `base_image.*` event kinds.
+
+Recorded actions include:
+
+- Source create, update, delete, and sync.
+- Version add, promote, deprecate, undeprecate, and delete.
+
+The audit event target uses a stable, searchable identifier:
+
+| Action | Target shape |
+| --- | --- |
+| Source event | `base-image-source:<source-key>` |
+| Version event | `base-image-version:<source-key>@<version>` |
+
+Audit metadata includes source details and action-specific fields such as imported/skipped sync counts or the promoted channel.
+
+## Operational guidance
+
+- Keep manifest values stable. Developers should rarely need to change `baseImage`.
+- Promote one stable version per source. Multiple versions can be available, but stable is the default build input.
+- Deprecate before deleting when a version may still matter for investigation.
+- Use the audit feed to answer who changed a runtime source or promoted a runtime version.
+- After promoting a new runtime, make a fresh push to build app images from it.
