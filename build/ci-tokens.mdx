@@ -21,6 +21,7 @@ A service-account token can do anything an `editor` can do — within the projec
 - ✓ Retry pushes
 - ✓ List, show, pin, unpin previews
 - ✓ Read deployment logs
+- ✓ Manage Minecraft whitelist entries when the token creator still has `owner` or `editor` access
 
 What it **cannot** do (privilege-escalation guard):
 
@@ -40,7 +41,7 @@ Only project **owners** can mint.
 ### Portal
 
 1. Open the project.
-2. **Settings** → **Service accounts**.
+2. Go to **API tokens**.
 3. Click **New token**, name it (`ci-github-actions`, `release-bot`), pick an expiry.
 4. Copy the secret immediately — you won't see it again.
 
@@ -88,7 +89,7 @@ Tokens never auto-rotate. The platform doesn't refresh them or reissue silently.
 
 ## Audit
 
-Every token mint, use, and revocation is recorded in the project's audit feed (portal **Settings** → **Audit**). Useful when investigating a compromise or wondering "who pushed at 3am yesterday".
+Every token mint, use, and revocation is recorded in the project's audit feed (portal **Audit**). Useful when investigating a compromise or wondering "who pushed at 3am yesterday".
 
 ## What if my token leaks?
 

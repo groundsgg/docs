@@ -1,6 +1,6 @@
 ---
 title: "Projects & teams"
-description: "Projects scope everything you do on the platform — pushes, previews, members, tokens."
+description: "Projects scope everything you do on the platform — pushes, previews, members, tokens, and Minecraft access."
 ---
 
 Every push, preview, and token belongs to a **project**. A project is your collaboration unit: a set of members with roles, working on the same plugin or service.
@@ -9,11 +9,11 @@ Every push, preview, and token belongs to a **project**. A project is your colla
 
 There are three roles, with strictly nested permissions:
 
-| Role | Push | View pushes | Manage previews | Invite / remove members | Mint tokens |
-|---|---|---|---|---|---|
-| `viewer` | — | ✓ | — | — | — |
-| `editor` | ✓ | ✓ | ✓ | — | — |
-| `owner` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Role | Push | View pushes | Manage previews | Manage Minecraft access | Invite / remove members | Mint tokens |
+|---|---|---|---|---|---|---|
+| `viewer` | — | ✓ | — | — | — | — |
+| `editor` | ✓ | ✓ | ✓ | ✓ | — | — |
+| `owner` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 Roles are project-scoped. You can be an `owner` on one project and a `viewer` on another.
 
@@ -55,10 +55,34 @@ For people who haven't signed up yet, mint a one-time invite link:
 
 Invite links are **single-use** — redemption is atomic, so simultaneous clicks can't both succeed. They cannot be used to grant `owner` (only existing owners can promote).
 
+## Minecraft access
+
+Minecraft access is project-scoped by default, with an optional app-specific layer for one Minecraft app.
+
+There are three sources:
+
+| Source | Managed from | Access granted |
+|---|---|---|
+| Linked project member | Members page | Every Minecraft app in the project |
+| Project-wide player | Members page → Minecraft whitelist | Every Minecraft app in the project |
+| App-specific player | App settings → Minecraft whitelist | Only that app |
+
+Project members who sign in with a linked Minecraft Java account appear as **Linked member** entries. These entries inherit access from membership and are read-only in the whitelist list. To remove that access, remove the project member or update the member's linked Minecraft identity.
+
+Owners and editors can add **Project-wide** players from the Members page. Use this for playtesters or operators who need to join Minecraft servers but should not access the project in the portal.
+
+Owners and editors can add **App-specific** players from a Minecraft app's settings page. Use this for temporary access to one server without granting access to every Minecraft app in the project.
+
+When you add a Minecraft username, forge resolves it to a Mojang UUID immediately. The UI continues to show the username, but access is tied to the UUID so later username changes do not strand the whitelist entry.
+
+<Note>
+Only Java identities are used for Minecraft app access today. Bedrock ownership from the identity provider does not grant Java server access.
+</Note>
+
 ## Service-account tokens
 
 For unattended use (CI, scripts, bots) projects can mint long-lived `gnds_*` API tokens scoped to a single project. See [CI / service-account tokens](/build/ci-tokens).
 
 ## Audit
 
-Membership and role changes are recorded in the project's audit feed (visible in the portal under Settings → Audit). Token mint and revocation events appear there too.
+Membership, role, token, deployment, push, project, and Minecraft whitelist changes are recorded in the project's audit feed (visible in the portal under **Audit**).
