@@ -3,7 +3,7 @@ title: "Control Center step-up"
 description: "Configure Keycloak LoA step-up for Grounds Control Center access mutations."
 ---
 
-The Grounds Control Center protects high-risk access mutations with OpenID Connect step-up authentication. Portal requests Level of Authentication (LoA) 2, Forge validates the returned token, and the mutation continues only when Keycloak returns a fresh `acr=2` token.
+The Grounds Control Center protects high-risk access mutations with OpenID Connect step-up authentication. Portal requests Level of Authentication (LoA) 1 for normal login and LoA 2 for protected writes. Forge validates the returned token, and the mutation continues only when Keycloak returns a fresh `acr=2` token.
 
 <Warning>
   The Minecraft login uses an external identity provider. Keycloak does not continue the browser flow after that broker login, so you must configure both the Portal browser flow and the Minecraft identity provider post-login flow.
@@ -32,6 +32,8 @@ Use these settings on the `grounds-portal` client.
     ```
   </Step>
 </Steps>
+
+Portal and Forge only use the Keycloak `groups` claim as identity groups. Do not grant Portal access through `realm_access.roles`; users without a `groups` claim are denied login.
 
 ## Browser flow
 
@@ -69,6 +71,9 @@ Authentication Levels
 
     OTP Form
       Requirement: Required
+
+    Deny access
+      Requirement: Disabled
 ```
 
 ## Minecraft identity provider
@@ -84,6 +89,19 @@ Create the flow with this structure:
 ```text
 minecraft post-login step-up
 
+  Post-login Level 1 - Minecraft Login
+    Requirement: Conditional
+
+    Require LoA 1 after Minecraft login
+      Type: Condition - Level of Authentication
+      Requirement: Required
+      Level of Authentication: 1
+      Max Age: 36000
+
+    Allow access
+      Type: Allow access
+      Requirement: Required
+
   Post-login Level 2 - Control Center Step-up
     Requirement: Conditional
 
@@ -95,20 +113,19 @@ minecraft post-login step-up
 
     OTP Form
       Requirement: Required
-```
 
-<Info>
-  For validation before a user has OTP configured, you can temporarily add a `Deny access` execution after `OTP Form`.
-</Info>
-
-Use this deny message:
-
-```text
-Control Center step-up requires two-factor authentication. Configure OTP for your account and try again.
+    Deny access
+      Requirement: Disabled
 ```
 
 <Warning>
-  Disable or remove the deny execution after OTP enrollment is available. Leaving it enabled can block a successful step-up after the OTP form.
+  Keep the LoA 1 subflow before the LoA 2 subflow. If the post-login flow starts with LoA 2, normal Minecraft login can prompt users to configure OTP.
+</Warning>
+
+For validation before a user has OTP configured, you can temporarily enable the `Deny access` execution after `OTP Form`.
+
+<Warning>
+  Disable the deny execution after testing. Leaving it enabled can block a successful step-up after the OTP form.
 </Warning>
 
 ## Forge settings
@@ -137,4 +154,6 @@ Common causes:
 - The `grounds-portal` client is missing the `1 -> 1` and `2 -> 2` ACR mappings.
 - The LoA 2 condition uses a non-numeric value instead of `2`.
 - The Minecraft identity provider has no post-login flow configured.
+- The Minecraft post-login flow is missing the LoA 1 allow-access subflow before LoA 2.
 - The user has no OTP credential configured.
+- The token is missing the `groups` claim. Portal and Forge do not import identity groups from `realm_access.roles`.
