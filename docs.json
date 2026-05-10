@@ -53,7 +53,13 @@
             ]
           },
           "build/ci-tokens",
-          "build/portal",
+          {
+            "group": "Portal",
+            "pages": [
+              "build/portal/index",
+              "build/portal/control-center-step-up"
+            ]
+          },
           "build/local-development",
           "build/observability",
           "build/troubleshooting",
@@ -101,8 +107,7 @@
             "pages": [
               "deploy/keycloak-minecraft-idp/index",
               "deploy/keycloak-minecraft-idp/installation",
-              "deploy/keycloak-minecraft-idp/configuration",
-              "deploy/keycloak-minecraft-idp/control-center-step-up"
+              "deploy/keycloak-minecraft-idp/configuration"
             ]
           }
         ]
