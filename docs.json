@@ -101,7 +101,8 @@
             "pages": [
               "deploy/keycloak-minecraft-idp/index",
               "deploy/keycloak-minecraft-idp/installation",
-              "deploy/keycloak-minecraft-idp/configuration"
+              "deploy/keycloak-minecraft-idp/configuration",
+              "deploy/keycloak-minecraft-idp/control-center-step-up"
             ]
           }
         ]
