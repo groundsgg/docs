@@ -53,7 +53,14 @@
             ]
           },
           "build/ci-tokens",
-          "build/portal",
+          {
+            "group": "Portal",
+            "pages": [
+              "build/portal/index",
+              "build/portal/control-center-access",
+              "build/portal/control-center-step-up"
+            ]
+          },
           "build/local-development",
           "build/observability",
           "build/troubleshooting",

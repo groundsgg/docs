@@ -1,0 +1,159 @@
+---
+title: "Control Center step-up"
+description: "Configure Keycloak LoA step-up for Grounds Control Center access mutations."
+---
+
+The Grounds Control Center protects high-risk access mutations with OpenID Connect step-up authentication. Portal requests Level of Authentication (LoA) 1 for normal login and LoA 2 for protected writes. Forge validates the returned token, and the mutation continues only when Keycloak returns a fresh `acr=2` token.
+
+<Warning>
+  The Minecraft login uses an external identity provider. Keycloak does not continue the browser flow after that broker login, so you must configure both the Portal browser flow and the Minecraft identity provider post-login flow.
+</Warning>
+
+## Portal client
+
+Use these settings on the `grounds-portal` client.
+
+<Steps>
+  <Step title="Set the browser flow override">
+    Set the browser flow override to:
+
+    ```text
+    grounds portal browser step-up
+    ```
+  </Step>
+
+  <Step title="Set ACR to LoA mappings">
+    Add both mappings on the client:
+
+    ```text
+    ACR  LoA
+    1    1
+    2    2
+    ```
+  </Step>
+</Steps>
+
+Portal and Forge only use the Keycloak `groups` claim as identity groups. Do not grant Portal access through `realm_access.roles`; users without a `groups` claim are denied login.
+
+## Browser flow
+
+Create or update the `grounds portal browser step-up` browser flow.
+
+```text
+Cookie
+  Requirement: Alternative
+
+Authentication Levels
+  Requirement: Required
+
+  Level 1 - Minecraft Login
+    Requirement: Conditional
+
+    Require LoA 1
+      Type: Condition - Level of Authentication
+      Requirement: Required
+      Level of Authentication: 1
+      Max Age: 36000
+
+    Minecraft Identity Provider Redirect
+      Type: Identity Provider Redirector
+      Requirement: Required
+      Default Provider: minecraft
+
+  Level 2 - Control Center Step-up
+    Requirement: Conditional
+
+    Require LoA 2
+      Type: Condition - Level of Authentication
+      Requirement: Required
+      Level of Authentication: 2
+      Max Age: 0
+
+    OTP Form
+      Requirement: Required
+
+    Deny access
+      Requirement: Disabled
+```
+
+## Minecraft identity provider
+
+Set the `minecraft` identity provider post-login flow to:
+
+```text
+minecraft post-login step-up
+```
+
+Create the flow with this structure:
+
+```text
+minecraft post-login step-up
+
+  Post-login Level 1 - Minecraft Login
+    Requirement: Conditional
+
+    Require LoA 1 after Minecraft login
+      Type: Condition - Level of Authentication
+      Requirement: Required
+      Level of Authentication: 1
+      Max Age: 36000
+
+    Allow access
+      Type: Allow access
+      Requirement: Required
+
+  Post-login Level 2 - Control Center Step-up
+    Requirement: Conditional
+
+    Require LoA 2 after Minecraft login
+      Type: Condition - Level of Authentication
+      Requirement: Required
+      Level of Authentication: 2
+      Max Age: 0
+
+    OTP Form
+      Requirement: Required
+
+    Deny access
+      Requirement: Disabled
+```
+
+<Warning>
+  Keep the LoA 1 subflow before the LoA 2 subflow. If the post-login flow starts with LoA 2, normal Minecraft login can prompt users to configure OTP.
+</Warning>
+
+For validation before a user has OTP configured, you can temporarily enable the `Deny access` execution after `OTP Form`.
+
+<Warning>
+  Disable the deny execution after testing. Leaving it enabled can block a successful step-up after the OTP form.
+</Warning>
+
+## Forge settings
+
+Forge must require the same ACR value Keycloak returns for LoA 2.
+
+```text
+CONTROL_CENTER_STEP_UP_ACR=2
+CONTROL_CENTER_STEP_UP_MAX_AGE_SECONDS=300
+```
+
+Forge rejects high-risk mutations until the access token contains:
+
+```text
+acr=2
+auth_time within CONTROL_CENTER_STEP_UP_MAX_AGE_SECONDS
+```
+
+## Troubleshooting
+
+If a Control Center write returns `403`, inspect the token claims at the Portal-to-Forge boundary. A rejected replay with `acr=1` means Keycloak did not execute LoA 2.
+
+Common causes:
+
+- The `grounds-portal` client does not use the step-up browser flow override.
+- The `grounds-portal` client is missing the `1 -> 1` and `2 -> 2` ACR mappings.
+- The LoA 2 condition uses a non-numeric value instead of `2`.
+- The Minecraft identity provider has no post-login flow configured.
+- The Minecraft post-login flow is missing the LoA 1 allow-access subflow before LoA 2.
+- The user has no OTP credential configured.
+- The token is missing the `groups` claim. Portal and Forge do not import identity groups from `realm_access.roles`.
