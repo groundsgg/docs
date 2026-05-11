@@ -57,6 +57,7 @@
             "group": "Portal",
             "pages": [
               "build/portal/index",
+              "build/portal/control-center-access",
               "build/portal/control-center-step-up"
             ]
           },

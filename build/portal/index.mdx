@@ -1,6 +1,6 @@
 ---
 title: "Portal"
-description: "The web UI at portal.platform.grnds.io — projects, apps, members, Minecraft access, pushes, previews, and platform base images."
+description: "The web UI at portal.platform.grnds.io — projects, apps, members, Minecraft access, pushes, previews, platform access, and platform base images."
 ---
 
 The portal is the visual side of the platform. Sign in with your Grounds Account at [portal.platform.grnds.io](https://portal.platform.grnds.io); membership in any project lands you on a project switcher.
@@ -47,7 +47,7 @@ Status badges reflect the underlying push: `ready`, `received`, `building`, `dep
 
 ### Base images
 
-Platform admins can manage the runtime catalog under **Platform → Base images**.
+Users with `BASE_IMAGES_MANAGE` can manage the runtime catalog under **Platform → Base images**.
 
 - **Overview** — source cards for each runtime family, including the source key, workload type, registry repository, sync status, and version count.
 - **Source detail** — paginated version list for one source.
@@ -55,6 +55,12 @@ Platform admins can manage the runtime catalog under **Platform → Base images*
 - **Version actions** — add a version, promote it to stable, deprecate it, undeprecate it, or delete it when no channel uses it.
 
 Developers reference source keys in `grounds.yaml`, for example `baseImage: paper`. Forge resolves the source to the stable catalog version during push. See [Base images](/build/concepts/base-images).
+
+### Control Center
+
+Users with `CONTROL_CENTER_VIEW` can open the **Platform Control Center** from the header. The first module is **Access**, which manages platform users, access roles, permissions, identity mappings, direct grants, and access audit events.
+
+See [Control Center access](/build/portal/control-center-access) for the access-management workflow and [Control Center step-up](/build/portal/control-center-step-up) for protected mutation authentication.
 
 ### App details and actions
 
@@ -124,7 +130,7 @@ The portal supports system, light, and dark themes via the `data-mode` attribute
 
 ## What it can't do (yet)
 
-The portal is feature-complete for **observation**, **member/token management**, and Minecraft access management. Things still CLI-only:
+The portal is feature-complete for **observation**, **member/token management**, Minecraft access management, platform access management, and base image catalog management. Things still CLI-only:
 
 - Uploading a new push artifact. The portal can show the push command, but the upload still runs from the CLI or Gradle plugin.
 - Bulk operations on pushes or previews.

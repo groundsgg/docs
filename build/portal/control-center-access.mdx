@@ -1,0 +1,119 @@
+---
+title: "Control Center access"
+description: "Manage platform users, access roles, permissions, identity mappings, and platform access audit events."
+---
+
+The **Platform Control Center** is the platform-wide administration area in Portal. The first Control Center module is **Access**, which manages who can operate platform-level features such as base image catalog management and future platform tools.
+
+Project roles are separate. A project `owner`, `editor`, or `viewer` role only grants access inside one project. Control Center access is platform-scoped and enforced by forge on every privileged request.
+
+## Access model
+
+Control Center access is calculated from three inputs:
+
+```text
+Keycloak identity groups
+  -> identity group mappings
+  + direct user grants
+  -> effective access roles
+  -> effective permissions
+```
+
+| Term | Meaning |
+| --- | --- |
+| Identity group | A group received from Keycloak. Portal shows these as read-only identity data. |
+| Access role | A Grounds-managed bundle of platform permissions. |
+| Permission | A concrete platform capability, such as `BASE_IMAGES_MANAGE`. |
+| Identity mapping | A rule that maps one Keycloak identity group to one Grounds access role. |
+| Direct grant | An access role granted directly to one user as an exception path. |
+| Effective access | The final access result after mapped roles and direct grants are combined. |
+
+<Info>
+Portal uses Keycloak groups as identity input, but forge remains the source of truth for Grounds access roles, direct grants, permissions, and enforcement.
+</Info>
+
+## Opening the Control Center
+
+Users with `CONTROL_CENTER_VIEW` see the Control Center icon in the Portal header. Open it to go to **Control Center → Access**.
+
+The Access module has these pages:
+
+- **Users** — review users, identity groups, mapped access roles, direct access roles, and effective permissions.
+- **Access Roles** — create and manage Grounds access-role bundles.
+- **Permissions** — inspect platform permissions and assign them to access roles.
+- **Identity Mappings** — map Keycloak groups to Grounds access roles.
+- **Audit** — review platform-scoped access-management events.
+
+## Users
+
+The Users page shows each known user with their account identity, linked Minecraft identity when present, identity groups, access roles, effective permissions, and last-seen timestamp.
+
+Use a user detail panel to distinguish access sources:
+
+- **Identity groups** are read-only groups from Keycloak.
+- **Granted access roles** are inherited through identity group mappings.
+- **Direct access roles** are assigned directly in Grounds.
+
+Direct grants are useful for temporary access, small operational teams, break-glass access, or testing. Prefer identity mappings for normal long-lived access because Keycloak remains the place where identity ownership changes.
+
+## Access roles
+
+Access roles group permissions into reusable bundles. Built-in roles are protected from deletion, while custom roles can be created for operational needs.
+
+An access role can include:
+
+- label and description
+- visual color
+- assigned permissions
+- direct user grants
+- identity mappings
+
+Deleting a role that is still mapped or directly granted is blocked. Remove the mappings and grants first, then delete the role.
+
+## Permissions
+
+Permissions are concrete platform capabilities. The initial Control Center permissions include:
+
+| Permission | Grants |
+| --- | --- |
+| `CONTROL_CENTER_VIEW` | View the Platform Control Center entry point and Access module. |
+| `ACCESS_USERS_MANAGE` | Manage user direct grants. |
+| `ACCESS_ROLES_MANAGE` | Create, edit, and delete access roles. |
+| `ACCESS_PERMISSIONS_MANAGE` | Assign permissions to access roles. |
+| `ACCESS_IDENTITY_MAPPINGS_MANAGE` | Manage identity group mappings. |
+| `BASE_IMAGES_MANAGE` | Manage platform base image sources and versions. |
+| `PLATFORM_TEST_MANAGE` | Access and operate platform test tools. |
+
+Permissions are assigned to access roles, not directly to users.
+
+## Identity mappings
+
+Identity mappings connect Keycloak groups to Grounds access roles. For example, a `platform-admin` Keycloak group can map to the **Platform Administrator** access role.
+
+Admins can:
+
+- add a mapping by group name
+- assign an access role to the group
+- update the mapped access role
+- remove the mapping
+
+Portal does not create, rename, or delete Keycloak groups. Manage the groups themselves in Keycloak.
+
+## Protected changes
+
+High-risk access mutations can require OpenID Connect step-up authentication. When forge requires step-up, Portal redirects the user through Keycloak, resumes the pending action when possible, and retries with a fresh token.
+
+See [Control Center step-up](/build/portal/control-center-step-up) for the Keycloak and forge configuration.
+
+## Access audit
+
+Access-management changes are written to the Control Center access audit feed. These events are platform-scoped, separate from a project's **Audit** page.
+
+Recorded events include:
+
+- access role create, update, delete
+- access-role permission updates
+- user direct-grant updates
+- identity mapping updates
+
+Use the audit feed to answer who changed platform access, when it changed, and which target was affected.
