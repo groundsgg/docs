@@ -75,14 +75,27 @@ cd ~/grounds/plugin-agones
 ```
 
 Fix any compilation, test, or packaging issue there first. Then return to the
-app repo and run the push task with a stacktrace:
+app repo.
+
+For pushes that do **not** use `--local` or `--with-local`, run the Gradle task
+with a stacktrace:
 
 ```bash
 ./gradlew groundsPush --target=dev --stacktrace
 ```
 
-This separates local Gradle failures from CLI wrapper behavior. For task-level
-details, see [groundsPush](/build/gradle-plugin/groundsPush).
+For pushes that **do** use local overrides, rerun the CLI command with the same
+local flags and add verbose logging:
+
+```bash
+grounds push --target=dev --local plugin-agones --verbose
+grounds push --target=dev --with-local --verbose
+```
+
+Direct `groundsPush` inspection is useful for task-level Gradle failures, but it
+does not reproduce CLI workspace resolution for local overrides because that
+resolution happens before Gradle starts. For task-level details, see
+[groundsPush](/build/gradle-plugin/groundsPush).
 
 ## 5. Inspect Portal
 
