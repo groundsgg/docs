@@ -1,0 +1,164 @@
+---
+title: "Local plugin workspaces"
+description: "Use local plugin builds as opt-in overrides for multi-plugin pushes."
+---
+
+Local plugin workspaces let you test several independent plugin repositories
+together without putting machine-specific paths in `grounds.yaml`.
+
+For the internal step-by-step workflow, start with
+[Work with local plugin workspaces](/build/local-plugin-workspaces).
+
+The manifest stays portable and points at release sources. Your local
+`workspace.yaml` maps plugin IDs and variants to repositories on your machine.
+`grounds push` only uses those local builds when you ask for them with
+`--local` or `--with-local`.
+
+<Tip>
+Use workspace overrides for dependency development: app repo in one directory,
+plugin repos as siblings, and release sources as the default for every teammate
+and CI run.
+</Tip>
+
+## Config file
+
+Workspace mappings live in the CLI config directory:
+
+| OS | Default workspace file |
+| --- | --- |
+| Linux | `~/.config/grounds/workspace.yaml` |
+| macOS | `~/Library/Application Support/grounds/workspace.yaml` |
+| Windows | `%APPDATA%\grounds\workspace.yaml` |
+
+The global `--config <dir>` flag and `GROUNDS_CONFIG_DIR` environment variable
+move this file together with the rest of the CLI config.
+
+```bash
+GROUNDS_CONFIG_DIR=/path/to/sample/.grounds-config grounds workspace list
+```
+
+See [Configuration](/build/cli/configuration) for the full config directory
+rules.
+
+## Manifest shape
+
+Local overrides match entries in `grounds.yaml` by `id` and optional `variant`:
+
+```yaml grounds.yaml
+name: velocity-stack
+type: plugin-velocity
+baseImage: velocity
+plugins:
+  - id: plugin-agones
+    variant: velocity
+    source: github:groundsgg/plugin-agones@v0.5.0
+  - id: plugin-player
+    variant: velocity
+    source: github:groundsgg/plugin-player@v0.1.0
+```
+
+`source` remains the default release source. `id` and `variant` give the CLI a
+stable key for local replacement.
+
+## Add mappings explicitly
+
+Use `workspace add` when you know the repository path and artifact layout:
+
+```bash
+grounds workspace add plugin-agones /home/alice/grounds/plugin-agones \
+  --variant velocity \
+  --artifact velocity/build/libs/plugin-agones-velocity.jar \
+  --build './gradlew :velocity:shadowJar'
+
+grounds workspace add plugin-player /home/alice/grounds/plugin-player \
+  --variant velocity \
+  --artifact velocity/build/libs/plugin-player-velocity.jar \
+  --build './gradlew :velocity:shadowJar'
+```
+
+| Flag | Purpose |
+| --- | --- |
+| `--variant <name>` | Stores a variant-specific mapping, for example `paper`, `velocity`, or `minestom`. |
+| `--artifact <glob>` | Artifact glob relative to the repository path. Defaults to `build/libs/*.jar`, or `<variant>/build/libs/*.jar` for variant mappings. |
+| `--build <command>` | Build command run inside the repository before artifact resolution. Defaults to `./gradlew build`, or `./gradlew :<variant>:shadowJar` for variant mappings. |
+| `--disabled` | Adds the mapping disabled. Disabled mappings are ignored by `--with-local`. |
+
+Artifact globs should resolve to the deployable JAR. If multiple JARs match,
+the resolver ignores common auxiliary JARs such as `-sources` and `-javadoc`
+and prefers shadow/all artifacts.
+
+## Scan sibling repos
+
+Use `workspace scan` to discover local plugin repositories under one or more
+directories:
+
+```bash
+grounds workspace scan /home/alice/grounds
+grounds workspace scan /home/alice/grounds --yes
+```
+
+Without `--yes`, the CLI prints the proposed mappings and asks before writing.
+With `--yes`, it writes immediately.
+
+<Note>
+Scan does not overwrite existing mappings. If you have custom build commands or
+artifact paths, they stay in place.
+</Note>
+
+## Inspect and toggle mappings
+
+```bash
+grounds workspace list
+grounds workspace doctor
+
+grounds workspace enable plugin-agones velocity
+grounds workspace enable plugin-agones velocity --disable
+```
+
+`workspace list` prints each mapping with ID, variant, enabled state, path,
+artifact, and build command. `workspace doctor` checks whether configured repo
+paths exist.
+
+## Push with local overrides
+
+Use release sources by default:
+
+```bash
+grounds push --target=dev
+```
+
+Override one or more plugins for this push:
+
+```bash
+grounds push --target=dev --local plugin-agones
+grounds push --target=dev --local plugin-agones,plugin-player
+grounds push --target=dev --local plugin-agones --local plugin-player
+```
+
+Override every enabled workspace entry that appears in `grounds.yaml`:
+
+```bash
+grounds push --target=dev --with-local
+```
+
+Before Gradle runs, the CLI prints the effective source table:
+
+```text
+Bundle sources:
+ID              Variant   Effective   Value
+plugin-agones   velocity  local       /home/alice/grounds/plugin-agones/velocity/build/libs/plugin-agones-velocity.jar
+plugin-player   velocity  release     github:groundsgg/plugin-player@v0.1.0
+```
+
+`Effective` tells you whether the push uses the release source from
+`grounds.yaml` or a local artifact from `workspace.yaml`.
+
+## Behavior and safety
+
+- Local overrides apply only to the push where you pass `--with-local` or `--local`.
+- The CLI builds local repos before resolving their artifacts.
+- Git metadata is best-effort. Non-git directories still work.
+- Local filesystem paths are passed to Gradle through a generated resolved
+  plugins file; they do not need to appear in `grounds.yaml`.
+- Local path values are not shown in portal source labels. Portal shows a safe
+  artifact label and records that the effective source was local.

@@ -23,6 +23,16 @@
           "build/index",
           "build/quickstart",
           {
+            "group": "Workflows",
+            "pages": [
+              "build/local-development",
+              "build/local-plugin-workspaces",
+              "build/multi-plugin-stacks",
+              "build/share-staging-previews",
+              "build/debug-pushes"
+            ]
+          },
+          {
             "group": "Concepts",
             "pages": [
               "build/concepts/projects-and-teams",
@@ -33,39 +43,44 @@
             ]
           },
           {
-            "group": "CLI",
+            "group": "Reference",
             "pages": [
-              "build/cli/installation",
-              "build/cli/auth",
-              "build/cli/push",
-              "build/cli/preview",
-              "build/cli/configuration"
+              "build/manifest",
+              {
+                "group": "CLI",
+                "pages": [
+                  "build/cli/installation",
+                  "build/cli/auth",
+                  "build/cli/push",
+                  "build/cli/workspace",
+                  "build/cli/preview",
+                  "build/cli/configuration"
+                ]
+              },
+              {
+                "group": "Gradle plugin",
+                "pages": [
+                  "build/gradle-plugin/setup",
+                  "build/gradle-plugin/groundsPush",
+                  "build/gradle-plugin/groundsPushRetry",
+                  "build/gradle-plugin/groundsTestLocal"
+                ]
+              },
+              "build/ci-tokens",
+              {
+                "group": "Portal",
+                "pages": [
+                  "build/portal/index",
+                  "build/portal/control-center-access",
+                  "build/portal/control-center-step-up"
+                ]
+              },
+              "build/observability"
             ]
           },
-          "build/manifest",
-          {
-            "group": "Gradle plugin",
-            "pages": [
-              "build/gradle-plugin/setup",
-              "build/gradle-plugin/groundsPush",
-              "build/gradle-plugin/groundsPushRetry",
-              "build/gradle-plugin/groundsTestLocal"
-            ]
-          },
-          "build/ci-tokens",
-          {
-            "group": "Portal",
-            "pages": [
-              "build/portal/index",
-              "build/portal/control-center-access",
-              "build/portal/control-center-step-up"
-            ]
-          },
-          "build/local-development",
-          "build/observability",
           "build/troubleshooting",
           {
-            "group": "Internal — Grounds engineers only",
+            "group": "Internal test environment",
             "pages": [
               "build/test-environment/index",
               "build/test-environment/bundle-reference"

@@ -39,6 +39,28 @@ You probably **don't** want this (yet) if you:
 - want to run mods that require a runtime source that is not in the platform base image catalog yet
 - expect free tier with persistent always-on servers — Grounds auto-pauses idle dev clusters after a few hours
 
+## Internal developer path
+
+If you work on Grounds plugins or platform-adjacent repos, start here:
+
+<CardGroup cols={2}>
+<Card title="Internal quickstart" icon="rocket" href="/build/quickstart">
+  Set up a local workspace, authenticate the CLI, and push with local plugin overrides.
+</Card>
+
+<Card title="Local plugin workspaces" icon="folder-tree" href="/build/local-plugin-workspaces">
+  Map independent plugin repos into `grounds push --local` and `--with-local`.
+</Card>
+
+<Card title="Multi-plugin stacks" icon="layer-group" href="/build/multi-plugin-stacks">
+  Test Paper, Velocity, or gamemode stacks with multiple plugins in one push.
+</Card>
+
+<Card title="Debug pushes" icon="bug" href="/build/debug-pushes">
+  Work through local build, upload, Forge build, and deployment failures.
+</Card>
+</CardGroup>
+
 ## Get started in five minutes
 
 <Steps>
@@ -47,7 +69,7 @@ You probably **don't** want this (yet) if you:
   brew install --cask groundsgg/tap/grounds
   ```
 
-  Linux/Windows + scripts: see [Quickstart → Install](/build/quickstart#install-the-cli).
+  Linux/Windows + scripts: see [Quickstart → Install](/build/quickstart#2-install-and-sign-in-with-the-cli).
 </Step>
 
 <Step title="Sign in">

@@ -28,6 +28,7 @@ What lives there:
 |---|---|
 | `credentials.json` | Created by `grounds login`. Refresh + access tokens. `0600`. |
 | `config.toml` | Optional. User-managed defaults. |
+| `workspace.yaml` | Optional. Local plugin workspace overrides for `grounds push --local` and `--with-local`. |
 
 ## config.toml
 
@@ -68,6 +69,17 @@ grounds-prod push --target=staging
 ```
 
 Each dir has its own `credentials.json` and `config.toml`.
+
+The same directory also owns `workspace.yaml`, so isolated profiles can have
+their own local plugin mappings:
+
+```bash
+GROUNDS_CONFIG_DIR=/path/to/sample/.grounds-config grounds workspace list
+GROUNDS_CONFIG_DIR=/path/to/sample/.grounds-config grounds push --with-local
+```
+
+See [Local plugin workspaces](/build/cli/workspace) for the workspace file and
+commands.
 
 ## Resetting
 

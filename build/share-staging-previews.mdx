@@ -1,0 +1,76 @@
+---
+title: "Share staging previews"
+description: "Push a build to staging, share it with teammates, and manage preview lifetime."
+---
+
+Use staging when you need a real cluster preview that teammates, reviewers, or
+stakeholders can inspect without running your workspace locally.
+
+## Push to staging
+
+Push the current manifest to staging:
+
+```bash
+grounds push --target=staging
+```
+
+Every staging push creates a preview environment with its own namespace and
+public URL. The push output includes the preview link when provisioning
+completes.
+
+For the full push command reference, see [grounds push](/build/cli/push).
+
+## When to use staging
+
+Use staging for:
+
+- Reviewing a plugin or service in an environment that matches the shared
+  platform path.
+- Sharing a build with teammates who do not have your local workspace.
+- Running a demo or smoke test against a real preview URL.
+- Validating behavior that depends on platform networking, ingress, or runtime
+  configuration.
+
+For fast inner-loop checks on your machine, use local development instead of a
+staging preview.
+
+## List previews
+
+List active previews for the current project:
+
+```bash
+grounds preview list
+```
+
+Use the list to find the preview ID, status, expiry, pin state, and URL before
+sharing the build or changing its lifetime.
+
+## Pin a preview
+
+Pin a preview when a demo, review, or test run needs to stay available past the
+normal preview cleanup window:
+
+```bash
+grounds preview pin <preview-id>
+```
+
+Unpin it when the review is finished so the cleanup process can remove it:
+
+```bash
+grounds preview unpin <preview-id>
+```
+
+Pin sparingly. Pinned previews consume cluster resources until they are unpinned
+or deleted.
+
+## Inspect in Portal
+
+Open the project in Portal and use the **Previews** tab to inspect preview
+status, expiry, URL, and pin state. Portal exposes the same preview lifetime
+operations as the CLI, so use whichever surface fits the review flow.
+
+## Reference
+
+- [grounds preview](/build/cli/preview)
+- [Preview environments](/build/concepts/preview-environments)
+- [grounds push](/build/cli/push)

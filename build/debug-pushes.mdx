@@ -1,0 +1,135 @@
+---
+title: "Debug pushes and deployments"
+description: "Diagnose failed local builds, uploads, Forge builds, and deployments."
+---
+
+Use this workflow when `grounds push` fails, local plugin overrides are not
+being picked up, or a deployment reaches Forge but never becomes ready.
+
+| Layer | Typical signal |
+| --- | --- |
+| Workspace resolution | `local workspace entry ... not found` |
+| Local build | Gradle failure from the dependency repo build command |
+| Upload | HTTP, auth, file size, or network error |
+| Forge build | `build_failed` |
+| Deploy | `deploy_failed`, pod scheduling, readiness, or crash loop |
+
+## 1. Read the CLI output
+
+Start at the first failed layer in the terminal output. `grounds push` prints
+the local source decision, Gradle output, upload result, Forge build status, and
+deploy status in order.
+
+Do not jump straight to deployment logs if the failure happened before upload or
+before `build_succeeded`. Match the terminal status to the table above, then
+debug the earliest failing layer.
+
+For exact push behavior, flags, output, and exit codes, see
+[grounds push](/build/cli/push).
+
+## 2. Check local workspace mappings
+
+Local overrides only work when the CLI can resolve the plugin ID in
+`grounds.yaml` to a workspace entry. List the workspace entries first:
+
+```bash
+grounds workspace list
+```
+
+Then run the workspace doctor from the app repo where you push:
+
+```bash
+grounds workspace doctor
+```
+
+Check that:
+
+- The plugin ID matches the structured `plugins:` entry in `grounds.yaml`.
+- The workspace path points at the repo you expect.
+- The entry is enabled when using `--with-local`.
+- The dependency repo still builds the variant that the app needs.
+
+For workspace command details, see the CLI workspace reference at
+[workspace overrides](/build/cli/workspace).
+
+## 3. Check the source table
+
+Before Gradle runs, the CLI prints the effective source table. Treat that table
+as the source of truth for this push.
+
+Confirm that the plugin you expected to override shows `local`, and that the
+path points at the artifact from the intended repo. If it still shows
+`release`, the push is using the manifest source instead of your local build.
+
+If the source table is wrong, fix the workspace mapping or the `--local` /
+`--with-local` flags before inspecting Forge or deployment state.
+
+## 4. Inspect Gradle directly
+
+When the source table is correct but the local build fails, run the dependency
+repo build command directly:
+
+```bash
+cd ~/grounds/plugin-agones
+./gradlew :velocity:shadowJar
+```
+
+Fix any compilation, test, or packaging issue there first. Then return to the
+app repo and run the push task with a stacktrace:
+
+```bash
+./gradlew groundsPush --target=dev --stacktrace
+```
+
+This separates local Gradle failures from CLI wrapper behavior. For task-level
+details, see [groundsPush](/build/gradle-plugin/groundsPush).
+
+## 5. Inspect Portal
+
+If upload succeeded and Forge created a push, inspect the push in
+[Portal](/build/portal). Use the Portal view to confirm:
+
+- The push target is the one you intended.
+- The manifest and plugin sources match the CLI output.
+- The failure is in build or deploy, not workspace resolution.
+- The latest push is the one you are debugging.
+
+Portal is useful when the CLI disconnected, timed out while streaming, or the
+push history has multiple retries.
+
+## 6. Tail deployment logs
+
+When the CLI reports `deploy_failed`, `CrashLoopBackOff`, readiness failures, or
+502s from a preview URL, tail the live deployment logs:
+
+```bash
+grounds logs deployment <app-name>
+```
+
+Use the deployment name printed by `grounds push` or shown in Portal. Look for
+plugin startup exceptions, Java version mismatches, missing runtime
+dependencies, readiness failures, or memory pressure.
+
+For symptom-specific checks, see [Troubleshooting](/build/troubleshooting).
+
+## 7. Retry transient failures
+
+Retry only after deciding the failure was transient or after fixing the platform
+condition that caused it. Good retry candidates include registry hiccups,
+temporary image pull failures, interrupted deploy reconciliation, or CLI stream
+timeouts after Forge accepted the push.
+
+```bash
+grounds push retry <push-id>
+```
+
+Retrying creates a new push row and reuses the server-stored manifest and
+artifact. It does not rebuild local sources or upload new files. If you changed
+code, run a new `grounds push` instead.
+
+## Reference
+
+- [Troubleshooting](/build/troubleshooting)
+- [grounds push](/build/cli/push)
+- [groundsPush](/build/gradle-plugin/groundsPush)
+- [Portal](/build/portal)

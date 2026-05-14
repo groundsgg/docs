@@ -1,17 +1,43 @@
 ---
-title: "Quickstart"
-description: "From zero to a public Minecraft server URL in five minutes."
+title: "Internal developer quickstart"
+description: "Set up an internal Grounds workspace, push a plugin, and test local plugin overrides."
 ---
 
-This guide walks through your first push. By the end you'll have a Paper plugin running on managed infrastructure, reachable at a public `*.mc.grnds.io` address.
+This guide starts from a fresh internal development workspace. By the end,
+you'll have the CLI authenticated, Gradle ready to resolve `grounds-push`, and
+a Velocity stack pushed with local `plugin-agones` and `plugin-player` builds.
+
+<Note>
+Examples use `~/grounds` as the parent directory. Use any directory you prefer,
+but keep the app repo and plugin repos under one parent so workspace scans are
+predictable.
+</Note>
 
 ## Prerequisites
 
-- A Grounds Account (talk to your org admin if you don't have one yet)
-- Java 21+ and Gradle (a Gradle wrapper in your project is fine)
-- macOS, Linux, or Windows (WSL2 works)
+- A Grounds Account.
+- Java 21+.
+- A Gradle wrapper in each plugin repository.
+- Git access to the internal repositories you work on.
+- A GitHub token with `read:packages` for resolving `gg.grounds.push` from GitHub Packages.
 
-## Install the CLI
+## 1. Create your workspace directory
+
+Keep the app repo and plugin repos under one parent directory:
+
+```bash
+mkdir -p ~/grounds
+cd ~/grounds
+git clone git@github.com:groundsgg/plugin-agones.git
+git clone git@github.com:groundsgg/plugin-player.git
+```
+
+Clone or create your app repo under the same parent. The examples below use
+`~/grounds/sample-plugin-workspace/app`.
+
+## 2. Install and sign in with the CLI
+
+Install the CLI for your operating system:
 
 <Tabs>
 <Tab title="macOS / Linux (Homebrew)">
@@ -35,13 +61,13 @@ scoop install grounds
 </Tab>
 </Tabs>
 
-## Sign in
+Sign in with your Grounds Account:
 
 ```bash
 grounds login
 ```
 
-The CLI opens your browser to Grounds Account. Sign in with your Grounds Account and approve the device code shown in the terminal — the CLI persists tokens in your OS keyring and you only need to repeat this when the session expires (usually weekly).
+The CLI opens your browser to Grounds Account. Sign in with your Grounds Account and approve the device code shown in the terminal. The CLI stores credentials in its config directory and you only need to repeat this when the session expires.
 
 Verify with:
 
@@ -49,94 +75,139 @@ Verify with:
 grounds doctor
 ```
 
-You should see green checks on `auth`, `api`, and `gradle wrapper` (if run from a project root).
+You should see green checks on `auth`, `api`, and `gradle wrapper` when run
+from a project root.
 
-## Set up the Gradle plugin
+## 3. Configure GitHub Packages for Gradle
 
-Grounds builds straight from Gradle. Add the plugin to your `build.gradle.kts`:
-
-```kotlin
-plugins {
-    `java-library`
-    id("gg.grounds.push") version "0.x" // see Releases for current
-}
-
-groundsPush {
-    // Reads ~/.config/grounds/credentials.json by default; no extra config needed.
-}
-
-dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
-}
-```
-
-Then create a `grounds.yaml` next to `build.gradle.kts`:
-
-```yaml
-name: my-plugin
-type: plugin-paper
-baseImage: paper
-jar: build/libs/my-plugin-0.1.0.jar
-```
-
-<Note>
-The `baseImage` field selects a catalog source key. `paper` means "use the current stable Paper runtime from the platform base image catalog." See [Base images](/build/concepts/base-images) for how versions are synced and promoted.
-</Note>
-
-## Your first push
+Internal Gradle builds resolve `gg.grounds.push` from GitHub Packages. Export
+credentials before running Gradle or `grounds push`:
 
 ```bash
+export GITHUB_ACTOR=<github-user>
+export GITHUB_TOKEN=<token-with-read-packages>
+```
+
+Your plugin repos can also read these values from your shell, Gradle properties,
+or your CI environment. Do not commit tokens to a repository.
+
+## 4. Check the app manifest
+
+The app manifest should keep shared release sources. Local workspace mappings
+replace those sources only for your push.
+
+Use this canonical sample manifest in `~/grounds/sample-plugin-workspace/app/grounds.yaml`:
+
+```yaml grounds.yaml
+name: sample-velocity-plugins
+type: plugin-velocity
+baseImage: velocity
+plugins:
+  - id: plugin-agones
+    variant: velocity
+    source: github:groundsgg/plugin-agones@v0.5.0
+  - id: plugin-player
+    variant: velocity
+    source: github:groundsgg/plugin-player@v0.1.0
+```
+
+See the [manifest reference](/build/manifest) for exact field rules and supported
+workload shapes.
+
+## 5. Understand the release-source push
+
+Plain `grounds push` uses the release sources from `grounds.yaml`:
+
+```bash
+cd ~/grounds/sample-plugin-workspace/app
 grounds push --target=dev
 ```
 
-What happens:
+Use this path when the referenced GitHub releases publish `.jar` assets. If a
+release has no JAR asset yet, the push fails during source resolution; continue
+with local workspace mappings for active development.
 
-1. The Gradle plugin assembles your JAR and uploads it + the manifest to the Grounds API.
+When release sources are available, the push flow is:
+
+1. The Gradle plugin assembles the configured artifacts and uploads them with the manifest to the Grounds API.
 2. **Forge** runs a Kaniko build inside the cluster, pushes the resulting OCI image to the internal registry, and signs it with cosign.
-3. Forge applies a Deployment + Service to your personal namespace (`user-<your-handle>`).
+3. Forge applies the workload to your personal namespace (`user-<your-handle>`).
 4. Once the pod is Ready, the CLI prints the public URL.
 
-Output looks like:
+Connect from any Minecraft client using that address. The first connection
+cold-starts the server; after that it stays warm until idle.
 
-```
-✔ Build complete (image sha256:abc…)
-✔ Deploy ready
-  → minecraft://my-plugin-yourname.mc.grnds.io
-```
+## 6. Add local workspace mappings
 
-Connect from any Minecraft client using that address. The first connection cold-starts the server (~15s); after that it stays warm until idle.
-
-## Ephemeral preview env
-
-For sharing a build with playtesters without polluting your dev environment:
+Map each manifest plugin ID to the local repository, build command, and artifact
+that should replace the release source during local override pushes:
 
 ```bash
-grounds push --target=staging
+grounds workspace add plugin-agones ~/grounds/plugin-agones \
+  --variant velocity \
+  --artifact velocity/build/libs/plugin-agones-velocity.jar \
+  --build './gradlew :velocity:shadowJar'
+
+grounds workspace add plugin-player ~/grounds/plugin-player \
+  --variant velocity \
+  --artifact velocity/build/libs/plugin-player-velocity.jar \
+  --build './gradlew :velocity:shadowJar'
+
+grounds workspace list
+grounds workspace doctor
 ```
 
-This creates a fresh `preview-<id>` namespace with a 7-day TTL. Hostname pattern: `<name>-pr<id>.mc.grnds.io`. Grounds garbage-collects the env automatically once the TTL expires — pin it to keep it longer:
+`grounds workspace doctor` checks that configured repository paths exist.
+
+## 7. Push with local plugin overrides
+
+Run a dev push with every enabled workspace mapping applied:
 
 ```bash
-grounds preview list           # find the id
-grounds preview pin <id>       # opt out of auto-cleanup
+grounds push --target=dev --with-local
+```
+
+<Note>
+The shared `grounds.yaml` still points at release sources. `--with-local`
+rewrites enabled workspace entries for this push only.
+</Note>
+
+## 8. Inspect the result
+
+Use the CLI output, Portal, and server logs to confirm the pushed stack is using
+your local builds. For a shareable preview of the same local override set
+without replacing your dev deployment, push to staging with `--with-local`:
+
+```bash
+grounds push --target=staging --with-local
+```
+
+This creates a fresh `preview-<id>` namespace with a 7-day TTL. Hostname pattern:
+`<name>-pr<id>.mc.grnds.io`. Grounds garbage-collects the env automatically once
+the TTL expires. See [Share staging previews](/build/share-staging-previews) for
+the full preview workflow, including pinning previews:
+
+```bash
+grounds preview list
+grounds preview pin <id>
 ```
 
 ## Next steps
 
 <CardGroup cols={2}>
-<Card title="CLI reference" icon="terminal" href="/build/cli">
-  Every subcommand and flag.
+<Card title="Local plugin workspaces" icon="folder-tree" href="/build/local-plugin-workspaces">
+  Map independent plugin repos into `grounds push --local` and `--with-local`.
 </Card>
 
-<Card title="Concepts" icon="book" href="/build/concepts">
-  Projects, dev clusters, preview envs — what they are and how they relate.
+<Card title="Multi-plugin stacks" icon="layer-group" href="/build/multi-plugin-stacks">
+  Test Paper, Velocity, or gamemode stacks with multiple plugins in one push.
 </Card>
 
-<Card title="Troubleshooting" icon="bug" href="/build/troubleshooting">
-  Common errors and how to fix them.
+<Card title="Debug pushes" icon="bug" href="/build/debug-pushes">
+  Work through local build, upload, Forge build, and deployment failures.
 </Card>
 
-<Card title="API reference" icon="code" href="/reference/apis">
-  Forge HTTP API for custom integrations.
+<Card title="Manifest reference" icon="file-code" href="/build/manifest">
+  Check fields, source formats, and workload shapes.
 </Card>
 </CardGroup>
