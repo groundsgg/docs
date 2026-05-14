@@ -83,20 +83,49 @@ When to set it explicitly:
 
 A list of 2–10 plugin sources bundled into a single Paper / Velocity / gamemode server. Useful when you want to test plugin interaction (economy + chat + teams) on one running instance instead of pushing each plugin as its own server.
 
+For the internal workflow that uses these fields with local overrides, see
+[Test multi-plugin stacks](/build/multi-plugin-stacks).
+
 A working end-to-end example lives at [groundsgg/multi-plugin-sample](https://github.com/groundsgg/multi-plugin-sample) — two trivial Paper plugins bundled via `:gradle-project` refs. Clone, run `./gradlew groundsPush`, see both plugins boot on one server.
 
-Each entry is one of four source kinds, distinguished by prefix:
+For team workflows, prefer structured entries with `id`, optional `variant`,
+and `source`:
+
+```yaml
+name: velocity-stack
+type: plugin-velocity
+baseImage: velocity
+plugins:
+  - id: plugin-agones
+    variant: velocity
+    source: github:groundsgg/plugin-agones@v0.5.0
+  - id: plugin-player
+    variant: velocity
+    source: github:groundsgg/plugin-player@v0.1.0
+```
+
+`source` is the portable default used by plain `grounds push`. `id` and
+`variant` let the CLI match the entry to a local
+[workspace override](/build/cli/workspace) when you pass `--local` or
+`--with-local`.
+
+Each `source` is one of three source kinds, distinguished by prefix:
 
 ```yaml
 name: combo
 type: plugin-paper
 baseImage: paper
 plugins:
-  - modules/economy/build/libs/economy.jar           # local (relative)
-  - /opt/jars/legacy.jar                             # local (absolute)
-  - :chat                                            # Gradle project
-  - github:groundsgg/plugin-teams@v0.3.0             # GitHub release, first .jar asset
-  - github:groundsgg/plugin-shop@v1.4.2:shop-all.jar # GitHub release, named asset
+  - id: economy
+    source: modules/economy/build/libs/economy.jar           # local (relative)
+  - id: legacy
+    source: /opt/jars/legacy.jar                             # local (absolute)
+  - id: chat
+    source: :chat                                            # Gradle project
+  - id: teams
+    source: github:groundsgg/plugin-teams@v0.3.0             # GitHub release, first .jar asset
+  - id: shop
+    source: github:groundsgg/plugin-shop@v1.4.2:shop-all.jar # GitHub release, named asset
 ```
 
 | Kind | Form | Resolved by |
@@ -106,6 +135,12 @@ plugins:
 | GitHub release | `github:<owner>/<repo>@<tag>[:<asset>]` | `groundsPush` downloads from the GitHub Releases API into `~/.gradle/caches/grounds-push/` |
 
 The Gradle plugin packs all resolved JARs into a `tar.gz` and forge unpacks them into `/app/plugins/` in manifest order (a numeric prefix preserves load order, since Paper's `pluginsFolder` scan is filesystem-ordered).
+
+<Tip>
+Keep local filesystem paths out of shared manifests when multiple developers
+work in separate repositories. Put release sources in `grounds.yaml` and put
+machine-specific paths in `workspace.yaml` instead.
+</Tip>
 
 #### GitHub source rules
 
@@ -121,7 +156,7 @@ Cache key is `<owner>-<repo>-<tag>-<asset>.jar`. Because tags are immutable pins
 
 - Mutually exclusive with `jar:` — pick one shape per manifest.
 - Forbidden for `type: service` (services have a single-jar `ENTRYPOINT`; multi-plugin has no meaningful semantics there).
-- 2 minimum (single-plugin uses `jar:`), 10 maximum, 50 MB total upload after resolution.
+- 2 minimum (single-plugin uses `jar:`), 10 maximum, 100 MB total upload after resolution.
 - For Gradle project refs the subproject must apply a Jar-producing plugin (`java`, `com.gradleup.shadow`, etc.). `groundsPush` discovers `shadowJar` first, then falls back to `jar`.
 - Absolute local paths still work but log a "non-portable manifest" warning, because CI won't see your machine's filesystem.
 

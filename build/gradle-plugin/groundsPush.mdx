@@ -30,6 +30,38 @@ Forge performs the final runtime image selection server-side from the [base imag
 
 Everything else is configured via the [`groundsPush` extension](/build/gradle-plugin/setup#the-groundspush-extension) or `grounds.yaml`.
 
+## Multi-plugin bundles
+
+When `grounds.yaml` contains `plugins:`, `groundsPush` resolves every source,
+packs the resolved JARs into a `tar.gz` bundle, and uploads that bundle as the
+artifact. Forge unpacks it into `/app/plugins/` in manifest order.
+
+```yaml grounds.yaml
+name: velocity-stack
+type: plugin-velocity
+baseImage: velocity
+plugins:
+  - id: plugin-agones
+    variant: velocity
+    source: github:groundsgg/plugin-agones@v0.5.0
+  - id: plugin-player
+    variant: velocity
+    source: github:groundsgg/plugin-player@v0.1.0
+```
+
+If you run `grounds push --local ...` or `grounds push --with-local`, the CLI
+resolves local workspace artifacts before Gradle starts and passes those
+resolved sources to `groundsPush`. The shared manifest still contains release
+sources; local filesystem paths stay in the CLI workspace config.
+
+<Note>
+Bundle uploads are capped at 100 MB. Keep dependency JARs out of the plugin
+artifact when the runtime already provides them.
+</Note>
+
+For the developer workflow around this feature, see
+[Test multi-plugin stacks](/build/multi-plugin-stacks).
+
 ## Output
 
 ```

@@ -1,0 +1,178 @@
+---
+title: "Work with local plugin workspaces"
+description: "Override release plugin sources with local builds from independent repositories."
+---
+
+Local plugin workspaces let you keep `grounds.yaml` pointed at release plugin
+sources while opting into local builds for a single push. Use this workflow when
+your app lives in one repository and the plugin dependencies you are changing
+live in sibling repositories.
+
+<Tip>
+Local overrides are machine-local. They do not change the manifest, and they
+only apply when you pass `--local` or `--with-local`.
+</Tip>
+
+## Repository layout
+
+Use the internal sample workspace as the reference shape:
+
+```text
+~/grounds/
+  sample-plugin-workspace/
+    app/
+      grounds.yaml
+  plugin-agones/
+  plugin-player/
+```
+
+Run `grounds push` from `~/grounds/sample-plugin-workspace/app`. Keep
+`plugin-agones` and `plugin-player` beside the app repository so the CLI can map
+release plugin IDs to the local repositories on your machine.
+
+Your manifest stays portable:
+
+```yaml grounds.yaml
+plugins:
+  - id: plugin-agones
+    variant: velocity
+    source: github:groundsgg/plugin-agones@v0.5.0
+  - id: plugin-player
+    variant: velocity
+    source: github:groundsgg/plugin-player@v0.1.0
+```
+
+The `id` and `variant` fields are the matching keys. The `source` fields remain
+the default release sources for teammates, CI, and any push that does not opt
+into local overrides.
+
+## Scan for repositories
+
+Start by asking the CLI to discover plugin repositories under `~/grounds`:
+
+```bash
+grounds workspace scan ~/grounds
+```
+
+Without `--yes`, the CLI prints the mappings it found and asks before writing
+them. Once the proposed mappings look right, write them immediately:
+
+```bash
+grounds workspace scan ~/grounds --yes
+```
+
+<Note>
+Scan does not replace existing mappings. If you already pinned custom Velocity
+artifacts or build commands, those entries stay in place.
+</Note>
+
+## Pin exact Velocity artifacts
+
+For Velocity plugin repositories, add explicit mappings so the push uses the
+deployable shadow JAR from each repository:
+
+```bash
+grounds workspace add plugin-agones ~/grounds/plugin-agones \
+  --variant velocity \
+  --artifact velocity/build/libs/plugin-agones-velocity.jar \
+  --build './gradlew :velocity:shadowJar'
+
+grounds workspace add plugin-player ~/grounds/plugin-player \
+  --variant velocity \
+  --artifact velocity/build/libs/plugin-player-velocity.jar \
+  --build './gradlew :velocity:shadowJar'
+```
+
+The artifact path is relative to the plugin repository. The build command runs
+inside that repository before the artifact is resolved.
+
+## Inspect mappings
+
+List the workspace entries before pushing:
+
+```bash
+grounds workspace list
+```
+
+Use `doctor` when a mapping does not behave as expected:
+
+```bash
+grounds workspace doctor
+```
+
+`workspace list` shows each plugin ID, variant, enabled state, repository path,
+artifact path, and build command. `workspace doctor` checks whether configured
+paths exist and reports missing local repositories.
+
+## Push one local override
+
+From `~/grounds/sample-plugin-workspace/app`, override only
+`plugin-agones` for this push:
+
+```bash
+grounds push --target=dev --local plugin-agones
+```
+
+The app manifest still reads both plugins from release sources, but the CLI
+replaces `plugin-agones` with the local Velocity artifact for this one push.
+
+You can pass multiple local plugin IDs as a comma-separated value:
+
+```bash
+grounds push --target=dev --local plugin-agones,plugin-player
+```
+
+You can also repeat `--local`:
+
+```bash
+grounds push --target=dev --local plugin-agones --local plugin-player
+```
+
+## Push every enabled local override
+
+When every enabled workspace mapping should replace its matching manifest entry,
+use `--with-local`:
+
+```bash
+grounds push --target=dev --with-local
+```
+
+This is the usual internal loop for the sample workspace after both Velocity
+artifacts are pinned. Disabled mappings are ignored.
+
+## Disable a mapping temporarily
+
+Disable `plugin-player` when you want `--with-local` to keep using the release
+source for that plugin:
+
+```bash
+grounds workspace enable plugin-player velocity --disable
+```
+
+Enable it again when you want the local Velocity artifact back in the push:
+
+```bash
+grounds workspace enable plugin-player velocity
+```
+
+## Config location
+
+Workspace mappings are stored in the CLI config directory as `workspace.yaml`.
+By default, that is:
+
+| OS | Default workspace file |
+| --- | --- |
+| Linux | `~/.config/grounds/workspace.yaml` |
+| macOS | `~/Library/Application Support/grounds/workspace.yaml` |
+| Windows | `%APPDATA%\grounds\workspace.yaml` |
+
+The global `--config <dir>` flag and `GROUNDS_CONFIG_DIR` environment variable
+move this file together with the rest of the CLI config. See
+[Configuration](/build/cli/configuration) for the full config directory rules.
+
+## Reference
+
+- [Workspace CLI reference](/build/cli/workspace)
+- [Push CLI reference](/build/cli/push)
+- [Configuration reference](/build/cli/configuration)
+- [Build multi-plugin stacks](/build/multi-plugin-stacks)

@@ -8,7 +8,7 @@ description: "Build with Gradle, upload to forge, deploy to a target."
 ## Synopsis
 
 ```text
-grounds push [--target=dev|staging] [--project <id>]
+grounds push [--target=dev|staging] [--project <id>] [--local <id>[,<id>]] [--with-local]
 grounds push retry <pushId>
 grounds push list [--target T] [--status S] [--limit N]
 ```
@@ -18,6 +18,9 @@ grounds push list [--target T] [--status S] [--limit N]
 ```bash
 grounds push --target=dev       # default
 grounds push --target=staging
+grounds push --local plugin-chat
+grounds push --local plugin-chat,plugin-permissions
+grounds push --with-local
 ```
 
 Runs `./gradlew groundsPush --target=<t>` in the current directory. The Gradle plugin handles:
@@ -29,6 +32,43 @@ Runs `./gradlew groundsPush --target=<t>` in the current directory. The Gradle p
 - Exiting with a non-zero code on any terminal failure.
 
 The CLI exits with the same code Gradle exits with.
+
+By default, `grounds push` uses the release sources declared in
+`grounds.yaml`. Local plugin builds are opt-in through
+[workspace overrides](/build/cli/workspace).
+
+### Local plugin overrides
+
+Use `--local` when one or more entries in `grounds.yaml: plugins` should come
+from your local workspace instead of the release source:
+
+```bash
+grounds push --target=dev --local plugin-agones
+grounds push --target=dev --local plugin-agones,plugin-player
+grounds push --target=dev --local plugin-agones --local plugin-player
+```
+
+`--local` accepts both comma-separated IDs and repeated flags. IDs must match
+the structured plugin `id` in `grounds.yaml`.
+
+Use `--with-local` when every enabled workspace mapping present in
+`grounds.yaml` should be replaced by its local artifact:
+
+```bash
+grounds push --target=dev --with-local
+```
+
+Before Gradle runs, the CLI prints the effective source table:
+
+```text
+Bundle sources:
+ID              Variant   Effective   Value
+plugin-agones   velocity  local       /home/alice/grounds/plugin-agones/velocity/build/libs/plugin-agones-velocity.jar
+plugin-player   velocity  release     github:groundsgg/plugin-player@v0.1.0
+```
+
+The table is the confirmation step. It shows which plugins use local artifacts
+and which still use release sources.
 
 ## push retry
 
@@ -96,6 +136,9 @@ grounds logs deployment my-cool-plugin
 ```
 
 ## Exit codes
+
+For a practical failure investigation flow, see
+[Debug pushes and deployments](/build/debug-pushes).
 
 | Code | Meaning |
 |---|---|

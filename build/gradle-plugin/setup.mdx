@@ -47,7 +47,7 @@ In your **plugin module's** `build.gradle.kts` (the one that produces the JAR):
 
 ```kotlin build.gradle.kts
 plugins {
-    id("gg.grounds.push") version "0.5.0"
+    id("gg.grounds.push") version "0.9.1"
 }
 ```
 
@@ -89,7 +89,7 @@ At `afterEvaluate`, the plugin looks for tasks named (in order) `shadowJar`, `ja
 ```kotlin build.gradle.kts
 plugins {
     id("com.gradleup.shadow") version "8.3.5"
-    id("gg.grounds.push") version "0.5.0"
+    id("gg.grounds.push") version "0.9.1"
 }
 
 tasks.shadowJar {

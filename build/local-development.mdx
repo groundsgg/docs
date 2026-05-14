@@ -39,6 +39,13 @@ You'll need a cloud `dev` push when:
 
 The mental model: `groundsTestLocal` answers *"does my plugin work?"*; `grounds push --target=dev` answers *"does my plugin work on the platform?"*.
 
+<Tip>
+When you need multiple independent plugin repositories on the same server, use
+[Local plugin workspaces](/build/local-plugin-workspaces) and
+[Multi-plugin stacks](/build/multi-plugin-stacks). `groundsTestLocal` is best
+for one plugin in one local Paper or Velocity server.
+</Tip>
+
 ## A typical day
 
 ```bash

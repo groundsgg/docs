@@ -1,0 +1,106 @@
+---
+title: "Test multi-plugin stacks"
+description: "Bundle multiple Paper, Velocity, or gamemode plugins into one Grounds push."
+---
+
+Multi-plugin stacks let you push several plugin JARs onto one Minecraft workload so you can test integration behavior in the same runtime that players connect to.
+
+## When to use `plugins:`
+
+Use `plugins:` when the thing you need to validate depends on more than one plugin being present in the same Paper, Velocity, or gamemode server.
+
+Common cases:
+
+- A Velocity proxy plugin depends on another proxy plugin being installed.
+- A Paper plugin needs an economy, chat, teams, or permissions plugin in the same server.
+- A gamemode needs its runtime plugin plus support plugins in the same Agones-managed workload.
+- You want a shared release-default manifest that teammates can override with local plugin builds when debugging cross-plugin behavior.
+
+For a single plugin push, keep using `jar:` instead.
+
+## Structured entries
+
+Use structured plugin entries so release sources, local overrides, and push output all refer to the same stable plugin keys.
+
+```yaml grounds.yaml
+name: sample-velocity-plugins
+type: plugin-velocity
+baseImage: velocity
+plugins:
+  - id: plugin-agones
+    variant: velocity
+    source: github:groundsgg/plugin-agones@v0.5.0
+  - id: plugin-player
+    variant: velocity
+    source: github:groundsgg/plugin-player@v0.1.0
+```
+
+`id` is the stable key used for workspace overrides and source reporting. Keep it short, lowercase, and consistent across manifests and workspace configuration.
+
+`variant` identifies which artifact variant the stack expects. Use `paper`, `velocity`, or `minestom` depending on the plugin repository and workload.
+
+`source` is the portable default for plain `grounds push`. It should be something another developer or CI runner can resolve without your local filesystem.
+
+## Release defaults, local overrides
+
+Keep release sources in `grounds.yaml` and put machine-specific paths in your local workspace config. That gives the team a reproducible default while still allowing local plugin replacement during development.
+
+Plain pushes use the release sources:
+
+```bash
+grounds push --target=dev
+```
+
+Push with every enabled local workspace override:
+
+```bash
+grounds push --target=dev --with-local
+```
+
+Push with selected local overrides:
+
+```bash
+grounds push --target=dev --local plugin-agones
+grounds push --target=dev --local plugin-agones,plugin-player
+```
+
+When you pass `--with-local`, the CLI replaces enabled workspace entries for that push before Gradle uploads the bundle. Entries without a matching enabled workspace mapping continue to use their manifest `source`.
+
+See [local plugin workspaces](/build/local-plugin-workspaces) for scanning repositories, adding mappings, enabling variants, and checking which source each plugin will use.
+
+## Supported source forms
+
+Each `source` resolves to one JAR before upload.
+
+| Source form | Example | Use when |
+| --- | --- | --- |
+| Relative local path | `modules/economy/build/libs/economy.jar` | The manifest is only used inside one repository layout. |
+| Absolute local path | `/opt/jars/legacy.jar` | You need a local-only escape hatch. Prefer workspace overrides for shared work. |
+| Gradle project | `:chat` or `:plugins:chat` | The plugin is built by another subproject in the same Gradle build. |
+| GitHub release | `github:groundsgg/plugin-player@v0.1.0` | You want a portable release default. |
+| GitHub release asset | `github:groundsgg/plugin-shop@v1.4.2:shop-all.jar` | A release has more than one JAR asset and you need a specific one. |
+
+The full manifest reference for source validation, GitHub release rules, and field behavior is in [`plugins`](/build/manifest#plugins-optional).
+
+## Upload shape
+
+`groundsPush` resolves every plugin entry to a JAR, packs the resolved files into one `tar.gz` bundle, and uploads that bundle as the push artifact. Forge unpacks the bundle into `/app/plugins/` in manifest order.
+
+The bundle preserves load order with numeric prefixes because Paper and Velocity scan plugin directories from the filesystem. Put dependency plugins before the plugins that need them.
+
+The Gradle task reference has the lower-level upload details in [Multi-plugin bundles](/build/gradle-plugin/groundsPush#multi-plugin-bundles).
+
+## Limits
+
+- `plugins:` and `jar:` are mutually exclusive. Pick one artifact shape per manifest.
+- `plugins:` requires 2 to 10 entries.
+- `plugins:` is supported for `plugin-paper`, `plugin-velocity`, and `gamemode`.
+- `plugins:` is not supported for `service`.
+- The total resolved upload is capped at 100 MB.
+- Local paths work, but they are not portable across machines or CI.
+
+## Next steps
+
+- Use [local plugin workspaces](/build/local-plugin-workspaces) when you need to replace release entries with local builds.
+- Use the [`plugins` manifest reference](/build/manifest#plugins-optional) for exact schema and validation rules.
+- Use [`groundsPush` multi-plugin bundles](/build/gradle-plugin/groundsPush#multi-plugin-bundles) for Gradle task behavior and upload details.
