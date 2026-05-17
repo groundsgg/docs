@@ -22,9 +22,15 @@ Use standalone conventions when a plugin must run without `plugin-grounds-runtim
 
 ## Updating runtime libraries
 
-Update shared runtime libraries in the runtime catalog used by `plugin-grounds-runtime`. The Paper and Velocity base images use `GROUNDS_RUNTIME_PLUGIN_VERSION` to download both the runtime plugin release asset and the `grounds-runtime-libraries.json` catalog from the matching Git tag, then generate `/opt/grounds/runtime-manifest.json` from that catalog during the image build.
+Update shared runtime libraries in `plugin-grounds-runtime`. That repository owns the runtime platform:
 
-When a bundled runtime library changes, release `plugin-grounds-runtime` with the updated catalog before bumping `GROUNDS_RUNTIME_PLUGIN_VERSION` in `containers`. Do not duplicate the library list in Dockerfiles.
+- Paper and Velocity runtime plugin artifacts
+- `grounds-runtime-bom`, which pins the shared library versions
+- `grounds-runtime-catalog`, which is used by base images to generate `/opt/grounds/runtime-manifest.json`
+
+Runtime-consumer Gradle conventions depend on `grounds-runtime-bom` through `groundsRuntime.runtimeVersion` or the `groundsRuntime.version` Gradle property. They keep shared libraries on the compile-only classpath without declaring versions in each plugin.
+
+When a bundled runtime library changes, release `plugin-grounds-runtime` first. Then bump `groundsRuntime.version` in consumer builds and `GROUNDS_RUNTIME_PLUGIN_VERSION` in `containers` to the same released version. Do not duplicate shared library versions in Dockerfiles or consumer plugin builds.
 
 ## Not provided
 
