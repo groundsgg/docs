@@ -61,6 +61,18 @@ resources:
 
 Local mode only runs Paper and Velocity. Use `grounds push --target=dev` for `minestom` / `service` workloads.
 
+### Runtime consumer starts without `plugin-grounds-runtime`
+
+Runtime-consumer artifacts do not have a standalone fallback. Install the matching `plugin-grounds-runtime` Paper or Velocity plugin in local, dev, test, and production environments.
+
+Use `/grounds-runtime` to confirm the runtime plugin is loaded and to inspect the runtime version, platform, manifest source, and provided libraries.
+
+### Runtime consumer bundles shared libraries
+
+Runtime-consumer builds fail when the final shadow JAR includes shared runtime packages such as `io/grpc`, `com/google/protobuf`, `kotlinx/coroutines`, or `kotlin`.
+
+Remove those libraries from `implementation` and rely on the runtime-consumer compile-only baseline. Keep plugin-private dependencies, such as NATS or Jackson, as `implementation`. If tests need a shared runtime library on the test runtime classpath, add it to `testImplementation`.
+
 ### `unknown baseImage`
 
 Your manifest references a base image source key that Forge does not know, or that is not allowed for the selected `type`.

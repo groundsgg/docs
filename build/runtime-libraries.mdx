@@ -1,0 +1,54 @@
+---
+title: "Runtime libraries"
+description: "Share selected JVM libraries through plugin-grounds-runtime for Paper and Velocity plugins."
+---
+
+`plugin-grounds-runtime` is an internal Paper and Velocity plugin that provides selected shared JVM libraries to Grounds plugins at runtime.
+
+Runtime-consumer conventions automatically add baseline shared runtime libraries to the compile-only classpath. Plugin modules should not declare those libraries as implementation dependencies and must not bundle them in their shadow JARs.
+
+## When to use runtime consumers
+
+Use runtime-consumer conventions for internal Paper and Velocity plugins that run on Grounds base images and can require `plugin-grounds-runtime` in local, dev, test, and production environments.
+
+Use standalone conventions when a plugin must run without `plugin-grounds-runtime`.
+
+## Provided libraries
+
+- Kotlin standard library family
+- Kotlin coroutines
+- protobuf-java
+- gRPC baseline modules
+
+## Not provided
+
+- Paper API
+- Velocity API
+- Minestom
+- Plugin-specific clients such as NATS
+- Jackson and other private implementation dependencies
+
+## Gradle convention IDs
+
+- `gg.grounds.paper-standalone-conventions`
+- `gg.grounds.paper-runtime-consumer-conventions`
+- `gg.grounds.paper-runtime-provider-conventions`
+- `gg.grounds.velocity-standalone-conventions`
+- `gg.grounds.velocity-runtime-consumer-conventions`
+- `gg.grounds.velocity-runtime-provider-conventions`
+
+## Migrating a plugin
+
+1. Switch Paper or Velocity modules to runtime-consumer conventions.
+2. Remove shared runtime libraries from `implementation`.
+3. Keep plugin-private dependencies as `implementation`.
+4. Keep test-only runtime requirements in `testImplementation`.
+5. Add the loader dependency on `plugin-grounds-runtime`.
+6. Build and inspect the final shadow JAR.
+7. Run the plugin locally with the matching runtime plugin installed.
+
+## Debugging
+
+Run `/grounds-runtime` in Paper or Velocity to inspect the installed runtime version, platform, manifest source, and provided libraries.
+
+Runtime-consumer artifacts do not have a standalone fallback. Local, dev, test, and production environments must install the matching `plugin-grounds-runtime` plugin.
