@@ -32,6 +32,22 @@ Runtime-consumer Gradle conventions depend on `grounds-runtime-bom` through `gro
 
 When a bundled runtime library changes, release `plugin-grounds-runtime` first. Then bump `groundsRuntime.version` in consumer builds and `GROUNDS_RUNTIME_PLUGIN_VERSION` in `containers` to the same released version. Do not duplicate shared library versions in Dockerfiles or consumer plugin builds.
 
+## Adding a shared dependency
+
+Add a dependency to the shared runtime only when it is common runtime surface for multiple internal Paper or Velocity plugins. Keep plugin-private clients, app-specific libraries, and test-only libraries in the consumer plugin build.
+
+1. Add or update the dependency in `plugin-grounds-runtime` under `runtime-catalog/grounds-runtime-libraries.json`.
+2. If the dependency exposes packages that can conflict with server or plugin classpaths, update the runtime relocation policy and consumer shadow exclusions.
+3. If this is a version-only update, release `plugin-grounds-runtime` and bump consumer `groundsRuntime.version`.
+4. If this adds or removes a module, also update `library-gradle-plugin` so the runtime-consumer conventions add the versionless dependency and validate the correct package prefixes.
+5. Release `plugin-grounds-runtime` before `library-gradle-plugin`, consumer plugins, and `containers`.
+
+The split is intentional:
+
+- `plugin-grounds-runtime` owns versions through `grounds-runtime-bom`.
+- `library-gradle-plugin` owns build policy: which modules are added, what gets relocated, and what must not be bundled by runtime consumers.
+- `containers` owns installation of the released runtime plugin and matching catalog.
+
 ## Not provided
 
 - Paper API
