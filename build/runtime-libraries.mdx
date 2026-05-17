@@ -20,6 +20,12 @@ Use standalone conventions when a plugin must run without `plugin-grounds-runtim
 - protobuf-java
 - gRPC baseline modules
 
+## Updating runtime libraries
+
+Update shared runtime libraries in the runtime catalog used by `plugin-grounds-runtime`. The Paper and Velocity base images use `GROUNDS_RUNTIME_PLUGIN_VERSION` to download both the runtime plugin release asset and the `grounds-runtime-libraries.json` catalog from the matching Git tag, then generate `/opt/grounds/runtime-manifest.json` from that catalog during the image build.
+
+When a bundled runtime library changes, release `plugin-grounds-runtime` with the updated catalog before bumping `GROUNDS_RUNTIME_PLUGIN_VERSION` in `containers`. Do not duplicate the library list in Dockerfiles.
+
 ## Not provided
 
 - Paper API
