@@ -39,7 +39,6 @@
               "build/concepts/targets",
               "build/concepts/pushes",
               "build/concepts/base-images",
-              "build/runtime-libraries",
               "build/concepts/preview-environments"
             ]
           },
@@ -161,7 +160,8 @@
             "group": "Convention plugins",
             "pages": [
               "reference/development/gradle-plugin/index",
-              "reference/development/gradle-plugin/usage"
+              "reference/development/gradle-plugin/usage",
+              "reference/development/gradle-plugin/runtime-libraries"
             ]
           },
           {
