@@ -3,14 +3,16 @@ title: "Observability"
 description: "Where to look when something is wrong — logs, metrics, traces."
 ---
 
-Every workload pushed to the platform is wired into our LGTM stack:
+Every workload pushed to the platform is wired into our LGTM stack — **Loki** (logs), **Mimir** (metrics), **Tempo** (traces), and **Grafana** (exploration).
 
-- **Loki** — logs from build steps and running pods.
-- **Mimir** — Prometheus metrics from base images and platform components.
-- **Tempo** — distributed traces (where instrumentation exists).
-- **Grafana** — the dashboarding + exploration front-end.
+Most of the time you don't need Grafana directly. The supported, project-scoped way to see your app's signals is the **portal** and the **CLI**:
 
-Sign in with your Grounds Account at [grafana.platform.grnds.io](https://grafana.platform.grnds.io). Your project membership translates to which logs/metrics you can see.
+- **Logs** — your app's **Logs** tab in the portal, or `grounds logs deployment <name>`. These stream straight from your pod, scoped to your project.
+- **Metrics** — the deployment detail page in the portal shows CPU/memory and base-image metrics for your app.
+
+<Note>
+[grafana.platform.grnds.io](https://grafana.platform.grnds.io) is reachable for ad-hoc exploration if your Grounds Account has a `dev` or `admin` role — sign in with Keycloak. It is **not project-isolated** today, so treat it as an operator/debug surface rather than your primary, scoped view; lead with the portal and CLI above.
+</Note>
 
 ## Logs
 
