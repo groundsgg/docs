@@ -27,6 +27,8 @@ resources:
 ```
 
 Multi-plugin servers ship multiple JARs onto one Paper / Velocity / gamemode workload — see [`plugins`](#plugins-optional) below.
+Minestom servers ship one Gradle distribution tar — see
+[`minestom-server` manifests](#minestom-server-manifests).
 
 ## Fields
 
@@ -49,6 +51,7 @@ What kind of workload this is. One of:
 | `plugin-paper` | Bukkit/Paper plugin JAR | `paper` |
 | `plugin-velocity` | Velocity plugin JAR | `velocity` |
 | `gamemode` | Bukkit/Paper plugin JAR running as an Agones-managed gameserver | `paper-gamemode` |
+| `minestom-server` | Complete Minestom server distribution tar | `minestom` |
 | `service` | Plain JVM app (no Minecraft runtime) | `service` |
 
 `type` drives quotas, resource defaults, port mappings, and which container our renderer wires up.
@@ -62,6 +65,7 @@ The catalog source key for the runtime image your JAR is layered onto. Must be o
 | `paper` | `ghcr.io/groundsgg/paper` | A Paper server with sane defaults, your JAR auto-loaded into `plugins/`. Use with `type: plugin-paper`. |
 | `paper-gamemode` | `ghcr.io/groundsgg/paper-gamemode` | Same as `paper`, but pre-bundled with `plugin-agones-paper` so the SDK sidecar (injected on every Fleet pod) reports Allocated/Ready from player events. Use with `type: gamemode`. |
 | `velocity` | `ghcr.io/groundsgg/velocity` | A Velocity proxy with your JAR in `plugins/`. |
+| `minestom` | `eclipse-temurin` | A JVM base image for a complete Minestom distribution. Use with `type: minestom-server`. |
 | `service` | `ghcr.io/groundsgg/jvm-service` | Generic JVM runner — your JAR's `main` is the entrypoint, no Minecraft runtime. |
 
 Forge resolves the source key to the current stable version in the [base image catalog](/build/concepts/base-images) when it builds your push. Do not put an OCI tag or digest in `grounds.yaml`; promote a new catalog version instead.
@@ -78,6 +82,59 @@ When to set it explicitly:
 
 - You produce multiple JARs and want to ensure the right one is picked.
 - You build with something other than `shadowJar` / `jar`.
+
+<Warning>
+Do not use `jar:` for `type: minestom-server`. Minestom pushes upload the distribution tar from
+[`build.artifact`](#build-minestom-server-only), not a single JAR.
+</Warning>
+
+### Minestom server manifests
+
+Use `type: minestom-server` when you push a complete Minestom server application.
+
+```yaml grounds.yaml
+name: minigame-agones
+type: minestom-server
+baseImage: minestom
+build:
+  task: :examples:minigame-agones:distTar
+  artifact: examples/minigame-agones/build/distributions/*.tar
+modules:
+  - id: plugin-agones
+    variant: minestom
+    source: github:groundsgg/plugin-agones@v0.6.0:plugin-agones-minestom.jar
+```
+
+Minestom has no plugin folder. Your Gradle project builds one runnable distribution that already
+contains the runtime, your game code, and the module dependencies selected by your application.
+
+#### `build` (Minestom server only)
+
+`build` tells the CLI how to create and find the Minestom distribution artifact before upload.
+
+| Field | Required | What it does |
+| --- | --- | --- |
+| `task` | Yes | Gradle task the CLI runs, such as `:server:distTar`. |
+| `artifact` | Yes | Glob for the generated distribution tar, relative to the project root. |
+
+The artifact must be a Gradle-style tar distribution (`.tar`, `.tar.gz`, or `.tgz`). The CLI
+normalizes the archive before upload so Forge receives one consistent app tarball.
+
+#### `modules` (Minestom server only)
+
+`modules` lists release module sources that can be replaced with local workspace mappings during
+development.
+
+| Field | Required | What it does |
+| --- | --- | --- |
+| `id` | Yes | Stable module key used by `--local`, `--with-local`, and workspace mappings. |
+| `variant` | No | Artifact variant, usually `minestom`. |
+| `source` | Yes | Portable release source, usually a pinned GitHub release asset. |
+
+`modules` is CLI composition metadata. Gradle dependencies still define the actual compile and
+runtime classpath. Keep release sources in `grounds.yaml` and use
+[local module workspaces](/reference/development/minestom-runtime/local-modules) when you need to
+replace them on your machine.
 
 ### `plugins` (optional)
 

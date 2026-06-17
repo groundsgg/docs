@@ -1,0 +1,162 @@
+---
+title: "Runtime Modules"
+description: "Write Grounds modules for Minestom servers with descriptors, lifecycle hooks, and typed service contracts."
+---
+
+A Minestom runtime module is a JVM object that is installed and started by `GroundsServer`. Modules
+use descriptors to declare metadata, module dependencies, provided services, and required services.
+
+## Module lifecycle
+
+Implement `GroundsModule` for the runtime behavior.
+
+```kotlin
+import gg.grounds.runtime.GroundsModule
+import gg.grounds.runtime.GroundsServerContext
+
+class MatchmakingModule : GroundsModule {
+    override val id: String = "grounds.matchmaking"
+
+    override fun install(ctx: GroundsServerContext) {
+        // Register event handlers, services, and shutdown hooks here.
+    }
+
+    override fun start() {
+        // Start background work after Minestom has started.
+    }
+
+    override fun stop() {
+        // Stop background work and release resources.
+    }
+}
+```
+
+Lifecycle order:
+
+1. The runtime validates selected providers.
+2. The runtime creates module instances.
+3. `install(ctx)` runs before Minestom starts accepting players.
+4. Minestom starts.
+5. `start()` runs in module order.
+6. During shutdown, `stop()` runs in reverse order.
+
+## Server context
+
+`GroundsServerContext` gives modules runtime information and shared module services.
+
+```kotlin
+override fun install(ctx: GroundsServerContext) {
+    val serverType = ctx.serverType
+    val environment = ctx.environment
+    val events = ctx.eventNode("grounds-matchmaking")
+
+    ctx.onShutdown {
+        // Cleanup that should run when the runtime stops.
+    }
+}
+```
+
+| Property or method | Use it for |
+| --- | --- |
+| `serverType` | Branching behavior between `LOBBY` and `MINIGAME`. |
+| `environment` | Branching behavior between `DEV`, `TEST`, and `PROD`. |
+| `services` | Registering and consuming typed services. |
+| `eventNode(name)` | Creating Minestom event nodes owned by your module. |
+| `onShutdown(action)` | Registering cleanup actions with the runtime. |
+
+## Module providers
+
+Use a `GroundsModuleProvider` when a module should be discoverable from the classpath.
+
+```kotlin
+import gg.grounds.modules.ModuleDescriptor
+import gg.grounds.modules.serviceKey
+import gg.grounds.runtime.GroundsModule
+import gg.grounds.runtime.GroundsModuleProvider
+import gg.grounds.runtime.ServerType
+
+class MatchmakingModuleProvider : GroundsModuleProvider {
+    override val id: String = "grounds.matchmaking"
+    override val version: String = "1.0.0"
+    override val serverTypes: Set<ServerType> = setOf(ServerType.MINIGAME)
+    override val descriptor: ModuleDescriptor =
+        ModuleDescriptor(
+            id = id,
+            version = version,
+            requires = setOf(serviceKey<PlayerService>()),
+            provides = setOf(serviceKey<MatchmakingService>()),
+        )
+
+    override fun create(): GroundsModule = MatchmakingModule()
+}
+```
+
+The provider is the runtime-facing factory. Keep module construction cheap and defer I/O to
+`install` or `start`.
+
+## ServiceLoader registration
+
+Provider-backed modules are discovered through Java `ServiceLoader`. Add a provider file to the
+module artifact:
+
+```text META-INF/services/gg.grounds.runtime.GroundsModuleProvider
+com.example.MatchmakingModuleProvider
+```
+
+After the artifact is on the runtime classpath, `GroundsServer.builder().discoverProviders()` can
+discover it.
+
+## Server type compatibility
+
+`serverTypes` controls where the provider is valid.
+
+```kotlin
+override val serverTypes: Set<ServerType> = setOf(ServerType.MINIGAME)
+```
+
+Use `ServerType.MINIGAME` for game servers and `ServerType.LOBBY` for lobby-only modules. Omit the
+override only when the module works in every server type.
+
+## Service contracts
+
+Use `requires` and `provides` for module-to-module service contracts.
+
+```kotlin
+override val descriptor =
+    ModuleDescriptor(
+        id = id,
+        version = version,
+        requires = setOf(serviceKey<PlayerService>()),
+        provides = setOf(serviceKey<MatchmakingService>()),
+    )
+```
+
+Inside `install`, register the services your descriptor provides:
+
+```kotlin
+import gg.grounds.modules.register
+
+override fun install(ctx: GroundsServerContext) {
+    ctx.services.register<MatchmakingService>(DefaultMatchmakingService())
+}
+```
+
+Consumers can require services by type:
+
+```kotlin
+import gg.grounds.modules.require
+
+override fun install(ctx: GroundsServerContext) {
+    val players = ctx.services.require<PlayerService>()
+}
+```
+
+<Tip>
+Use `dependsOn` for startup order that is not represented by a service contract. Use `requires` and
+`provides` when a module actually consumes or publishes a typed service.
+</Tip>
+
+## Next steps
+
+- Read [Service Registry](/reference/development/jvm-modules/service-registry) for key and registry details.
+- Read [Runtime composition](/reference/development/minestom-runtime/composition) to select provider-backed modules in a server.

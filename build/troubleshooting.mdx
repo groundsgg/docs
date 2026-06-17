@@ -61,6 +61,27 @@ resources:
 
 Local mode only runs Paper and Velocity. Use `grounds push --target=dev` for `minestom` / `service` workloads.
 
+### `type 'minestom-server' requires a distribution bundle`
+
+Forge received a JAR for a Minestom server push. `type: minestom-server` must upload a distribution
+tar built from `build.task` and matched by `build.artifact`.
+
+Check:
+
+- `grounds.yaml` has `build.task`, for example `:server:distTar`.
+- `grounds.yaml` has `build.artifact`, for example `server/build/distributions/*.tar`.
+- You are running `grounds push`, not manually uploading a JAR with an older tool.
+
+### `expected at least one distribution tar`
+
+The CLI ran the Minestom build task but the `build.artifact` glob did not match a tar file.
+
+Check:
+
+- The Gradle task actually creates a `.tar`, `.tar.gz`, or `.tgz` file.
+- The `build.artifact` path is relative to the directory containing `grounds.yaml`.
+- The glob is specific enough to avoid stale or unrelated files.
+
 ### `unknown baseImage`
 
 Your manifest references a base image source key that Forge does not know, or that is not allowed for the selected `type`.
@@ -109,6 +130,33 @@ Your manifest's `jar:` glob doesn't match any file. Check:
 - `./gradlew shadowJar` produces something at `build/libs/`.
 - The glob in `grounds.yaml` (or auto-detected) matches it.
 - The Gradle plugin successfully built before upload (look at the build output).
+
+### `Grounds module provider grounds.agones was requested but not discovered`
+
+The Minestom runtime selected a provider ID that was not on the distribution classpath.
+
+Check:
+
+- The server Gradle app has `runtimeOnly("gg.grounds:plugin-agones-minestom:0.6.0")` or newer.
+- The distribution tar contains the Agones Minestom JAR under `lib/`.
+- The runtime calls `discoverProviders()` before `useProvider("grounds.agones")`.
+- The selected ID matches the provider ID exactly: `grounds.agones`.
+
+### `local module requires both module and project for dependency substitution`
+
+A Minestom workspace mapping has only one of `module` or `project` configured. Set both fields or
+remove both fields and let Gradle's default composite substitution handle it.
+
+```yaml
+repos:
+  plugin-agones:
+    path: /home/alice/grounds/plugin-agones
+    variants:
+      minestom:
+        enabled: true
+        module: gg.grounds:plugin-agones-minestom
+        project: :minestom
+```
 
 ### Build hangs in `building` for >5 minutes
 

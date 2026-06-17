@@ -1,12 +1,12 @@
 ---
 title: "Work with local plugin workspaces"
-description: "Override release plugin sources with local builds from independent repositories."
+description: "Override release plugin or module sources with local builds from independent repositories."
 ---
 
-Local plugin workspaces let you keep `grounds.yaml` pointed at release plugin
+Local workspaces let you keep `grounds.yaml` pointed at release plugin or module
 sources while opting into local builds for a single push. Use this workflow when
-your app lives in one repository and the plugin dependencies you are changing
-live in sibling repositories.
+your app lives in one repository and the plugin or Minestom module dependencies
+you are changing live in sibling repositories.
 
 <Tip>
 Local overrides are machine-local. They do not change the manifest, and they
@@ -28,7 +28,7 @@ Use the internal sample workspace as the reference shape:
 
 Run `grounds push` from `~/grounds/sample-plugin-workspace/app`. Keep
 `plugin-agones` and `plugin-player` beside the app repository so the CLI can map
-release plugin IDs to the local repositories on your machine.
+release plugin or module IDs to the local repositories on your machine.
 
 Your manifest stays portable:
 
@@ -44,7 +44,8 @@ plugins:
 
 The `id` and `variant` fields are the matching keys. The `source` fields remain
 the default release sources for teammates, CI, and any push that does not opt
-into local overrides.
+into local overrides. Minestom server manifests use the same idea under
+`modules`.
 
 ## Scan for repositories
 
@@ -86,6 +87,38 @@ grounds workspace add plugin-player ~/grounds/plugin-player \
 The artifact path is relative to the plugin repository. The build command runs
 inside that repository before the artifact is resolved.
 
+## Add Minestom module mappings
+
+For Minestom runtime modules, add a mapping for the `minestom` variant:
+
+```bash
+grounds workspace add plugin-agones ~/grounds/plugin-agones --variant minestom
+```
+
+If Gradle composite substitution needs explicit coordinates, add `module` and
+`project` to `workspace.yaml`:
+
+```yaml
+repos:
+  plugin-agones:
+    path: /home/alice/grounds/plugin-agones
+    variants:
+      minestom:
+        enabled: true
+        module: gg.grounds:plugin-agones-minestom
+        project: :minestom
+```
+
+When both fields are present, the CLI generates a temporary Gradle init script
+that includes the local repository and substitutes the release module with the
+local project.
+
+<Note>
+For Minestom module substitution, the app's Gradle distribution task builds against the included
+local repository. The workspace `artifact` and `build` fields are used for plugin artifact
+overrides and are not the source of truth for the Minestom runtime classpath.
+</Note>
+
 ## Inspect mappings
 
 List the workspace entries before pushing:
@@ -100,7 +133,7 @@ Use `doctor` when a mapping does not behave as expected:
 grounds workspace doctor
 ```
 
-`workspace list` shows each plugin ID, variant, enabled state, repository path,
+`workspace list` shows each plugin or module ID, variant, enabled state, repository path,
 artifact path, and build command. `workspace doctor` checks whether configured
 paths exist and reports missing local repositories.
 
@@ -115,6 +148,7 @@ grounds push --target=dev --local plugin-agones
 
 The app manifest still reads both plugins from release sources, but the CLI
 replaces `plugin-agones` with the local Velocity artifact for this one push.
+For Minestom manifests, `--local` selects matching entries from `modules`.
 
 You can pass multiple local plugin IDs as a comma-separated value:
 
@@ -138,7 +172,8 @@ grounds push --target=dev --with-local
 ```
 
 This is the usual internal loop for the sample workspace after both Velocity
-artifacts are pinned. Disabled mappings are ignored.
+artifacts are pinned. It also applies to enabled Minestom module mappings.
+Disabled mappings are ignored.
 
 ## Disable a mapping temporarily
 
@@ -176,3 +211,4 @@ move this file together with the rest of the CLI config. See
 - [Push CLI reference](/build/cli/push)
 - [Configuration reference](/build/cli/configuration)
 - [Build multi-plugin stacks](/build/multi-plugin-stacks)
+- [Local Minestom Modules](/reference/development/minestom-runtime/local-modules)

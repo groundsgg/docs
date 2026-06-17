@@ -164,6 +164,21 @@
             ]
           },
           {
+            "group": "Development libraries",
+            "pages": [
+              "reference/development/jvm-modules/service-registry",
+              {
+                "group": "Minestom Runtime",
+                "pages": [
+                  "reference/development/minestom-runtime/index",
+                  "reference/development/minestom-runtime/modules",
+                  "reference/development/minestom-runtime/composition",
+                  "reference/development/minestom-runtime/local-modules"
+                ]
+              }
+            ]
+          },
+          {
             "group": "Conventions",
             "pages": [
               "reference/development/naming-conventions",

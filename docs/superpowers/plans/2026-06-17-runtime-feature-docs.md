@@ -263,9 +263,7 @@ Modify `build/local-plugin-workspaces.mdx`:
 - add a Minestom module example:
 
 ```bash
-grounds workspace add plugin-agones ~/grounds/plugin-agones \
-  --variant minestom \
-  --build './gradlew :minestom:build'
+grounds workspace add plugin-agones ~/grounds/plugin-agones --variant minestom
 ```
 
 - describe optional `workspace.yaml` fields:

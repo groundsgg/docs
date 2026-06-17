@@ -1,33 +1,32 @@
 ---
 title: "Minestom"
-description: "Embed plugin-agones-minestom as a library in your Minestom gameserver to sync Agones state"
+description: "Select the Agones runtime module in Minestom servers to sync Agones state from player activity."
 ---
 
-Use the Minestom module of `plugin-agones` when your gamemode runs on Minestom. Unlike the Paper
-build, Minestom has no plugin loader, so this module ships as a library that you embed and start
-explicitly from your server entrypoint.
+Use `plugin-agones-minestom` when your gamemode or lobby runs on Minestom and should report
+Agones state from player activity. In runtime-based servers, Agones is a provider-backed Grounds
+module selected by module ID.
 
-Once started, the library syncs Agones state from Minestom's player events the same way the Paper
-build does: the first player switches the gameserver to `Allocated`, the last one returning to
-`Ready`.
+Once started, the module syncs Agones state from Minestom player events: the first player switches
+the gameserver to `Allocated`, and the last player leaving switches it back to `Ready`.
+
+<Info>
+`plugin-agones-minestom` `0.6.0` and newer exposes a `GroundsModuleProvider` with ID
+`grounds.agones`.
+</Info>
 
 ## Requirements
 
 Your Minestom pod must run with an Agones sidecar exposing the SDK on `http://localhost:9358`. The
-Grounds container images configure this by default.
+Grounds Minestom image path configures this through the Agones-managed workload.
 
-<Info>
-The module targets Minestom `2026.03.03-1.21.11` and newer. It uses an internal coroutine scope for
-the sidecar calls, so you do not need to provide an executor.
-</Info>
+Your runtime application must use `grounds-minestom-runtime` and include the Agones Minestom module
+on the runtime classpath.
 
-## Add the Dependency
+## Add the dependency
 
 The module is published to the `groundsgg` GitHub Packages Maven registry as
 `gg.grounds:plugin-agones-minestom`.
-
-<Tabs>
-<Tab title="Gradle Kotlin DSL">
 
 ```kotlin build.gradle.kts
 repositories {
@@ -41,42 +40,98 @@ repositories {
 }
 
 dependencies {
-    implementation("gg.grounds:plugin-agones-minestom:<version>")
+    runtimeOnly("gg.grounds:plugin-agones-minestom:0.6.0")
 }
 ```
-
-</Tab>
-
-<Tab title="Gradle Groovy DSL">
-
-```groovy build.gradle
-repositories {
-    maven {
-        url "https://maven.pkg.github.com/groundsgg/plugin-agones"
-        credentials {
-            username = providers.gradleProperty('github.user').get()
-            password = providers.gradleProperty('github.token').get()
-        }
-    }
-}
-
-dependencies {
-    implementation "gg.grounds:plugin-agones-minestom:<version>"
-}
-```
-
-</Tab>
-</Tabs>
 
 <Warning>
 GitHub Packages requires authentication even for public artifacts. Configure `github.user` and
-`github.token` in your `~/.gradle/gradle.properties` or through environment variables.
+`github.token` in `~/.gradle/gradle.properties` or through environment variables.
 </Warning>
 
-## Start and Stop From Your Entrypoint
+## Select the provider
 
-`GroundsPluginAgones` is the single public entry point. Instantiate it once, call `enable()` during
-startup, and `disable()` during shutdown.
+Call `discoverProviders()` and select `grounds.agones` in your runtime composition.
+
+```kotlin
+import gg.grounds.runtime.core.GroundsServer
+
+fun main() {
+    GroundsServer.builder()
+        .discoverProviders()
+        .useProvider("grounds.agones")
+        .start()
+}
+```
+
+The runtime discovers the provider through `META-INF/services`, validates it, creates the module,
+and owns the lifecycle calls:
+
+1. `install(ctx)` registers the player listeners.
+2. `start()` reconciles the initial Agones state and starts the fallback loop.
+3. `stop()` removes listeners, cancels the fallback task, and releases coroutine resources.
+
+<Note>
+Discovery does not activate every provider on the classpath. The runtime starts Agones only when
+you explicitly call `useProvider("grounds.agones")`.
+</Note>
+
+## Manifest example
+
+Keep the release module source in `grounds.yaml` so teammates and CI use the same default.
+
+```yaml grounds.yaml
+name: minigame-agones
+type: minestom-server
+baseImage: minestom
+build:
+  task: :examples:minigame-agones:distTar
+  artifact: examples/minigame-agones/build/distributions/*.tar
+modules:
+  - id: plugin-agones
+    variant: minestom
+    source: github:groundsgg/plugin-agones@v0.6.0:plugin-agones-minestom.jar
+```
+
+`modules` lets the CLI replace `plugin-agones` with a local repository during development. Your
+Gradle dependencies still define the actual runtime classpath.
+
+## State sync semantics
+
+| Event | Resulting Agones state |
+| --- | --- |
+| `PlayerSpawnEvent` when the server had no other players | `Allocated` |
+| `PlayerSpawnEvent` with existing players | No change |
+| `PlayerDisconnectEvent` that leaves the server empty | `Ready` |
+| Fallback tick every 10 seconds | Reconciled from current player count |
+
+The disconnect path schedules its check on the next Minestom tick so that the connection manager's
+player list is already updated when the check runs.
+
+<Note>
+All state transitions go through `AgonesHelper`, which first fetches the gameserver state from the
+sidecar and only sends `Allocate` or `Ready` when it differs. Repeat calls are no-ops.
+</Note>
+
+## Label your GameServer
+
+The Minestom module only handles state sync. For the Velocity proxy to discover your Minestom
+gameserver, you still need to follow the
+[discovery contract](/reference/plugins/agones#gameserver-discovery-contract):
+
+- deploy into the `games` namespace
+- add `grounds/server-type: <lobby|game|match>` to the `GameServer` resource metadata
+- listen on port `25565` in the pod
+
+## Low-level direct usage
+
+<Warning>
+Use direct lifecycle calls only when you are embedding the Agones module without
+`grounds-minestom-runtime`. Runtime-based servers should select the provider instead.
+</Warning>
+
+`GroundsPluginAgones` still exposes direct `enable()` and `disable()` calls for non-runtime
+embeds.
 
 ```kotlin
 import gg.grounds.GroundsPluginAgones
@@ -94,72 +149,35 @@ fun main() {
 }
 ```
 
-<Steps>
-<Step title="Call enable during startup">
-`enable()` reads the current player count, sets the initial Agones state, registers a child
-`EventNode` called `grounds-plugin-agones` on the global event handler, and schedules a 10 second
-fallback reconciliation loop.
+When you use `grounds-minestom-runtime`, do not call `enable()` yourself. The runtime calls
+`install`, `start`, and `stop` through the selected provider.
 
-Calling `enable()` again while the plugin is already running is safe: the existing state is
-disabled first and replaced with a fresh runtime.
-</Step>
-
-<Step title="Call disable during shutdown">
-`disable()` cancels the fallback task, removes the event node from the global handler, and cancels
-the coroutine scope used for sidecar calls. After `disable()`, the instance is reusable with
-another `enable()` call.
-</Step>
-</Steps>
-
-## State Sync Semantics
-
-| Event                                                   | Resulting Agones state |
-|---------------------------------------------------------|------------------------|
-| `PlayerSpawnEvent` when the server had no other players | `Allocated`            |
-| `PlayerSpawnEvent` with existing players                | No change              |
-| `PlayerDisconnectEvent` that leaves the server empty    | `Ready`                |
-| Fallback tick every 10 seconds                          | Reconciled from current player count |
-
-The disconnect path schedules its check on the next Minestom tick so that the connection manager's
-player list is already updated when the check runs.
-
-<Note>
-All state transitions go through `AgonesHelper`, which first fetches the gameserver state from the
-sidecar and only sends `Allocate` or `Ready` when it differs. Repeat calls are no-ops.
-</Note>
-
-## Label Your GameServer
-
-The library only handles state sync. For the Velocity proxy to discover your Minestom gameserver,
-you still need to follow the [discovery contract](/reference/plugins/agones#gameserver-discovery-contract):
-
-- deploy into the `games` namespace
-- add `grounds/server-type: <lobby|game|match>` to the `GameServer` resource metadata
-- listen on port `25565` in the pod
-
-## Failure Modes
+## Failure modes
 
 <AccordionGroup>
-<Accordion title="Agones sidecar unreachable">
-Errors from the sidecar are logged at error level through the class logger. The fallback loop
-keeps retrying every 10 seconds, so a short sidecar outage is recovered automatically without any
-action from your gamemode.
+<Accordion title="Provider was requested but not discovered">
+`Grounds module provider grounds.agones was requested but not discovered` means the runtime selected
+the provider ID, but `plugin-agones-minestom` was not on the runtime classpath or did not expose the
+provider service file. Use `plugin-agones-minestom` `0.6.0` or newer and rebuild the distribution.
 </Accordion>
 
-<Accordion title="enable called twice without a disable in between">
-The second call disables the previous runtime first, so the event node and coroutine scope are
-cleaned up before the new one is created. No duplicate listeners are registered.
+<Accordion title="Agones sidecar unreachable">
+Errors from the sidecar are logged at error level through the class logger. The fallback loop keeps
+retrying every 10 seconds, so a short sidecar outage is recovered automatically without any action
+from your gamemode.
 </Accordion>
 
 <Accordion title="No Agones sidecar at all">
-If your deployment has no Agones sidecar, every sidecar call fails. The plugin continues to run,
-but cannot influence Agones state. In that setup, consider not loading the module at all to keep
-logs clean.
+If your deployment has no Agones sidecar, every sidecar call fails. The module continues to run, but
+cannot influence Agones state. In that setup, do not select `grounds.agones` to keep logs clean.
 </Accordion>
 </AccordionGroup>
 
-## Next Steps
+## Next steps
 
+- Read [Minestom Runtime composition](/reference/development/minestom-runtime/composition) for the
+  provider selection model.
+- Read [Local Minestom Modules](/reference/development/minestom-runtime/local-modules) to test local
+  Agones module changes during `grounds push`.
 - Read the [Velocity page](/reference/plugins/agones/velocity) to see how the proxy picks up this
   gameserver once it reaches a running Agones state.
-- Review the [Agones Integration overview](/reference/plugins/agones) for the cross-platform picture.

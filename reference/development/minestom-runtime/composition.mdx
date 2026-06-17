@@ -1,0 +1,148 @@
+---
+title: "Runtime Composition"
+description: "Discover and select provider-backed Grounds modules in a Minestom server."
+---
+
+Runtime composition is the point where your Minestom application chooses which modules are active.
+Classpath discovery finds available providers, but only selected providers are installed.
+
+## Build a server
+
+Use `GroundsServer.builder()` from your application entrypoint.
+
+```kotlin
+import gg.grounds.runtime.core.GroundsServer
+
+fun main() {
+    GroundsServer.builder()
+        .discoverProviders()
+        .useProvider("grounds.agones")
+        .start()
+}
+```
+
+`start()` calls `build()` and then starts Minestom. Use `build()` when tests need to inspect the
+composition without starting the server process.
+
+## Discover providers
+
+`discoverProviders()` scans the current thread context classloader with Java `ServiceLoader`.
+
+```kotlin
+GroundsServer.builder()
+    .discoverProviders()
+```
+
+The runtime logs the discovered provider IDs and versions. If nothing is found, it logs that no
+providers were discovered.
+
+<Note>
+Discovery does not activate every provider. You still choose each provider explicitly with
+`useProvider`.
+</Note>
+
+## Select discovered providers
+
+Select a provider by stable module ID:
+
+```kotlin
+GroundsServer.builder()
+    .discoverProviders()
+    .useProvider("grounds.agones")
+    .build()
+```
+
+The ID must match a discovered `GroundsModuleProvider.id`. If the ID is missing, build fails before
+Minestom starts:
+
+```text
+Grounds module provider grounds.agones was requested but not discovered. Available providers: none
+```
+
+If multiple providers expose the same ID, build fails as ambiguous. Keep provider IDs globally
+stable and unique.
+
+## Use direct providers
+
+Use `use(provider)` when the provider is created directly by your runtime application instead of
+through `ServiceLoader`.
+
+```kotlin
+GroundsServer.builder()
+    .use(ExampleMinigameModuleProvider())
+    .build()
+```
+
+Direct providers still participate in descriptor validation, service dependency ordering, and
+server type filtering.
+
+## Use direct modules
+
+Use `use(module)` for simple modules that do not need descriptor metadata.
+
+```kotlin
+GroundsServer.builder()
+    .use(DebugOverlayModule())
+    .build()
+```
+
+Direct modules are installed after provider-backed modules. Prefer providers for reusable modules
+because descriptors make dependencies and service contracts visible before startup.
+
+## Configure runtime environment
+
+By default, the runtime reads environment variables:
+
+| Variable | Default | Values |
+| --- | --- | --- |
+| `GROUNDS_SERVER_TYPE` | `minigame` | `lobby`, `minigame` |
+| `GROUNDS_ENV` | `dev` | `dev`, `test`, `prod` |
+| `GROUNDS_BIND_HOST` | `0.0.0.0` | Any bind host |
+| `GROUNDS_BIND_PORT` | `25565` | Any integer port |
+
+Tests can pass explicit config:
+
+```kotlin
+import gg.grounds.runtime.RuntimeEnvironment
+import gg.grounds.runtime.ServerType
+import gg.grounds.runtime.core.RuntimeConfig
+
+GroundsServer.builder()
+    .config(RuntimeConfig(serverType = ServerType.MINIGAME, environment = RuntimeEnvironment.TEST))
+    .use(ExampleMinigameModuleProvider())
+    .build()
+```
+
+## Startup behavior
+
+When the runtime starts, it:
+
+1. resolves selected discovered providers;
+2. validates module descriptors and service contracts;
+3. sorts provider-backed modules by dependencies;
+4. initializes Minestom;
+5. calls `install(ctx)` on every selected module;
+6. starts Minestom on the configured host and port;
+7. calls `start()` on every selected module.
+
+Shutdown reverses the module order, then runs registered shutdown hooks and stops Minestom cleanly.
+
+## Example with Agones and a game module
+
+```kotlin
+internal fun buildExampleServer(): GroundsServer =
+    GroundsServer.builder()
+        .discoverProviders()
+        .useProvider("grounds.agones")
+        .use(ExampleMinigameModuleProvider())
+        .build()
+```
+
+This composition discovers `plugin-agones-minestom` from the runtime classpath, selects its
+`grounds.agones` provider, and also installs a local minigame module provider.
+
+## Related docs
+
+- [Runtime modules](/reference/development/minestom-runtime/modules)
+- [Local modules](/reference/development/minestom-runtime/local-modules)
+- [Agones Minestom integration](/reference/plugins/agones/minestom)

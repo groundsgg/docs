@@ -1,0 +1,110 @@
+---
+title: "Minestom Runtime"
+description: "Build Minestom lobby and minigame servers from explicit Grounds runtime modules."
+---
+
+`grounds-minestom-runtime` is the process-level runtime for Minestom-based Grounds servers. It lets
+you compose a lobby or minigame from normal Gradle dependencies, select explicit runtime modules,
+and push the resulting distribution through Grounds.
+
+Minestom does not have a Paper-style plugin folder. A Minestom server is a JVM application that
+embeds Minestom and every module it needs. Grounds follows that model: build the server at compile
+time, publish one immutable distribution, then let Forge build and deploy the image.
+
+<Note>
+The runtime is not a hot plugin system. It discovers providers from the application classpath and
+starts only the providers your server selects.
+</Note>
+
+## What the runtime provides
+
+- module lifecycle hooks with `install`, `start`, and `stop`;
+- `GroundsServerContext` with server type, runtime environment, shutdown hooks, and typed services;
+- provider discovery through Java `ServiceLoader`;
+- explicit provider selection through `useProvider("module.id")`;
+- module descriptor validation, service dependency ordering, and server type filtering;
+- Minestom bootstrap and clean shutdown orchestration.
+
+## When to use it
+
+Use the runtime for Minestom servers that need reusable Grounds integrations such as Agones, config,
+permissions, matchmaking, or shared services.
+
+Do not use it when you only need a small standalone Minestom experiment with no reusable modules.
+Plain Minestom code still works; the runtime exists to make composed Grounds servers reproducible.
+
+## Typical shape
+
+```text
+my-minigame/
+  settings.gradle.kts
+  build.gradle.kts
+  grounds.yaml
+  server/
+    build.gradle.kts
+    src/main/kotlin/example/Main.kt
+```
+
+The Gradle app depends on released module artifacts:
+
+```kotlin server/build.gradle.kts
+dependencies {
+    implementation("gg.grounds:grounds-minestom-runtime-runtime-core:<version>")
+    runtimeOnly("gg.grounds:plugin-agones-minestom:0.6.0")
+}
+```
+
+The server entrypoint selects the modules it wants:
+
+```kotlin
+import gg.grounds.runtime.core.GroundsServer
+
+fun main() {
+    GroundsServer.builder()
+        .discoverProviders()
+        .useProvider("grounds.agones")
+        .start()
+}
+```
+
+The project pushes a distribution tar:
+
+```yaml grounds.yaml
+name: minigame-agones
+type: minestom-server
+baseImage: minestom
+build:
+  task: :server:distTar
+  artifact: server/build/distributions/*.tar
+modules:
+  - id: plugin-agones
+    variant: minestom
+    source: github:groundsgg/plugin-agones@v0.6.0:plugin-agones-minestom.jar
+```
+
+## Start here
+
+<CardGroup cols={2}>
+<Card title="Runtime modules" icon="puzzle-piece" href="/reference/development/minestom-runtime/modules">
+  Define `GroundsModule` and `GroundsModuleProvider` implementations with descriptors and typed
+  service contracts.
+</Card>
+
+<Card title="Runtime composition" icon="diagram-project" href="/reference/development/minestom-runtime/composition">
+  Discover providers, select module IDs, and understand validation and startup behavior.
+</Card>
+
+<Card title="Local modules" icon="code-branch" href="/reference/development/minestom-runtime/local-modules">
+  Replace release module dependencies with local repositories during `grounds push`.
+</Card>
+
+<Card title="Manifest reference" icon="file-code" href="/build/manifest#minestom-server-manifests">
+  See the `grounds.yaml` fields used for Minestom distribution pushes.
+</Card>
+</CardGroup>
+
+## Related docs
+
+- [Service Registry](/reference/development/jvm-modules/service-registry)
+- [grounds push](/build/cli/push)
+- [Agones Minestom integration](/reference/plugins/agones/minestom)

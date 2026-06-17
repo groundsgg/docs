@@ -8,7 +8,7 @@ description: "Build with Gradle, upload to forge, deploy to a target."
 ## Synopsis
 
 ```text
-grounds push [--target=dev|staging] [--project <id>] [--local <id>[,<id>]] [--with-local]
+grounds push [--target=dev|staging] [--flavor <key>] [--project <id>] [--local <id>[,<id>]] [--with-local]
 grounds push retry <pushId>
 grounds push list [--target T] [--status S] [--limit N]
 ```
@@ -18,6 +18,7 @@ grounds push list [--target T] [--status S] [--limit N]
 ```bash
 grounds push --target=dev       # default
 grounds push --target=staging
+grounds push --flavor=minestom
 grounds push --local plugin-chat
 grounds push --local plugin-chat,plugin-permissions
 grounds push --with-local
@@ -69,6 +70,49 @@ plugin-player   velocity  release     github:groundsgg/plugin-player@v0.1.0
 
 The table is the confirmation step. It shows which plugins use local artifacts
 and which still use release sources.
+
+### Minestom distribution pushes
+
+For `type: minestom-server`, the CLI uses the Minestom path instead of delegating to the Gradle
+`groundsPush` task. It reads `build.task`, builds the configured distribution, normalizes
+`build.artifact`, and uploads the tar artifact to Forge.
+
+```yaml grounds.yaml
+name: minigame-agones
+type: minestom-server
+baseImage: minestom
+build:
+  task: :examples:minigame-agones:distTar
+  artifact: examples/minigame-agones/build/distributions/*.tar
+modules:
+  - id: plugin-agones
+    variant: minestom
+    source: github:groundsgg/plugin-agones@v0.6.0:plugin-agones-minestom.jar
+```
+
+Run the push from the directory that contains `gradlew` and `grounds.yaml`:
+
+```bash
+grounds push --target=dev
+```
+
+If the manifest uses `flavors`, select the Minestom flavor explicitly:
+
+```bash
+grounds push --flavor=minestom --target=dev
+```
+
+Minestom module entries use the same `--local` and `--with-local` flags as plugin stacks. When
+local mappings apply, the CLI prints the effective source table before running Gradle:
+
+```text
+Bundle sources:
+ID              Variant   Effective   Value
+plugin-agones   minestom  local       /home/alice/grounds/plugin-agones
+```
+
+See [Local Minestom Modules](/reference/development/minestom-runtime/local-modules) for the
+workspace mapping details.
 
 ## push retry
 
