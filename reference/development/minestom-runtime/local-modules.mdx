@@ -1,0 +1,108 @@
+---
+title: "Local Minestom Modules"
+description: "Replace released Minestom module dependencies with local repositories during grounds push."
+---
+
+Local Minestom module substitution keeps release sources in `grounds.yaml` while you test local changes from sibling repositories. Use it when a server runtime and a module such as `plugin-agones:minestom` live in separate repositories.
+
+## Declare release modules
+
+A Minestom server manifest declares portable release defaults that every developer and CI runner can resolve.
+
+```yaml grounds.yaml
+name: minigame-agones
+type: minestom-server
+baseImage: minestom
+build:
+  task: :examples:minigame-agones:distTar
+  artifact: examples/minigame-agones/build/distributions/*.tar
+modules:
+  - id: plugin-agones
+    variant: minestom
+    source: github:groundsgg/plugin-agones@v0.6.0:plugin-agones-minestom.jar
+```
+
+`modules` is CLI composition metadata. It tells `grounds push` which release modules can be replaced locally. Gradle dependencies still define the runtime classpath.
+
+<Tip>
+Keep `source` pinned to a release in shared manifests. Put local paths in `workspace.yaml` so the manifest stays portable.
+</Tip>
+
+## Add a local module mapping
+
+```bash
+grounds workspace add plugin-agones ~/grounds/plugin-agones --variant minestom
+```
+
+The mapping is stored in local `workspace.yaml`, not in the project manifest.
+
+## Push with local modules
+
+Select one local module:
+
+```bash
+grounds push --local plugin-agones
+```
+
+Use every enabled mapping that matches a `modules` entry:
+
+```bash
+grounds push --with-local
+```
+
+For a Minestom push, the CLI loads the manifest and workspace mappings, resolves selected overrides, writes a temporary Gradle composite-build init script when needed, runs `build.task`, finds `build.artifact`, normalizes the distribution tar, and uploads that bundle to Forge.
+
+## Confirm effective sources
+
+Local resolution prints the effective source table:
+
+```text
+Bundle sources:
+ID              Variant   Effective   Value
+plugin-agones   minestom  local       /home/alice/grounds/plugin-agones
+```
+
+Use this table before reading build logs. It shows which modules came from local repositories and which stayed on release sources.
+
+## Explicit dependency substitution
+
+Gradle composite builds usually substitute a local dependency automatically when the included build publishes the same coordinates as the release module.
+
+For an explicit substitution, add both `module` and `project` to the Minestom variant in `workspace.yaml`:
+
+```yaml workspace.yaml
+repos:
+  plugin-agones:
+    path: /home/alice/grounds/plugin-agones
+    variants:
+      minestom:
+        enabled: true
+        module: gg.grounds:plugin-agones-minestom
+        project: :minestom
+```
+
+The CLI creates an init script equivalent to:
+
+```kotlin
+settingsEvaluated {
+    includeBuild("/home/alice/grounds/plugin-agones") {
+        dependencySubstitution {
+            substitute(module("gg.grounds:plugin-agones-minestom")).using(project(":minestom"))
+        }
+    }
+}
+```
+
+<Warning>
+If one of `module` or `project` is configured, configure the other one too. The CLI rejects an incomplete substitution mapping before it runs Gradle.
+</Warning>
+
+## Troubleshooting
+
+If a release dependency is still used, run `grounds workspace list`, confirm the Minestom variant is enabled, then push with `--with-local` or the matching `--local` ID. If a selected local module is absent from `grounds.yaml`, add a matching `modules` entry or use its declared ID.
+
+## Related docs
+
+- [Work with local plugin workspaces](/build/local-plugin-workspaces)
+- [grounds push](/build/cli/push)
+- [Manifest reference](/build/manifest#minestom-server-manifests)

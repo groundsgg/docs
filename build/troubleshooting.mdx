@@ -110,6 +110,22 @@ Your manifest's `jar:` glob doesn't match any file. Check:
 - The glob in `grounds.yaml` (or auto-detected) matches it.
 - The Gradle plugin successfully built before upload (look at the build output).
 
+### `type 'minestom-server' requires a distribution bundle`
+
+Forge received a JAR for a Minestom server. Set `type: minestom-server`, configure `build.task` and `build.artifact`, and push the Gradle application distribution tar instead. See [Minestom server manifests](/build/manifest#minestom-server-manifests).
+
+### `expected at least one distribution tar`
+
+The configured `build.task` completed, but `build.artifact` did not match a distribution tar. Run the task locally, confirm the output path relative to `grounds.yaml`, then update the artifact glob.
+
+### `Grounds module provider grounds.agones was requested but not discovered`
+
+The server selected a provider that is not on its runtime classpath. Add the matching runtime dependency, ensure its `META-INF/services/gg.grounds.runtime.GroundsModuleProvider` entry is packaged, then rebuild the distribution. See [Runtime composition](/reference/development/minestom-runtime/composition).
+
+### `local module "…" requires both module and project for dependency substitution`
+
+Your Minestom `workspace.yaml` mapping supplies only one explicit composite-build field. Set both `module` and `project`, or remove both fields to let Gradle use standard composite substitution.
+
 ### Build hangs in `building` for >5 minutes
 
 The pipeline's hard timeout is 30 minutes per step; the CLI's SSE inactivity timeout is 5 minutes. If the latter triggers, the build is still running on the cluster — re-attach by tailing logs:

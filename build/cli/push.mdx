@@ -8,7 +8,7 @@ description: "Build with Gradle, upload to forge, deploy to a target."
 ## Synopsis
 
 ```text
-grounds push [--target=dev|staging] [--project <id>] [--local <id>[,<id>]] [--with-local]
+grounds push [--target=dev|staging] [--project <id>] [--flavor <key>] [--local <id>[,<id>]] [--with-local]
 grounds push retry <pushId>
 grounds push list [--target T] [--status S] [--limit N]
 ```
@@ -21,17 +21,32 @@ grounds push --target=staging
 grounds push --local plugin-chat
 grounds push --local plugin-chat,plugin-permissions
 grounds push --with-local
+grounds push --flavor minestom --with-local
 ```
 
 Runs `./gradlew groundsPush --target=<t>` in the current directory. The Gradle plugin handles:
 
-- Resolving the JAR (auto-detects `shadowJar` or `jar`).
+- Resolving the JAR (auto-detects `shadowJar` or `jar`) for plugin and service workloads.
 - Reading and validating `grounds.yaml`.
 - Uploading JAR + manifest to forge.
 - Streaming build + deploy logs back to your terminal.
 - Exiting with a non-zero code on any terminal failure.
 
 The CLI exits with the same code Gradle exits with.
+
+### Minestom distributions
+
+For a `minestom-server` manifest, `grounds push` builds and uploads a complete application distribution instead of a JAR. The CLI runs the manifest's `build.task`, finds `build.artifact`, normalizes the Gradle distribution tar, and uploads the resulting bundle to Forge.
+
+Use `--flavor <key>` when the Minestom configuration is declared under a manifest flavor:
+
+```bash
+grounds push --flavor minestom
+grounds push --flavor minestom --local plugin-agones
+grounds push --flavor minestom --with-local
+```
+
+For local Minestom modules, the CLI resolves the selected workspace mappings and passes a temporary Gradle composite-build init script to the configured distribution task. The Gradle build remains responsible for the application classpath. See [Local Minestom modules](/reference/development/minestom-runtime/local-modules) for the manifest and workspace configuration.
 
 By default, `grounds push` uses the release sources declared in
 `grounds.yaml`. Local plugin builds are opt-in through
