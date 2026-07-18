@@ -34,7 +34,7 @@ Keep `source` pinned to a release in shared manifests. Put local paths in `works
 grounds workspace add plugin-agones ~/grounds/plugin-agones --variant minestom
 ```
 
-The mapping is stored in local `workspace.yaml`, not in the project manifest.
+The mapping is stored in local `workspace.yaml`, not in the project manifest. `workspace add` also writes its generic JAR and `shadowJar` defaults, but the Minestom flow ignores those values and uses the repository path for Gradle composite-build substitution.
 
 ## Push with local modules
 

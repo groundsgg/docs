@@ -79,13 +79,24 @@ grounds workspace add plugin-player /home/alice/grounds/plugin-player \
 | Flag | Purpose |
 | --- | --- |
 | `--variant <name>` | Stores a variant-specific mapping, for example `paper`, `velocity`, or `minestom`. |
-| `--artifact <glob>` | Artifact glob relative to the repository path. Defaults to `build/libs/*.jar`, or `<variant>/build/libs/*.jar` for variant mappings. |
-| `--build <command>` | Build command run inside the repository before artifact resolution. Defaults to `./gradlew build`, or `./gradlew :<variant>:shadowJar` for variant mappings. |
+| `--artifact <glob>` | Artifact glob relative to the repository path for Paper and Velocity overrides. Defaults to `build/libs/*.jar`, or `<variant>/build/libs/*.jar` for variant mappings. Ignored for Minestom composite builds. |
+| `--build <command>` | Build command run inside the repository before artifact resolution for Paper and Velocity overrides. Defaults to `./gradlew build`, or `./gradlew :<variant>:shadowJar` for variant mappings. Ignored for Minestom composite builds. |
 | `--disabled` | Adds the mapping disabled. Disabled mappings are ignored by `--with-local`. |
 
 Artifact globs should resolve to the deployable JAR. If multiple JARs match,
 the resolver ignores common auxiliary JARs such as `-sources` and `-javadoc`
 and prefers shadow/all artifacts.
+
+### Minestom composite builds
+
+For a `minestom` variant, the mapping supplies the local repository path to a temporary Gradle composite build. The CLI still writes the generic JAR and `shadowJar` defaults because all workspace mappings share one schema, but Minestom ignores those values. It runs the server distribution task and resolves the distribution artifact from the selected `grounds.yaml` flavor instead.
+
+```bash
+grounds workspace add plugin-agones /home/alice/grounds/plugin-agones --variant minestom
+grounds push --flavor minestom --local plugin-agones
+```
+
+Gradle usually substitutes an included build automatically when its published coordinates match the release module. For an explicit module-to-project substitution, add `module` and `project` to the Minestom variant in `workspace.yaml`; see [Local Minestom modules](/reference/development/minestom-runtime/local-modules#explicit-dependency-substitution).
 
 ## Scan sibling repos
 

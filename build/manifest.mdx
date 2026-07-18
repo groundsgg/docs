@@ -93,6 +93,33 @@ modules:
 
 `modules` records portable release defaults for CLI composition and local overrides. It does not add dependencies to your server; Gradle dependencies remain the source of the compile and runtime classpath. See [Local Minestom modules](/reference/development/minestom-runtime/local-modules) to replace a release module locally.
 
+### `flavors` (Minestom configuration variants)
+
+Use `flavors` when one project publishes more than one Minestom runtime configuration. The key is selected with `grounds push --flavor <key>`; when `flavors` is present, selecting a key is required.
+
+Keep the project `name` at the top level and put the complete Minestom runtime configuration in each flavor:
+
+```yaml grounds.yaml
+name: minigame
+flavors:
+  minestom:
+    type: minestom-server
+    baseImage: minestom
+    build:
+      task: :server:distTar
+      artifact: server/build/distributions/*.tar
+    modules:
+      - id: plugin-agones
+        variant: minestom
+        source: github:groundsgg/plugin-agones@v0.6.0:plugin-agones-minestom.jar
+```
+
+The selected flavor must define `type`, `baseImage`, `build.task`, `build.artifact`, and at least one module. Use `minestom-server` for the type; `minestom` is accepted as a shorthand. Do not combine top-level `plugins` entries with `flavors`, because local workspace resolution needs one source layout.
+
+```bash
+grounds push --flavor minestom
+```
+
 ### `jar` (optional, default `build/libs/*.jar`)
 
 A glob pointing at the JAR to upload, **relative to the project root**. The Gradle plugin auto-detects `shadowJar` or `jar` and sets this for you, so you usually don't need to write it.
