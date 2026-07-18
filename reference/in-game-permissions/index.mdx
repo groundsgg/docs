@@ -34,9 +34,16 @@ decide what a player may do inside the Minecraft network.
 
 ```mermaid
 flowchart LR
-  group[Keycloak group] --> role[Minecraft role]
-  role --> grants[Allow or deny grants]
-  grants --> snapshot[Effective snapshot]
+  defaultRole[Default role] --> roles[Effective Minecraft roles]
+  keycloakGroup[Keycloak group] --> groupMapping[Group to role mapping]
+  groupMapping --> roles
+  directRole[Direct player to role assignment] --> roles
+  roles --> inheritedRole[Inherited roles]
+  inheritedRole --> roleGrants[Role allow or deny grants]
+  roles --> roleGrants
+  roleGrants --> policy[Effective policy]
+  directGrant[Direct player permission grant] --> policy
+  policy --> snapshot[Effective snapshot]
 ```
 
 | Term | Meaning |
@@ -44,13 +51,26 @@ flowchart LR
 | Keycloak group | Read-only identity input that can map to a Minecraft role. |
 | Minecraft role | Reusable grants; it can inherit another role or be a default role. |
 | Grant | Allow or deny rule at global, server-type, or server scope. |
+| Group-to-role mapping | Assigns a Minecraft role to every player in one Keycloak group; it can expire. |
+| Direct player-to-role assignment | Assigns a reusable role to one player; it can expire. |
 | Direct player grant | Time-limited or permanent exception for one player. |
 | Effective snapshot | Complete, versioned result evaluated locally by a runtime. |
 
-Keycloak groups never map directly to permission nodes. Exact patterns such as
-`network.chat.moderate` and wildcards such as `network.chat.*` can match a
-check. Server scope wins over server-type scope, which wins over global scope;
-a deny wins between equally specific candidates.
+### Assignment sources
+
+| Source | Assignment | Result |
+| --- | --- | --- |
+| Default role | Role -> every player | The role's grants apply to every player. |
+| Keycloak group mapping | Keycloak group -> role | Members receive the mapped role and its inherited roles. |
+| Direct role assignment | Player -> role | One player receives the selected role and its inherited roles. |
+| Direct player grant | Player -> permission node | One player receives an allow or deny exception without a role. |
+
+Keycloak groups never map directly to permission nodes: they provide group-to-role
+assignments. A role can then carry allow or deny grants, including inherited
+role grants. Exact patterns such as `network.chat.moderate` and wildcards such
+as `network.chat.*` can match a check. Server scope wins over server-type
+scope, which wins over global scope; a deny wins between equally specific
+candidates.
 
 Once a snapshot expires, a check returns `false` until a valid replacement is
 available. Changing a permission does not disconnect a player automatically.

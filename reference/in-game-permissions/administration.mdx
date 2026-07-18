@@ -34,6 +34,23 @@ Use a direct role grant for a reusable exception and a direct permission grant
 for one narrow exception. Both can expire. Verify the selected server type or
 server in effective access before testing in-game.
 
+## Assignment sources
+
+The effective access view combines all of these sources for a player:
+
+| Source in Portal | Assignment path | Use it when |
+| --- | --- | --- |
+| Default role | Role -> every player | Every player needs a baseline capability. |
+| Group mapping | Keycloak group -> Minecraft role -> role grants | Keycloak owns normal team membership. |
+| Direct role | Player -> Minecraft role -> role grants | One player needs a reusable, potentially temporary role. |
+| Direct grant | Player -> permission node | One player needs a narrow allow or deny exception. |
+
+Group mappings and direct role assignments are role assignments, not direct
+permission-node grants. A mapped or directly assigned role contributes its own
+grants and any inherited roles. The effective access view identifies whether a
+role or grant came from a default role, group mapping, direct role assignment,
+direct permission grant, or role inheritance.
+
 <Warning>
 Removing a grant does not kick a connected player. The change applies when the
 runtime refreshes a snapshot and makes a later check.
@@ -44,6 +61,8 @@ runtime refreshes a snapshot and makes a later check.
 Map a Keycloak group to a Minecraft role for normal long-lived access. Portal
 reads groups but does not create, rename, or delete them; manage membership in
 Keycloak. An optional mapping expiry supports temporary group-derived access.
+The mapped role supplies the permissions; groups do not receive direct
+permission-node grants.
 
 ## Permission catalog
 
