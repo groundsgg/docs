@@ -15,12 +15,12 @@ service from another project.
 
 ## Configuration
 
-| Variable | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `PERMISSIONS_GRPC_TARGET` | Yes | — | The local project `service-permissions` gRPC endpoint. Startup fails when it is blank. |
-| `GROUNDS_PERMISSION_SERVER_TYPE` | No | Runtime-specific | Resolves server-type-scoped grants, for example `lobby`. |
-| `GROUNDS_PERMISSION_SERVER_ID` | No | Unset | Resolves grants scoped to one server. |
-| `PERMISSIONS_REFRESH_INTERVAL_SECONDS` | No | `60` | Interval for refreshing snapshots of online players. |
+| Variable                               | Required | Default          | Purpose                                                                                |
+|----------------------------------------|----------|------------------|----------------------------------------------------------------------------------------|
+| `PERMISSIONS_GRPC_TARGET`              | Yes      | —                | The local project `service-permissions` gRPC endpoint. Startup fails when it is blank. |
+| `GROUNDS_PERMISSION_SERVER_TYPE`       | No       | Runtime-specific | Resolves server-type-scoped grants, for example `lobby`.                               |
+| `GROUNDS_PERMISSION_SERVER_ID`         | No       | Unset            | Resolves grants scoped to one server.                                                  |
+| `PERMISSIONS_REFRESH_INTERVAL_SECONDS` | No       | `60`             | Interval for refreshing snapshots of online players.                                   |
 
 The platform bundle supplies the local endpoint for managed workloads. Set the
 server type and server ID only when your workload needs scoped policy.
