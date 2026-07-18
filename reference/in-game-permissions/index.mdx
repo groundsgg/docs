@@ -32,8 +32,11 @@ decide what a player may do inside the Minecraft network.
 
 ## Authorization model
 
-```text
-Keycloak group -> Minecraft role -> allow or deny grants -> effective snapshot
+```mermaid
+flowchart LR
+  group[Keycloak group] --> role[Minecraft role]
+  role --> grants[Allow or deny grants]
+  grants --> snapshot[Effective snapshot]
 ```
 
 | Term | Meaning |
