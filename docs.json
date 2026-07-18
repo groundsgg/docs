@@ -157,13 +157,13 @@
             ]
           },
           {
-            "group": "Minecraft Permissions",
+            "group": "In-Game Permissions",
             "pages": [
-              "reference/minecraft-permissions/index",
-              "reference/minecraft-permissions/administration",
-              "reference/minecraft-permissions/runtime-integration",
-              "reference/minecraft-permissions/permission-catalog",
-              "reference/minecraft-permissions/infrastructure"
+              "reference/in-game-permissions/index",
+              "reference/in-game-permissions/administration",
+              "reference/in-game-permissions/runtime-integration",
+              "reference/in-game-permissions/permission-catalog",
+              "reference/in-game-permissions/infrastructure"
             ]
           },
           {
