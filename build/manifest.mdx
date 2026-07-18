@@ -49,6 +49,7 @@ What kind of workload this is. One of:
 | `plugin-paper` | Bukkit/Paper plugin JAR | `paper` |
 | `plugin-velocity` | Velocity plugin JAR | `velocity` |
 | `gamemode` | Bukkit/Paper plugin JAR running as an Agones-managed gameserver | `paper-gamemode` |
+| `minestom-server` | Minestom Gradle application distribution | `minestom` |
 | `service` | Plain JVM app (no Minecraft runtime) | `service` |
 
 `type` drives quotas, resource defaults, port mappings, and which container our renderer wires up.
@@ -62,6 +63,7 @@ The catalog source key for the runtime image your JAR is layered onto. Must be o
 | `paper` | `ghcr.io/groundsgg/paper` | A Paper server with sane defaults, your JAR auto-loaded into `plugins/`. Use with `type: plugin-paper`. |
 | `paper-gamemode` | `ghcr.io/groundsgg/paper-gamemode` | Same as `paper`, but pre-bundled with `plugin-agones-paper` so the SDK sidecar (injected on every Fleet pod) reports Allocated/Ready from player events. Use with `type: gamemode`. |
 | `velocity` | `ghcr.io/groundsgg/velocity` | A Velocity proxy with your JAR in `plugins/`. |
+| `minestom` | Eclipse Temurin runtime | A Minestom application distribution. Use with `type: minestom-server`. |
 | `service` | `ghcr.io/groundsgg/jvm-service` | Generic JVM runner — your JAR's `main` is the entrypoint, no Minecraft runtime. |
 
 Forge resolves the source key to the current stable version in the [base image catalog](/build/concepts/base-images) when it builds your push. Do not put an OCI tag or digest in `grounds.yaml`; promote a new catalog version instead.
@@ -69,6 +71,54 @@ Forge resolves the source key to the current stable version in the [base image c
 <Note>
 The valid source keys come from the platform catalog. The table above lists the standard sources, but self-hosted or internal environments may expose additional sources.
 </Note>
+
+### Minestom server manifests
+
+Use `minestom-server` for a complete Gradle application distribution rather than a plugin JAR. The configured artifact must be a distribution tar produced by the configured Gradle task.
+
+```yaml grounds.yaml
+name: minigame-agones
+type: minestom-server
+baseImage: minestom
+build:
+  task: :examples:minigame-agones:distTar
+  artifact: examples/minigame-agones/build/distributions/*.tar
+modules:
+  - id: plugin-agones
+    variant: minestom
+    source: github:groundsgg/plugin-agones@v0.6.0:plugin-agones-minestom.jar
+```
+
+`build.task` is the Gradle task that produces the distribution and `build.artifact` is its path relative to the project root. Forge rejects a JAR upload for `minestom-server` because the runtime image needs the complete distribution, including its launcher and runtime dependencies.
+
+`modules` records portable release defaults for CLI composition and local overrides. It does not add dependencies to your server; Gradle dependencies remain the source of the compile and runtime classpath. See [Local Minestom modules](/reference/development/minestom-runtime/local-modules) to replace a release module locally.
+
+### `flavors` (Minestom configuration variants)
+
+Use `flavors` when one project publishes more than one Minestom runtime configuration. The key is selected with `grounds push --flavor <key>`; when `flavors` is present, selecting a key is required.
+
+Keep the project `name` at the top level and put the complete Minestom runtime configuration in each flavor:
+
+```yaml grounds.yaml
+name: minigame
+flavors:
+  minestom:
+    type: minestom-server
+    baseImage: minestom
+    build:
+      task: :server:distTar
+      artifact: server/build/distributions/*.tar
+    modules:
+      - id: plugin-agones
+        variant: minestom
+        source: github:groundsgg/plugin-agones@v0.6.0:plugin-agones-minestom.jar
+```
+
+The selected flavor must define `type`, `baseImage`, `build.task`, `build.artifact`, and at least one module. Use `minestom-server` for the type; `minestom` is accepted as a shorthand. Do not combine top-level `plugins` entries with `flavors`, because local workspace resolution needs one source layout.
+
+```bash
+grounds push --flavor minestom
+```
 
 ### `jar` (optional, default `build/libs/*.jar`)
 

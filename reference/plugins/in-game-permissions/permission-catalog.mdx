@@ -1,0 +1,79 @@
+---
+title: "Register Permission Nodes"
+description: "Publish a workload permission catalog and manage custom in-game permission entries."
+---
+
+Register permission nodes so administrators can select consistent names when
+building roles and player grants. A workload-owned manifest is the preferred
+source of truth for the permissions that its code checks.
+
+## Add a permission manifest
+
+Place this file in your runtime artifact at
+`META-INF/grounds/permissions.json`:
+
+```json META-INF/grounds/permissions.json
+{
+  "source": "example-lobby",
+  "permissions": [
+    {
+      "key": "network.queue.join",
+      "label": "Join queue",
+      "description": "Allows a player to join the lobby matchmaking queue.",
+      "supportedScopes": ["GLOBAL", "SERVER_TYPE"]
+    },
+    {
+      "key": "network.chat.moderate",
+      "label": "Moderate chat",
+      "description": "Allows moderation actions in the network chat service.",
+      "supportedScopes": ["GLOBAL", "SERVER_TYPE", "SERVER"]
+    }
+  ]
+}
+```
+
+<AccordionGroup>
+<Accordion title="Manifest requirements">
+Use one stable source ID per workload. Each manifest needs at least one entry.
+Every entry needs a non-empty key, label, description, and supported scope
+list; keys must be unique within the manifest.
+</Accordion>
+
+<Accordion title="Choose scopes deliberately">
+
+| Scope         | Choose it when                                            |
+| ------------- | --------------------------------------------------------- |
+| `GLOBAL`      | The capability has the same meaning across the network.   |
+| `SERVER_TYPE` | The capability changes by workload type, such as `lobby`. |
+| `SERVER`      | The capability applies only to one named server.          |
+
+Declare only scopes that the workload actually evaluates. Catalog metadata does
+not grant a player access by itself.
+</Accordion>
+</AccordionGroup>
+
+## Registration behavior
+
+The Velocity plugin discovers active plugin manifests. The Minestom module
+collects manifests from active Grounds module providers. Each runtime submits
+the collected manifest to its local project `service-permissions` instance
+after startup.
+
+<Warning>
+An invalid manifest does not stop the runtime. It is skipped while the runtime
+registers the remaining valid manifests. Correct the packaged JSON and deploy
+a new workload version to register the missing nodes.
+</Warning>
+
+## Custom catalog entries
+
+Administrators can create custom entries in Portal for a node that no workload
+has registered yet. Use this during staged development or for a policy node
+owned outside a runtime module. Replace the custom entry with a workload
+manifest when the workload becomes authoritative, and keep its key unchanged
+so existing grants continue to match your code.
+
+## Next steps
+
+- [Use catalog nodes in roles and player grants](/reference/plugins/in-game-permissions/administration)
+- [Configure a runtime to register the manifest](/reference/plugins/in-game-permissions/runtime-integration)

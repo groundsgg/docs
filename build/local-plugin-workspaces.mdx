@@ -1,12 +1,12 @@
 ---
-title: "Work with local plugin workspaces"
-description: "Override release plugin sources with local builds from independent repositories."
+title: "Work with local plugin and module workspaces"
+description: "Override release plugin sources and Minestom module dependencies with local repositories."
 ---
 
-Local plugin workspaces let you keep `grounds.yaml` pointed at release plugin
-sources while opting into local builds for a single push. Use this workflow when
-your app lives in one repository and the plugin dependencies you are changing
-live in sibling repositories.
+Local workspaces let you keep `grounds.yaml` pointed at release sources while
+opting into local builds for a single push. Use this workflow when your app
+lives in one repository and its plugin or Minestom module dependencies live in
+sibling repositories.
 
 <Tip>
 Local overrides are machine-local. They do not change the manifest, and they
@@ -85,6 +85,34 @@ grounds workspace add plugin-player ~/grounds/plugin-player \
 
 The artifact path is relative to the plugin repository. The build command runs
 inside that repository before the artifact is resolved.
+
+## Map a Minestom module
+
+Minestom servers use a complete application distribution, not a plugin folder.
+For a local Minestom module, map the repository by its `minestom` variant:
+
+```bash
+grounds workspace add plugin-agones ~/grounds/plugin-agones --variant minestom
+```
+
+The CLI substitutes the module through a Gradle composite build during a
+Minestom push. Add explicit coordinates only when the repository's Gradle
+project path or published coordinates do not match automatically:
+
+```yaml workspace.yaml
+repos:
+  plugin-agones:
+    path: /home/alice/grounds/plugin-agones
+    variants:
+      minestom:
+        enabled: true
+        module: gg.grounds:plugin-agones-minestom
+        project: :minestom
+```
+
+`module` and `project` form one substitution rule. Configure both fields or
+neither one. See [Local Minestom modules](/reference/development/minestom-runtime/local-modules)
+for the matching manifest and push flow.
 
 ## Inspect mappings
 

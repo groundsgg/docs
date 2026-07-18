@@ -153,6 +153,16 @@
                   "reference/plugins/agones/paper",
                   "reference/plugins/agones/minestom"
                 ]
+              },
+              {
+                "group": "In-Game Permissions",
+                "pages": [
+                  "reference/plugins/in-game-permissions/index",
+                  "reference/plugins/in-game-permissions/administration",
+                  "reference/plugins/in-game-permissions/runtime-integration",
+                  "reference/plugins/in-game-permissions/permission-catalog",
+                  "reference/plugins/in-game-permissions/infrastructure"
+                ]
               }
             ]
           },
@@ -161,6 +171,21 @@
             "pages": [
               "reference/development/gradle-plugin/index",
               "reference/development/gradle-plugin/usage"
+            ]
+          },
+          {
+            "group": "Development libraries",
+            "pages": [
+              "reference/development/jvm-modules/service-registry",
+              {
+                "group": "Minestom Runtime",
+                "pages": [
+                  "reference/development/minestom-runtime/index",
+                  "reference/development/minestom-runtime/modules",
+                  "reference/development/minestom-runtime/composition",
+                  "reference/development/minestom-runtime/local-modules"
+                ]
+              }
             ]
           },
           {

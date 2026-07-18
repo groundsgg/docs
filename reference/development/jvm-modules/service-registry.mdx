@@ -1,0 +1,149 @@
+---
+title: "Service Registry"
+description: "Publish and consume typed JVM module services without string lookups at call sites."
+---
+
+The Grounds JVM module library uses typed service keys so modules can publish
+stable contracts and other modules can consume them without raw-string
+lookups.
+
+Use the registry when modules in the same JVM share a stable interface, such as
+a matchmaking service, player service, configuration service, or NATS client.
+It is not remote service discovery and does not create classloader isolation.
+
+## Type-first access
+
+Use type-first access when one implementation provides a service contract.
+
+```kotlin
+import gg.grounds.modules.core.DefaultServiceRegistry
+import gg.grounds.modules.register
+import gg.grounds.modules.require
+
+interface MatchmakingService {
+    fun status(): String
+}
+
+class DefaultMatchmakingService : MatchmakingService {
+    override fun status(): String = "ready"
+}
+
+val registry = DefaultServiceRegistry()
+registry.register<MatchmakingService>(DefaultMatchmakingService())
+
+val matchmaking = registry.require<MatchmakingService>()
+```
+
+The default `serviceKey<T>()` uses the Kotlin type as the key. This keeps
+normal call sites free from string identifiers.
+
+## Class-based access
+
+Use class-based overloads from non-reified code, Java-facing adapters, or code
+that already has a `KClass`.
+
+```kotlin
+registry.register(MatchmakingService::class, DefaultMatchmakingService())
+
+val matchmaking = registry.require(MatchmakingService::class)
+```
+
+These overloads create the same default service key as
+`serviceKey<MatchmakingService>()`.
+
+## Optional services
+
+Use `get` or `contains` when a service is optional.
+
+```kotlin
+val matchmaking = registry.get<MatchmakingService>()
+
+if (registry.contains<MatchmakingService>()) {
+    // Enable an optional integration.
+}
+```
+
+Use `require` for mandatory dependencies. It throws `MissingServiceException`
+when no service is registered, so missing contracts fail during startup rather
+than later gameplay.
+
+## Qualified keys
+
+Use qualified keys only when several services implement the same public
+contract and consumers must select one explicitly.
+
+```kotlin
+import gg.grounds.modules.qualifiedServiceKey
+
+interface NatsClient
+
+object NatsServiceKeys {
+    val Public = qualifiedServiceKey<NatsClient>("grounds.nats.public")
+    val Internal = qualifiedServiceKey<NatsClient>("grounds.nats.internal")
+}
+```
+
+Register and read qualified keys explicitly:
+
+```kotlin
+registry.register(NatsServiceKeys.Public, publicNats)
+registry.register(NatsServiceKeys.Internal, internalNats)
+
+val internalNats = registry.require(NatsServiceKeys.Internal)
+```
+
+<Warning>
+Do not create qualified keys inline at call sites. Define them once in the
+module API that owns the contract, then reuse those constants everywhere.
+</Warning>
+
+## Module descriptors
+
+Use the same service keys in module descriptors. `requires` and `provides`
+describe service contracts; `dependsOn` declares ordering that has no service
+contract.
+
+```kotlin
+import gg.grounds.modules.ModuleDescriptor
+import gg.grounds.modules.serviceKey
+
+override val descriptor =
+    ModuleDescriptor(
+        id = "grounds.matchmaking",
+        version = "1.0.0",
+        requires = setOf(NatsServiceKeys.Internal),
+        provides = setOf(serviceKey<MatchmakingService>()),
+        dependsOn = setOf("grounds.config"),
+    )
+```
+
+| Field | Use it for |
+| --- | --- |
+| `requires` | Services that must exist before this module can run. |
+| `provides` | Services this module promises to register. |
+| `dependsOn` | Modules that must start first even when no service contract exists. |
+
+## Failure behavior
+
+The default registry rejects duplicate registration for the same service key.
+If two implementations of one contract must exist, give each one a stable,
+qualified key.
+
+<AccordionGroup>
+<Accordion title="Duplicate service">
+Registering the same key twice throws `DuplicateServiceException`.
+</Accordion>
+
+<Accordion title="Missing service">
+`registry.require<MatchmakingService>()` throws `MissingServiceException` when
+the service is not registered. Prefer `require` for mandatory module
+dependencies.
+</Accordion>
+</AccordionGroup>
+
+## Next steps
+
+- Read [Runtime modules](/reference/development/minestom-runtime/modules) to
+  declare service contracts in a Grounds Minestom module.
+- Read [Runtime composition](/reference/development/minestom-runtime/composition)
+  to select provider-backed modules at startup.

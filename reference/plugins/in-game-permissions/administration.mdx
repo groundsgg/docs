@@ -1,0 +1,106 @@
+---
+title: "Manage In-Game Permissions"
+description: "Create Minecraft roles, map Keycloak groups, grant player exceptions, and inspect effective access in Portal."
+---
+
+Use the In-Game Permissions area in Portal to manage authorization for a
+Minecraft network. Portal access authorizes administration only; it never
+becomes a Minecraft role or a player runtime permission.
+
+## Roles
+
+Create a role with a name, optional display metadata, and optional default
+status. Default roles apply to every player. Build reusable roles with
+inheritance, for example `moderator` inheriting `member`; Portal rejects cycles.
+
+## Role grants
+
+| Field       | Use it for                                                       |
+|-------------|------------------------------------------------------------------|
+| Allow       | Grant `network.chat.moderate` or another capability.             |
+| Deny        | Exclude a capability inherited through another role or wildcard. |
+| Global      | Apply to every server.                                           |
+| Server type | Apply to all servers of one type, such as `lobby`.               |
+| Server      | Apply to one named server.                                       |
+| Expiry      | End temporary access automatically.                              |
+
+Use exact nodes when possible. The most specific matching scope wins; a deny
+wins between equally specific candidates.
+
+## Players
+
+Search a player to review assigned roles, direct grants, and effective access.
+Use a direct role grant for a reusable exception and a direct permission grant
+for one narrow exception. Both can expire. Verify the selected server type or
+server in effective access before testing in-game.
+
+## Assignment sources
+
+The effective access view combines all of these sources for a player:
+
+| Source in Portal | Assignment path | Use it when |
+| --- | --- | --- |
+| Default role | Role -> every player | Every player needs a baseline capability. |
+| Group mapping | Keycloak group -> Minecraft role -> role grants | Keycloak owns normal team membership. |
+| Direct role | Player -> Minecraft role -> role grants | One player needs a reusable, potentially temporary role. |
+| Direct grant | Player -> permission node | One player needs a narrow allow or deny exception. |
+
+Group mappings and direct role assignments are role assignments, not direct
+permission-node grants. A mapped or directly assigned role contributes its own
+grants and any inherited roles. The effective access view identifies whether a
+role or grant came from a default role, group mapping, direct role assignment,
+direct permission grant, or role inheritance.
+
+<Warning>
+Removing a grant does not kick a connected player. The change applies when the
+runtime refreshes a snapshot and makes a later check.
+</Warning>
+
+## Keycloak group mappings
+
+Map a Keycloak group to a Minecraft role for normal long-lived access. Portal
+reads groups but does not create, rename, or delete them; manage membership in
+Keycloak. An optional mapping expiry supports temporary group-derived access.
+The mapped role supplies the permissions; groups do not receive direct
+permission-node grants.
+
+## Permission catalog
+
+The catalog lists workload-registered nodes and administrator-created custom
+entries. Catalog metadata does not grant access by itself. See
+[Register permission nodes](/reference/plugins/in-game-permissions/permission-catalog)
+before creating a workload-owned entry.
+
+## Audit
+
+Open **Audit** in In-Game Permissions to review Minecraft authorization
+changes. Filter by action family and UTC time range, search by actor, action,
+or target, and page through the newest events first.
+
+Each event records the Portal administrator, action, technical target, time,
+and a non-sensitive change summary. Historical events without an actor display
+as `Unknown`. This history is separate from the Portal Access audit.
+
+## Recommended workflow
+
+<Steps>
+<Step title="Create the least-privileged role">
+Create the smallest role that supports the player action. Add a scoped deny
+only when an inherited or wildcard allow must be excluded.
+</Step>
+
+<Step title="Map normal membership">
+Map the appropriate Keycloak group to the role. Prefer this over direct player
+grants for a team whose membership is maintained in Keycloak.
+</Step>
+
+<Step title="Add temporary exceptions">
+Use an expiring player role or direct player grant for a short-lived exception.
+Confirm its expiry before saving it.
+</Step>
+
+<Step title="Verify effective access">
+Open the player's effective access view for the target server type or server.
+Confirm the resulting roles and patterns before testing in-game.
+</Step>
+</Steps>

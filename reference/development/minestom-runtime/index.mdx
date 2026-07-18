@@ -1,0 +1,83 @@
+---
+title: "Minestom Runtime"
+description: "Compose Grounds Minestom servers from lifecycle-aware runtime modules."
+---
+
+`grounds-minestom-runtime` provides the process-level pieces for Grounds
+Minestom lobby and minigame servers: module lifecycle, shared services, runtime
+configuration, and Minestom startup and shutdown orchestration.
+
+It is not a hot plugin system. Build a server as an immutable Gradle
+distribution with its runtime dependencies already on the classpath, then use
+modules to compose its behavior at startup.
+
+## Add the runtime
+
+Add the runtime core from the Grounds Maven registry. Your application calls
+the runtime API directly, so use `implementation` rather than `runtimeOnly`.
+
+```kotlin build.gradle.kts
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/groundsgg/*")
+        credentials {
+            username = providers.gradleProperty("github.user").get()
+            password = providers.gradleProperty("github.token").get()
+        }
+    }
+}
+
+dependencies {
+    implementation("gg.grounds:grounds-minestom-runtime-runtime-core:0.4.0")
+}
+```
+
+Configure `github.user` and `github.token` through Gradle properties or your CI
+environment before resolving Grounds GitHub Packages.
+
+## Compose a server
+
+Use `GroundsServer.builder()` in your application entrypoint. Discover
+provider-backed modules from the classpath, then select only the providers your
+server needs.
+
+```kotlin
+import gg.grounds.runtime.core.GroundsServer
+
+fun main() {
+    GroundsServer.builder()
+        .discoverProviders()
+        .useProvider("grounds.agones")
+        .start()
+}
+```
+
+`discoverProviders()` finds `GroundsModuleProvider` implementations through
+Java `ServiceLoader`. Discovery alone does not activate every provider;
+`useProvider` selects one by its stable ID.
+
+## Start here
+
+<CardGroup cols={2}>
+<Card title="Runtime modules" icon="puzzle-piece" href="/reference/development/minestom-runtime/modules">
+Define lifecycle-aware modules, providers, descriptors, and typed service contracts.
+</Card>
+
+<Card title="Runtime composition" icon="diagram-project" href="/reference/development/minestom-runtime/composition">
+Discover providers, select modules, configure the runtime, and understand startup behavior.
+</Card>
+
+<Card title="Local modules" icon="code-branch" href="/reference/development/minestom-runtime/local-modules">
+Replace a released Minestom module with a local repository during a Grounds push.
+</Card>
+
+<Card title="Manifest reference" icon="file-code" href="/build/manifest#minestom-server-manifests">
+Configure the Minestom distribution task and artifact in `grounds.yaml`.
+</Card>
+</CardGroup>
+
+## Related docs
+
+- [Service Registry](/reference/development/jvm-modules/service-registry)
+- [Agones Minestom integration](/reference/plugins/agones/minestom)
+- [grounds push](/build/cli/push)

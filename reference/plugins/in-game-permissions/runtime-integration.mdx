@@ -1,0 +1,109 @@
+---
+title: "Integrate In-Game Permissions"
+description: "Configure the Grounds Velocity plugin or Minestom module and evaluate player permissions from local snapshots."
+---
+
+Use the Grounds permissions modules when a Velocity proxy or Minestom
+gameserver needs to evaluate in-game permissions. Each runtime fetches a
+complete snapshot at login and evaluates later checks locally.
+
+<Warning>
+Set `PERMISSIONS_GRPC_TARGET` to the `service-permissions` endpoint in the
+same project vCluster. Do not configure a central production endpoint or a
+service from another project.
+</Warning>
+
+## Configuration
+
+| Variable                               | Required | Default          | Purpose                                                                                |
+|----------------------------------------|----------|------------------|----------------------------------------------------------------------------------------|
+| `PERMISSIONS_GRPC_TARGET`              | Yes      | —                | The local project `service-permissions` gRPC endpoint. Startup fails when it is blank. |
+| `GROUNDS_PERMISSION_SERVER_TYPE`       | No       | Runtime-specific | Resolves server-type-scoped grants, for example `lobby`.                               |
+| `GROUNDS_PERMISSION_SERVER_ID`         | No       | Unset            | Resolves grants scoped to one server.                                                  |
+| `PERMISSIONS_REFRESH_INTERVAL_SECONDS` | No       | `60`             | Interval for refreshing snapshots of online players.                                   |
+
+The platform bundle supplies the local endpoint for managed workloads. Set the
+server type and server ID only when your workload needs scoped policy.
+
+## Velocity
+
+Install the Velocity permissions plugin with your proxy. At proxy startup it
+registers the snapshot client, loads player snapshots during login, refreshes
+online players on the configured interval, and exposes the local `Permissions`
+service to your plugin code.
+
+Use the shared API for an unscoped check:
+
+```kotlin
+import gg.grounds.permissions.Permissions
+import java.util.UUID
+
+fun canModerateChat(permissions: Permissions, playerId: UUID): Boolean =
+    permissions.hasPermission(playerId, "network.chat.moderate")
+```
+
+Pass an explicit scope only when your code must override the runtime's default
+scope:
+
+```kotlin
+import gg.grounds.permissions.PermissionCheckScope
+import gg.grounds.permissions.Permissions
+import java.util.UUID
+
+fun canUseLobbyCommand(permissions: Permissions, playerId: UUID): Boolean =
+    permissions.hasPermission(
+        playerId,
+        "network.lobby.command.use",
+        PermissionCheckScope.serverType("lobby"),
+    )
+```
+
+## Minestom
+
+Add the Minestom permissions module to the Grounds module runtime. The module
+registers `Permissions` in `GroundsServerContext.services` while it is
+installed. Discover and select its `grounds.permissions` provider, then resolve
+the service from the code that handles your player action.
+
+```kotlin
+import gg.grounds.modules.require
+import gg.grounds.permissions.Permissions
+import gg.grounds.runtime.GroundsServerContext
+import gg.grounds.runtime.core.GroundsServer
+import java.util.UUID
+
+fun main() {
+    GroundsServer.builder()
+        .discoverProviders()
+        .useProvider("grounds.permissions")
+        .start()
+}
+
+fun canJoinQueue(ctx: GroundsServerContext, playerId: UUID): Boolean {
+    val permissions = ctx.services.require<Permissions>()
+    return permissions.hasPermission(playerId, "network.queue.join")
+}
+```
+
+The Minestom module uses the configured server type. If you do not set
+`GROUNDS_PERMISSION_SERVER_TYPE`, it uses the Grounds server type from the
+module context.
+
+## Snapshot lifecycle and outages
+
+1. The runtime fetches a snapshot during player login.
+2. Once `refreshAfter` passes, the periodic sweep asks the local project
+   service for a replacement while the existing snapshot remains usable.
+3. A failed refresh keeps the previous snapshot until it expires.
+4. An expired snapshot makes every check return `false`.
+5. If login cannot obtain a valid snapshot, the runtime denies that login.
+
+This fail-closed behavior prevents a temporary service outage from granting
+unverified permissions. Handle a `false` result as an ordinary authorization
+denial rather than retrying a remote call.
+
+## Next steps
+
+- [Register your permission nodes](/reference/plugins/in-game-permissions/permission-catalog)
+- [Understand the project-local runtime topology](/reference/plugins/in-game-permissions/infrastructure)
+- [Manage roles and player access](/reference/plugins/in-game-permissions/administration)
