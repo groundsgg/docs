@@ -153,17 +153,17 @@
                   "reference/plugins/agones/paper",
                   "reference/plugins/agones/minestom"
                 ]
+              },
+              {
+                "group": "In-Game Permissions",
+                "pages": [
+                  "reference/in-game-permissions/index",
+                  "reference/in-game-permissions/administration",
+                  "reference/in-game-permissions/runtime-integration",
+                  "reference/in-game-permissions/permission-catalog",
+                  "reference/in-game-permissions/infrastructure"
+                ]
               }
-            ]
-          },
-          {
-            "group": "In-Game Permissions",
-            "pages": [
-              "reference/in-game-permissions/index",
-              "reference/in-game-permissions/administration",
-              "reference/in-game-permissions/runtime-integration",
-              "reference/in-game-permissions/permission-catalog",
-              "reference/in-game-permissions/infrastructure"
             ]
           },
           {
