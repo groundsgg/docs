@@ -157,6 +157,16 @@
             ]
           },
           {
+            "group": "Minecraft Permissions",
+            "pages": [
+              "reference/minecraft-permissions/index",
+              "reference/minecraft-permissions/administration",
+              "reference/minecraft-permissions/runtime-integration",
+              "reference/minecraft-permissions/permission-catalog",
+              "reference/minecraft-permissions/infrastructure"
+            ]
+          },
+          {
             "group": "Convention plugins",
             "pages": [
               "reference/development/gradle-plugin/index",

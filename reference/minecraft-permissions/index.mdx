@@ -1,0 +1,59 @@
+---
+title: "Minecraft Permissions"
+description: "Manage Minecraft network authorization and integrate local permission checks in Grounds runtimes."
+---
+
+Use Minecraft permissions to control what players can do across a Grounds
+network. Administrators create policy in Portal; Velocity and Minestom
+workloads receive complete permission snapshots and check them locally.
+
+<Info>
+Minecraft permissions are separate from [Portal access](/build/portal/control-center-access).
+Portal access decides who can administer the platform. Minecraft permissions
+decide what a player may do inside the Minecraft network.
+</Info>
+
+## Choose your task
+
+<CardGroup cols={2}>
+<Card title="Manage permissions" icon="user-shield" href="/reference/minecraft-permissions/administration">
+  Create roles, map Keycloak groups, grant player exceptions, and inspect effective access.
+</Card>
+<Card title="Integrate a runtime" icon="plug" href="/reference/minecraft-permissions/runtime-integration">
+  Configure the Velocity plugin or Minestom module and make local permission checks.
+</Card>
+<Card title="Register permission nodes" icon="list-check" href="/reference/minecraft-permissions/permission-catalog">
+  Publish your workload's permission catalog and manage custom entries.
+</Card>
+<Card title="Understand the infrastructure" icon="diagram-project" href="/reference/minecraft-permissions/infrastructure">
+  Learn why Grounds has global and project-local permission service instances.
+</Card>
+</CardGroup>
+
+## Authorization model
+
+```text
+Keycloak group -> Minecraft role -> allow or deny grants -> effective snapshot
+```
+
+| Term | Meaning |
+| --- | --- |
+| Keycloak group | Read-only identity input that can map to a Minecraft role. |
+| Minecraft role | Reusable grants; it can inherit another role or be a default role. |
+| Grant | Allow or deny rule at global, server-type, or server scope. |
+| Direct player grant | Time-limited or permanent exception for one player. |
+| Effective snapshot | Complete, versioned result evaluated locally by a runtime. |
+
+Keycloak groups never map directly to permission nodes. Exact patterns such as
+`network.chat.moderate` and wildcards such as `network.chat.*` can match a
+check. Server scope wins over server-type scope, which wins over global scope;
+a deny wins between equally specific candidates.
+
+Once a snapshot expires, a check returns `false` until a valid replacement is
+available. Changing a permission does not disconnect a player automatically.
+
+## Next steps
+
+- [Manage Minecraft permissions in Portal](/reference/minecraft-permissions/administration)
+- [Configure Velocity or Minestom](/reference/minecraft-permissions/runtime-integration)
+- [Set up the Minecraft Keycloak identity provider](/deploy/keycloak-minecraft-idp)
