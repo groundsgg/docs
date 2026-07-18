@@ -11,6 +11,30 @@ It is not a hot plugin system. Build a server as an immutable Gradle
 distribution with its runtime dependencies already on the classpath, then use
 modules to compose its behavior at startup.
 
+## Add the runtime
+
+Add the runtime core from the Grounds Maven registry. Your application calls
+the runtime API directly, so use `implementation` rather than `runtimeOnly`.
+
+```kotlin build.gradle.kts
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/groundsgg/*")
+        credentials {
+            username = providers.gradleProperty("github.user").get()
+            password = providers.gradleProperty("github.token").get()
+        }
+    }
+}
+
+dependencies {
+    implementation("gg.grounds:grounds-minestom-runtime-runtime-core:0.4.0")
+}
+```
+
+Configure `github.user` and `github.token` through Gradle properties or your CI
+environment before resolving Grounds GitHub Packages.
+
 ## Compose a server
 
 Use `GroundsServer.builder()` in your application entrypoint. Discover

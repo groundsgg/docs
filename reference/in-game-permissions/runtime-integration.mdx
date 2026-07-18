@@ -62,17 +62,21 @@ fun canUseLobbyCommand(permissions: Permissions, playerId: UUID): Boolean =
 
 Add the Minestom permissions module to the Grounds module runtime. The module
 registers `Permissions` in `GroundsServerContext.services` while it is
-installed. Resolve and use that service from the code that handles your player
-action.
+installed. Discover and select its `grounds.permissions` provider, then resolve
+the service from the code that handles your player action.
 
 ```kotlin
+import gg.grounds.modules.require
 import gg.grounds.permissions.Permissions
-import gg.grounds.permissions.minestom.GroundsPermissionsModule
 import gg.grounds.runtime.GroundsServerContext
+import gg.grounds.runtime.core.GroundsServer
 import java.util.UUID
 
-fun installPermissions(ctx: GroundsServerContext) {
-    GroundsPermissionsModule().install(ctx)
+fun main() {
+    GroundsServer.builder()
+        .discoverProviders()
+        .useProvider("grounds.permissions")
+        .start()
 }
 
 fun canJoinQueue(ctx: GroundsServerContext, playerId: UUID): Boolean {

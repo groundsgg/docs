@@ -32,7 +32,7 @@ The module is published to the `groundsgg` GitHub Packages Maven registry as
 ```kotlin build.gradle.kts
 repositories {
     maven {
-        url = uri("https://maven.pkg.github.com/groundsgg/plugin-agones")
+        url = uri("https://maven.pkg.github.com/groundsgg/*")
         credentials {
             username = providers.gradleProperty("github.user").get()
             password = providers.gradleProperty("github.token").get()
@@ -41,6 +41,7 @@ repositories {
 }
 
 dependencies {
+    implementation("gg.grounds:grounds-minestom-runtime-runtime-core:0.4.0")
     runtimeOnly("gg.grounds:plugin-agones-minestom:0.6.0")
 }
 ```
@@ -52,7 +53,7 @@ dependencies {
 ```groovy build.gradle
 repositories {
     maven {
-        url "https://maven.pkg.github.com/groundsgg/plugin-agones"
+        url "https://maven.pkg.github.com/groundsgg/*"
         credentials {
             username = providers.gradleProperty('github.user').get()
             password = providers.gradleProperty('github.token').get()
@@ -61,6 +62,7 @@ repositories {
 }
 
 dependencies {
+    implementation "gg.grounds:grounds-minestom-runtime-runtime-core:0.4.0"
     runtimeOnly "gg.grounds:plugin-agones-minestom:0.6.0"
 }
 ```
