@@ -15,14 +15,14 @@ inheritance, for example `moderator` inheriting `member`; Portal rejects cycles.
 
 ## Role grants
 
-| Field | Use it for |
-| --- | --- |
-| Allow | Grant `network.chat.moderate` or another capability. |
-| Deny | Exclude a capability inherited through another role or wildcard. |
-| Global | Apply to every server. |
-| Server type | Apply to all servers of one type, such as `lobby`. |
-| Server | Apply to one named server. |
-| Expiry | End temporary access automatically. |
+| Field       | Use it for                                                       |
+|-------------|------------------------------------------------------------------|
+| Allow       | Grant `network.chat.moderate` or another capability.             |
+| Deny        | Exclude a capability inherited through another role or wildcard. |
+| Global      | Apply to every server.                                           |
+| Server type | Apply to all servers of one type, such as `lobby`.               |
+| Server      | Apply to one named server.                                       |
+| Expiry      | End temporary access automatically.                              |
 
 Use exact nodes when possible. The most specific matching scope wins; a deny
 wins between equally specific candidates.
@@ -68,7 +68,7 @@ permission-node grants.
 
 The catalog lists workload-registered nodes and administrator-created custom
 entries. Catalog metadata does not grant access by itself. See
-[Register permission nodes](/reference/in-game-permissions/permission-catalog)
+[Register permission nodes](/reference/plugins/in-game-permissions/permission-catalog)
 before creating a workload-owned entry.
 
 ## Audit

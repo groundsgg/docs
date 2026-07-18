@@ -157,11 +157,11 @@
               {
                 "group": "In-Game Permissions",
                 "pages": [
-                  "reference/in-game-permissions/index",
-                  "reference/in-game-permissions/administration",
-                  "reference/in-game-permissions/runtime-integration",
-                  "reference/in-game-permissions/permission-catalog",
-                  "reference/in-game-permissions/infrastructure"
+                  "reference/plugins/in-game-permissions/index",
+                  "reference/plugins/in-game-permissions/administration",
+                  "reference/plugins/in-game-permissions/runtime-integration",
+                  "reference/plugins/in-game-permissions/permission-catalog",
+                  "reference/plugins/in-game-permissions/infrastructure"
                 ]
               }
             ]
