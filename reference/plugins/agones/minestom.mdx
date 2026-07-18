@@ -3,9 +3,9 @@ title: "Minestom"
 description: "Embed plugin-agones-minestom as a library in your Minestom gameserver to sync Agones state"
 ---
 
-Use the Minestom module of `plugin-agones` when your gamemode runs on Minestom. Unlike the Paper
-build, Minestom has no plugin loader, so this module ships as a library that you embed and start
-explicitly from your server entrypoint.
+Use the Minestom module of `plugin-agones` when your gamemode runs on Minestom. Unlike Paper,
+Minestom has no plugin loader. Runtime-based servers discover the module from the classpath and
+select its `grounds.agones` provider during `GroundsServer` composition.
 
 Once started, the library syncs Agones state from Minestom's player events the same way the Paper
 build does: the first player switches the gameserver to `Allocated`, the last one returning to
@@ -41,7 +41,7 @@ repositories {
 }
 
 dependencies {
-    implementation("gg.grounds:plugin-agones-minestom:<version>")
+    runtimeOnly("gg.grounds:plugin-agones-minestom:0.6.0")
 }
 ```
 
@@ -61,7 +61,7 @@ repositories {
 }
 
 dependencies {
-    implementation "gg.grounds:plugin-agones-minestom:<version>"
+    runtimeOnly "gg.grounds:plugin-agones-minestom:0.6.0"
 }
 ```
 
@@ -73,10 +73,34 @@ GitHub Packages requires authentication even for public artifacts. Configure `gi
 `github.token` in your `~/.gradle/gradle.properties` or through environment variables.
 </Warning>
 
-## Start and Stop From Your Entrypoint
+## Compose with grounds-minestom-runtime
 
-`GroundsPluginAgones` is the single public entry point. Instantiate it once, call `enable()` during
-startup, and `disable()` during shutdown.
+`plugin-agones-minestom` `0.6.0` exposes a `GroundsModuleProvider` with the stable ID
+`grounds.agones`. Add the runtime dependency, discover providers, and select this provider in the
+server entrypoint:
+
+```kotlin
+import gg.grounds.runtime.core.GroundsServer
+
+fun main() {
+    GroundsServer.builder()
+        .discoverProviders()
+        .useProvider("grounds.agones")
+        .start()
+}
+```
+
+The runtime owns the module lifecycle: it installs the module before Minestom starts, then starts
+it after the server starts and stops it during shutdown. See [Runtime composition](/reference/development/minestom-runtime/composition) for provider selection and validation behavior.
+
+## Low-level direct usage
+
+<Warning>
+Use direct lifecycle calls only when embedding Agones without `grounds-minestom-runtime`.
+Runtime-based servers should select the provider instead.
+</Warning>
+
+`GroundsPluginAgones` remains available for a custom Minestom bootstrap:
 
 ```kotlin
 import gg.grounds.GroundsPluginAgones
@@ -84,32 +108,16 @@ import net.minestom.server.MinecraftServer
 
 fun main() {
     val server = MinecraftServer.init()
-
     val agones = GroundsPluginAgones()
+
     agones.enable()
-
     Runtime.getRuntime().addShutdownHook(Thread { agones.disable() })
-
     server.start("0.0.0.0", 25565)
 }
 ```
 
-<Steps>
-<Step title="Call enable during startup">
-`enable()` reads the current player count, sets the initial Agones state, registers a child
-`EventNode` called `grounds-plugin-agones` on the global event handler, and schedules a 10 second
-fallback reconciliation loop.
-
-Calling `enable()` again while the plugin is already running is safe: the existing state is
-disabled first and replaced with a fresh runtime.
-</Step>
-
-<Step title="Call disable during shutdown">
-`disable()` cancels the fallback task, removes the event node from the global handler, and cancels
-the coroutine scope used for sidecar calls. After `disable()`, the instance is reusable with
-another `enable()` call.
-</Step>
-</Steps>
+`enable()` installs listeners and starts reconciliation. `disable()` cancels the fallback task,
+removes the event node, and releases the coroutine scope.
 
 ## State Sync Semantics
 
