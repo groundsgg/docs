@@ -39,7 +39,18 @@
               "build/concepts/targets",
               "build/concepts/pushes",
               "build/concepts/base-images",
-              "build/concepts/preview-environments"
+              "build/concepts/preview-environments",
+              "build/concepts/game-servers",
+              "build/concepts/connecting-players"
+            ]
+          },
+          {
+            "group": "Runtime",
+            "pages": [
+              "build/runtime/environment-and-secrets",
+              "build/runtime/databases",
+              "build/runtime/messaging",
+              "build/runtime/backend-services"
             ]
           },
           {
