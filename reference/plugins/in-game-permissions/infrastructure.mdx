@@ -1,83 +1,114 @@
 ---
 title: "In-Game Permissions Infrastructure"
-description: "Understand global and project-local permission services, identity synchronization, and runtime boundaries."
+description: "Understand production, stage, and project permission environments, identity propagation, and runtime security boundaries."
 ---
 
-Grounds separates global identity coordination from project-local runtime
-authorization. That keeps player checks local to a project while allowing
-identity changes to propagate safely across the platform.
+Grounds separates permission policy between production, stage, and individual
+projects. Each environment owns its policy and identity projection, and each
+runtime connects only to the permission instance assigned to that environment.
 
 ```mermaid
-flowchart LR
+flowchart TB
   keycloak[Keycloak] --> stream[Durable identity stream]
-  stream --> global[Global production instance]
+  stream --> production[Production permission instance]
   stream --> forge[Forge identity relay]
-  portal[Portal] --> proxy[Forge project proxy]
-  proxy --> project[Project instance]
   forge --> broker[Project broker]
-  broker --> project
-  project --> velocity[Velocity]
-  project --> minestom[Minestom]
+  broker --> project[Project permission instance]
+
+  portal[Portal] -->|Production administration| production
+  portal -->|Project administration| proxy[Forge project proxy]
+  proxy --> project
+
+  keycloak -. Scheduled reconciliation .-> production
+  keycloak -. Scheduled reconciliation .-> stage[Stage permission instance]
+  keycloak -. Scheduled reconciliation .-> project
+
+  production -->|Private runtime API| productionRuntime[Production runtimes]
+  stage -->|Private runtime API| stageRuntime[Stage runtimes]
+  project -->|Private runtime API| projectRuntime[Project runtimes]
 ```
 
-## Global production instance
+## Production
 
-The global production `service-permissions` instance runs in the management
-cluster. It owns durable permission and identity data for its scope, reads the
-central Keycloak realm with minimum read-only access, consumes identity-change
-events, and exposes the authenticated control-plane API.
+The production permission instance owns the platform's live Minecraft policy
+and its identity projection. Portal uses its authenticated administration API,
+while production runtimes use a separate private runtime API to fetch player
+snapshots and register authorized catalog sources.
 
 <Info>
-The global production instance is a control-plane component. Minecraft plugins
-do not use it as their runtime endpoint.
+Administration and runtime traffic use separate API surfaces. Browser-facing
+routes do not expose the private runtime API.
 </Info>
 
-## Project instances
+## Stage
+
+The stage permission instance provides isolated pre-production policy and a
+private runtime API for stage workloads. This allows service and policy changes
+to be exercised without making a stage runtime depend on production runtime
+availability.
+
+<Info>
+Stage currently receives identity freshness through scheduled reconciliation.
+It does not consume the real-time project invalidation relay.
+</Info>
+
+## Projects
 
 Each project receives a `service-permissions` instance from the platform
-bundle inside that project's vCluster. The project instance keeps its own
-project-local permission data and exposes the local gRPC endpoint that the
-project's Velocity and Minestom workloads use.
+bundle. The instance keeps project-local policy and identity data. Workloads in
+that project fetch snapshots and register authorized catalog sources through
+its private REST API.
 
 Portal calls Forge's authorized project proxy. Forge forwards the request to
-the selected project instance, so Portal does not need direct network access to
-a project vCluster.
+the selected project instance after checking project access, so Portal does not
+need direct network access to the project's runtime environment.
 
 ## Identity propagation and recovery
 
 <Steps>
 <Step title="Publish an identity change">
-Keycloak publishes a minimal identity invalidation to a durable central stream.
+After a supported identity change, Keycloak publishes a minimal user-scoped
+invalidation to a durable central stream. The event contains identifiers and a
+reason, not credentials or complete permission policy.
 </Step>
 
-<Step title="Relay it to the project">
-Forge relays the invalidation to the appropriate project broker. Forge does not
-calculate runtime policy.
+<Step title="Deliver production and project invalidations">
+The stream delivers the event to the production consumer and the Forge relay.
+Forge forwards invalidations to active project brokers; it does not calculate
+runtime policy.
 </Step>
 
-<Step title="Refresh project state">
-The project service refreshes its identity projection and makes newer snapshots
-available to its local runtimes.
+<Step title="Refresh identity projections">
+The receiving permission instance refreshes its identity projection and makes
+newer snapshots available to its assigned runtimes.
 </Step>
 
 <Step title="Reconcile after delays">
-Scheduled identity reconciliation and runtime snapshot refresh recover when an
-event is delayed or unavailable.
+Scheduled identity reconciliation recovers delayed, missed, and unsupported
+events. Runtime snapshot refresh then distributes the recovered state.
 </Step>
 </Steps>
 
 ## Runtime boundary
 
-Velocity and Minestom connect only to the local `service-permissions` endpoint
-inside their own project vCluster. They fetch complete snapshots at login and
-evaluate later permission checks locally. A plugin must not call a central
-service or another project's service directly.
+Velocity and Minestom connect only to the private REST endpoint assigned to
+their environment. They fetch complete snapshots at login and evaluate later
+permission checks locally. A workload must not call another project's instance
+or cross between stage and production directly.
 
-## Security behavior
+## Security boundaries
 
-- The Keycloak reader receives only the identity read permissions it needs.
-- Forge relays authorized requests and invalidations but is not a runtime
-  policy authority.
+- Administration APIs and private runtime APIs are separate surfaces; runtime
+  routes are not exposed as public browser endpoints.
+- Managed workloads authenticate with short-lived projected tokens read from
+  files instead of static credentials in workload configuration.
+- A workload can read snapshots or register only the exact catalog sources
+  declared in its Forge manifest.
+- Forge authorizes Portal project requests before forwarding them. Project
+  owners and editors receive write access; project viewers receive read-only
+  access.
+- Keycloak invalidations contain only the identifiers and reason required to
+  refresh an identity projection.
 - Missing or expired runtime snapshots fail closed.
 - Identity state that is too stale can prevent a permission service from being
   ready until it synchronizes again.

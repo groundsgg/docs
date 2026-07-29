@@ -7,6 +7,12 @@ Use the In-Game Permissions area in Portal to manage authorization for a
 Minecraft network. Portal access authorizes administration only; it never
 becomes a Minecraft role or a player runtime permission.
 
+<Info>
+Project owners and editors can manage their project's permissions. Project
+viewers have read-only access. Production permission administration requires
+separate platform access.
+</Info>
+
 ## Roles
 
 Create a role with a name, optional display metadata, and optional default
@@ -20,6 +26,7 @@ inheritance, for example `moderator` inheriting `member`; Portal rejects cycles.
 | Allow       | Grant `network.chat.moderate` or another capability.             |
 | Deny        | Exclude a capability inherited through another role or wildcard. |
 | Global      | Apply to every server.                                           |
+| Environment | Apply within one deployment environment, such as `stage` or `prod`. |
 | Server type | Apply to all servers of one type, such as `lobby`.               |
 | Server      | Apply to one named server.                                       |
 | Expiry      | End temporary access automatically.                              |
@@ -31,8 +38,8 @@ wins between equally specific candidates.
 
 Search a player to review assigned roles, direct grants, and effective access.
 Use a direct role grant for a reusable exception and a direct permission grant
-for one narrow exception. Both can expire. Verify the selected server type or
-server in effective access before testing in-game.
+for one narrow exception. Both can expire. Verify the selected environment,
+server type, and server in effective access before testing in-game.
 
 ## Assignment sources
 
@@ -63,6 +70,43 @@ reads groups but does not create, rename, or delete them; manage membership in
 Keycloak. An optional mapping expiry supports temporary group-derived access.
 The mapped role supplies the permissions; groups do not receive direct
 permission-node grants.
+
+## Sync production policy into a project
+
+Use **Sync from global** to compare the current production policy with a
+project before changing project data. The preview includes roles, role grants,
+role inheritance, and catalog entries.
+
+<Warning>
+The sync never transfers direct player-to-role assignments or direct player
+permission grants. Review and manage player-specific access inside the target
+project.
+</Warning>
+
+<Steps>
+<Step title="Preview production changes">
+Open **Sync from global**. Portal compares the latest production snapshot with
+the project's current permission state without changing the project.
+</Step>
+
+<Step title="Choose how to resolve conflicts">
+For each conflict, choose **Keep project**, **Use global**, **Skip**, or
+**Remove project** when that action is available. Review additions and removals
+before continuing.
+</Step>
+
+<Step title="Choose whether to include Keycloak mappings">
+Enable **Include Keycloak mappings** only when production group-to-role mappings
+should replace or extend the project mappings. When disabled, existing project
+mappings remain local to the project.
+</Step>
+
+<Step title="Apply the preview">
+Confirm the import. If the project changed after the preview was created,
+Portal rejects the stale preview without changing project data. Create a new
+preview and review it again.
+</Step>
+</Steps>
 
 ## Permission catalog
 
@@ -102,6 +146,7 @@ Confirm its expiry before saving it.
 
 <Step title="Verify effective access">
 Open the player's effective access view for the target server type or server.
-Confirm the resulting roles and patterns before testing in-game.
+Confirm the resulting roles and patterns for the target environment, server
+type, and server before testing in-game.
 </Step>
 </Steps>

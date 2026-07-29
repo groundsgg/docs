@@ -32,6 +32,22 @@ Place this file in your runtime artifact at
 }
 ```
 
+## Authorize the manifest source
+
+The manifest's `source` must exactly match a resource authorized by the
+workload's `catalog:register` capability. For the example above, declare:
+
+```yaml
+- capability: catalog:register
+  resources:
+    - example-lobby
+```
+
+This authorizes the workload to register `example-lobby`; it does not grant
+access to arbitrary catalog sources. See
+[Integrate In-Game Permissions](/reference/plugins/in-game-permissions/runtime-integration)
+for the complete Forge service declaration.
+
 <AccordionGroup>
 <Accordion title="Manifest requirements">
 Use one stable source ID per workload. Each manifest needs at least one entry.
@@ -48,7 +64,8 @@ list; keys must be unique within the manifest.
 | `SERVER`      | The capability applies only to one named server.          |
 
 Declare only scopes that the workload actually evaluates. Catalog metadata does
-not grant a player access by itself.
+not grant a player access by itself. Environment-scoped policy is configured by
+administrators and is not a supported workload manifest scope.
 </Accordion>
 </AccordionGroup>
 
@@ -56,8 +73,10 @@ not grant a player access by itself.
 
 The Velocity plugin discovers active plugin manifests. The Minestom module
 collects manifests from active Grounds module providers. Each runtime submits
-the collected manifest to its local project `service-permissions` instance
-after startup.
+the collected manifests asynchronously to its assigned permission instance
+after startup. Connection failures, rate limits, and service failures are
+retried with bounded backoff. Invalid manifests and other client errors require
+a corrected workload declaration or artifact and a new deployment.
 
 <Warning>
 An invalid manifest does not stop the runtime. It is skipped while the runtime

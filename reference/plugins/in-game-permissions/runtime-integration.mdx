@@ -5,32 +5,62 @@ description: "Configure the Grounds Velocity plugin or Minestom module and evalu
 
 Use the Grounds permissions modules when a Velocity proxy or Minestom
 gameserver needs to evaluate in-game permissions. Each runtime fetches a
-complete snapshot at login and evaluates later checks locally.
+complete snapshot through the private REST API at login and evaluates later
+checks locally.
 
-<Warning>
-Set `PERMISSIONS_GRPC_TARGET` to the `service-permissions` endpoint in the
-same project vCluster. Do not configure a central production endpoint or a
-service from another project.
-</Warning>
+## Declare service access
+
+Managed workloads declare their required permission-service capabilities in
+the Forge workload manifest:
+
+```yaml
+services:
+  permissions:
+    version: v1
+    access:
+      - capability: snapshot:read
+      - capability: catalog:register
+        resources:
+          - example-lobby
+```
+
+`snapshot:read` allows the workload to fetch player snapshots.
+`catalog:register` allows it to replace manifests only for the listed source
+IDs. A permissions service declaration without an access entry grants no
+permission-service access.
+
+<Tip>
+Declare only the capabilities and catalog sources your workload uses. The
+platform derives the runtime credentials and exact authorization from this
+declaration.
+</Tip>
 
 ## Configuration
 
-| Variable                               | Required | Default          | Purpose                                                                                |
-|----------------------------------------|----------|------------------|----------------------------------------------------------------------------------------|
-| `PERMISSIONS_GRPC_TARGET`              | Yes      | —                | The local project `service-permissions` gRPC endpoint. Startup fails when it is blank. |
-| `GROUNDS_PERMISSION_SERVER_TYPE`       | No       | Runtime-specific | Resolves server-type-scoped grants, for example `lobby`.                               |
-| `GROUNDS_PERMISSION_SERVER_ID`         | No       | Unset            | Resolves grants scoped to one server.                                                  |
-| `PERMISSIONS_REFRESH_INTERVAL_SECONDS` | No       | `60`             | Interval for refreshing snapshots of online players.                                   |
+| Variable                               | Required when enabled | Managed behavior                | Purpose                                                          |
+|----------------------------------------|-----------------------|---------------------------------|------------------------------------------------------------------|
+| `PERMISSIONS_SERVICE_URL`              | Yes                   | Injected                        | Base URL of the permission instance assigned to the workload.    |
+| `PERMISSIONS_TOKEN_FILE`               | Yes                   | Injected                        | Path to the projected workload token.                            |
+| `GROUNDS_PERMISSION_SERVER_TYPE`       | No                    | Runtime-specific default        | Resolves server-type-scoped grants, for example `lobby`.         |
+| `GROUNDS_PERMISSION_SERVER_ID`         | No                    | Unset                           | Resolves grants scoped to one server.                            |
+| `GROUNDS_PERMISSION_ENVIRONMENT`       | No                    | Set by the platform when needed | Resolves environment-scoped grants, such as `stage` or `prod`.   |
+| `PERMISSIONS_REFRESH_INTERVAL_SECONDS` | No                    | `60`                            | Interval for refreshing snapshots of online players.            |
 
-The platform bundle supplies the local endpoint for managed workloads. Set the
-server type and server ID only when your workload needs scoped policy.
+The integration is enabled when both `PERMISSIONS_SERVICE_URL` and
+`PERMISSIONS_TOKEN_FILE` are present. Supplying only one fails startup. Managed
+workloads receive both values from the platform; do not override them to call a
+central instance or an instance assigned to another project.
+
+The client reads the projected token file for every request, so routine token
+rotation does not require a workload restart. Never copy the token into a
+manifest, environment variable, or log message.
 
 ## Velocity
 
 Install the Velocity permissions plugin with your proxy. At proxy startup it
-registers the snapshot client, loads player snapshots during login, refreshes
-online players on the configured interval, and exposes the local `Permissions`
-service to your plugin code.
+registers the REST snapshot client, loads player snapshots during login,
+refreshes online players on the configured interval, and exposes the local
+`Permissions` service to your plugin code.
 
 Use the shared API for an unscoped check:
 
@@ -43,6 +73,7 @@ fun canModerateChat(permissions: Permissions, playerId: UUID): Boolean =
 ```
 
 Pass an explicit scope only when your code must override the runtime's default
+scope. The configured environment, server type, and server ID form that default
 scope:
 
 ```kotlin
@@ -91,9 +122,10 @@ module context.
 
 ## Snapshot lifecycle and outages
 
-1. The runtime fetches a snapshot during player login.
-2. Once `refreshAfter` passes, the periodic sweep asks the local project
-   service for a replacement while the existing snapshot remains usable.
+1. The runtime fetches a snapshot through the private runtime REST API during
+   player login.
+2. Once `refreshAfter` passes, the periodic sweep asks the assigned permission
+   instance for a replacement while the existing snapshot remains usable.
 3. A failed refresh keeps the previous snapshot until it expires.
 4. An expired snapshot makes every check return `false`.
 5. If login cannot obtain a valid snapshot, the runtime denies that login.
@@ -105,5 +137,5 @@ denial rather than retrying a remote call.
 ## Next steps
 
 - [Register your permission nodes](/reference/plugins/in-game-permissions/permission-catalog)
-- [Understand the project-local runtime topology](/reference/plugins/in-game-permissions/infrastructure)
+- [Understand the permission runtime topology](/reference/plugins/in-game-permissions/infrastructure)
 - [Manage roles and player access](/reference/plugins/in-game-permissions/administration)

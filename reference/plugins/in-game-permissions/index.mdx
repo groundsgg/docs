@@ -26,9 +26,17 @@ decide what a player may do inside the Minecraft network.
   Publish your workload's permission catalog and manage custom entries.
 </Card>
 <Card title="Understand the infrastructure" icon="diagram-project" href="/reference/plugins/in-game-permissions/infrastructure">
-  Learn why Grounds has global and project-local permission service instances.
+  Learn how production, stage, and project permission environments stay isolated.
 </Card>
 </CardGroup>
+
+## Permission environments
+
+Grounds keeps policy separate between production, stage, and individual
+projects. Production owns the platform's live Minecraft policy. Stage provides
+an isolated pre-production policy environment. Each project owns its local
+policy, which you can initialize or update from production through an explicit
+preview and import workflow.
 
 ## Authorization model
 
@@ -50,7 +58,8 @@ flowchart LR
 |----------------------------------|--------------------------------------------------------------------------------|
 | Keycloak group                   | Read-only identity input that can map to a Minecraft role.                     |
 | Minecraft role                   | Reusable grants; it can inherit another role or be a default role.             |
-| Grant                            | Allow or deny rule at global, server-type, or server scope.                    |
+| Grant                            | Allow or deny rule at global, environment, server-type, or server scope.       |
+| Environment                      | Deployment context such as `stage` or `prod` used for scoped checks.           |
 | Group-to-role mapping            | Assigns a Minecraft role to every player in one Keycloak group; it can expire. |
 | Direct player-to-role assignment | Assigns a reusable role to one player; it can expire.                          |
 | Direct player grant              | Time-limited or permanent exception for one player.                            |
@@ -68,9 +77,9 @@ flowchart LR
 Keycloak groups never map directly to permission nodes: they provide group-to-role
 assignments. A role can then carry allow or deny grants, including inherited
 role grants. Exact patterns such as `network.chat.moderate` and wildcards such
-as `network.chat.*` can match a check. Server scope wins over server-type
-scope, which wins over global scope; a deny wins between equally specific
-candidates.
+as `network.chat.*` can match a check. Server scope wins over server-type scope,
+server-type scope wins over environment scope, and environment scope wins over
+global scope. A deny wins between equally specific candidates.
 
 Once a snapshot expires, a check returns `false` until a valid replacement is
 available. Changing a permission does not disconnect a player automatically.
