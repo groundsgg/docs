@@ -159,7 +159,7 @@ Run:
 ```bash
 mintlify validate
 git diff --check
-rg -n "PERMISSIONS_GRPC_TARGET|gRPC endpoint|local gRPC" reference/plugins/in-game-permissions
+rg -n "PERMISSIONS_GRPC_TARGET|gRPC endpoint|local gRPC" reference/plugins/in-game-permissions/runtime-integration.mdx
 rg -n "PERMISSIONS_SERVICE_URL|PERMISSIONS_TOKEN_FILE|snapshot:read|catalog:register" reference/plugins/in-game-permissions/runtime-integration.mdx
 ```
 
