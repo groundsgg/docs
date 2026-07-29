@@ -8,41 +8,89 @@ gameserver needs to evaluate in-game permissions. Each runtime fetches a
 complete snapshot through the private REST API at login and evaluates later
 checks locally.
 
-## Declare service access
+## Declare service and event access
 
-Managed workloads declare their required permission-service capabilities in
-the Forge workload manifest:
+Managed applications declare permission-service access, NATS subject access,
+and transport on their component in the platform bundle. Use the environment
+field supported by the component's chart:
 
+<Tabs>
+<Tab title="Velocity">
 ```yaml
-services:
-  permissions:
-    version: v1
-    access:
-      - capability: snapshot:read
-      - capability: catalog:register
-        resources:
-          - example-lobby
-events:
-  - subject: permissions.snapshot.invalidated
-    dir: sub
-helm:
-  extraEnv:
-    - name: NATS_URL
-      valueFrom: shared.nats
+components:
+  velocity:
+    type: plugin-velocity-base
+    chart:
+      url: oci://ghcr.io/groundsgg/charts/grounds-velocity
+      version: 0.8.0
+    image: ghcr.io/groundsgg/velocity
+    version: 0.13.0
+    services:
+      permissions:
+        version: v1
+        access:
+          - capability: snapshot:read
+          - capability: catalog:register
+            resources:
+              - plugin-permissions
+              - plugin-agones
+              - plugin-chat
+    helm:
+      env:
+        - name: NATS_URL
+          valueFrom: shared.nats
+    events:
+      - subject: permissions.snapshot.invalidated
+        dir: sub
 ```
+</Tab>
+
+<Tab title="Minestom (grounds-gamemode)">
+```yaml
+components:
+  minestom-lobby:
+    type: gamemode
+    chart:
+      url: oci://ghcr.io/groundsgg/charts/grounds-gamemode
+      version: 0.8.0
+    image: ghcr.io/groundsgg/minestom-lobby
+    version: 1.4.0
+    services:
+      permissions:
+        version: v1
+        access:
+          - capability: snapshot:read
+    helm:
+      kind: lobby
+      extraEnv:
+        - name: NATS_URL
+          valueFrom: shared.nats
+    events:
+      - subject: permissions.snapshot.invalidated
+        dir: sub
+```
+</Tab>
+</Tabs>
 
 `snapshot:read` allows the workload to fetch player snapshots.
 `catalog:register` allows it to replace manifests only for the listed source
-IDs. The `events` entry allows the projected workload identity to subscribe to
-snapshot invalidations. It does not configure the broker endpoint, so the
-bundle must also provide `NATS_URL` explicitly from the shared NATS transport.
+IDs. These are application-level bundle declarations, not the environment
+variables or volumes rendered into the pod.
+
+The platform projection turns `services.permissions.access` into the private
+REST endpoint, token-file path, and exact REST authorization. It turns
+`events:` into NATS subject authorization enforced by a projected workload
+identity. The chart-specific `helm.env` or `helm.extraEnv` entry separately
+passes the shared broker endpoint as `NATS_URL`. Declaring an event never
+configures `NATS_URL` by itself.
+
 A permissions service declaration without an access entry grants no
 permission-service access, even when the event subscription is present.
 
 <Tip>
 Declare only the capabilities and catalog sources your workload uses. The
-platform derives the runtime credentials and exact authorization from this
-declaration.
+platform derives runtime credentials and exact authorization from the service
+and event declarations, while the chart environment selects the transport.
 </Tip>
 
 ## Configuration
@@ -66,10 +114,9 @@ central instance or an instance assigned to another project.
 
 The client reads the projected token file for every request, so routine token
 rotation does not require a workload restart. Never copy the token into a
-manifest, environment variable, or log message. Managed workloads receive the
-event subject, broker endpoint, and token-file path from their bundle
-declaration and platform projection; put only token-file paths in
-configuration, never token values.
+manifest, environment variable, or log message. The bundle declares access and
+the broker endpoint; the platform projection injects the resulting token-file
+paths. Put only token-file paths in configuration, never token values.
 
 ## Velocity
 
