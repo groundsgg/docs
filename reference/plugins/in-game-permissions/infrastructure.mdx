@@ -9,23 +9,31 @@ runtime connects only to the permission instance assigned to that environment.
 
 ```mermaid
 flowchart TB
-  keycloak[Keycloak] --> stream[Durable identity stream]
-  stream --> production[Production permission instance]
-  stream --> forge[Forge identity relay]
-  forge --> broker[Project broker]
-  broker --> project[Project permission instance]
+  keycloak[Keycloak] --> stream[Core durable identity stream]
+  stream -->|Identity invalidation| production[Production permission instance]
+  stream -->|Identity invalidation| forge[Forge identity relay]
+  stream -->|Identity invalidation| stageBroker[Stage cluster-local broker]
+  forge -->|Identity invalidation| projectBroker[Project broker]
+  projectBroker -->|Identity invalidation| project[Project permission instance]
+  stageBroker -->|Identity invalidation| stage[Stage permission instance]
 
   portal[Portal] -->|Production administration| production
   portal -->|Project administration| proxy[Forge project proxy]
   proxy --> project
 
   keycloak -. Scheduled reconciliation .-> production
-  keycloak -. Scheduled reconciliation .-> stage[Stage permission instance]
+  keycloak -. Scheduled reconciliation .-> stage
   keycloak -. Scheduled reconciliation .-> project
 
   production -->|Private runtime API| productionRuntime[Production runtimes]
+  production -->|UUID snapshot invalidation| coreBroker[Core NATS]
+  coreBroker -->|Snapshot invalidation| productionRuntime
   stage -->|Private runtime API| stageRuntime[Stage runtimes]
+  stage -->|UUID snapshot invalidation| stageBroker
+  stageBroker -->|Snapshot invalidation| stageRuntime
   project -->|Private runtime API| projectRuntime[Project runtimes]
+  project -->|UUID snapshot invalidation| projectBroker
+  projectBroker -->|Snapshot invalidation| projectRuntime
 ```
 
 ## Production
@@ -33,7 +41,9 @@ flowchart TB
 The production permission instance owns the platform's live Minecraft policy
 and its identity projection. Portal uses its authenticated administration API,
 while production runtimes use a separate private runtime API to fetch player
-snapshots and register authorized catalog sources.
+snapshots and register authorized catalog sources. After persisting a relevant
+identity change, the instance publishes a snapshot invalidation to its assigned
+runtimes through Core NATS.
 
 <Info>
 Administration and runtime traffic use separate API surfaces. Browser-facing
@@ -48,8 +58,9 @@ to be exercised without making a stage runtime depend on production runtime
 availability.
 
 <Info>
-Stage currently receives identity freshness through scheduled reconciliation.
-It does not consume the real-time project invalidation relay.
+Stage consumes real-time identity changes and publishes snapshot invalidations
+through its private cluster-local NATS broker. Scheduled reconciliation and the
+runtime snapshot sweep remain fallback paths for missed or delayed events.
 </Info>
 
 ## Projects
@@ -57,7 +68,9 @@ It does not consume the real-time project invalidation relay.
 Each project receives a `service-permissions` instance from the platform
 bundle. The instance keeps project-local policy and identity data. Workloads in
 that project fetch snapshots and register authorized catalog sources through
-its private REST API.
+its private REST API. The bundle declares the instance's publish subject and
+each runtime's subscribe subject, and it supplies each runtime's `NATS_URL`
+from the shared project broker explicitly.
 
 Portal calls Forge's authorized project proxy. Forge forwards the request to
 the selected project instance after checking project access, so Portal does not
@@ -79,13 +92,21 @@ runtime policy.
 </Step>
 
 <Step title="Refresh identity projections">
-The receiving permission instance refreshes its identity projection and makes
-newer snapshots available to its assigned runtimes.
+The receiving permission instance refreshes and persists its identity
+projection. It then publishes one snapshot invalidation for each changed
+Minecraft UUID.
+</Step>
+
+<Step title="Refresh online runtime snapshots">
+Each assigned runtime receives the invalidation for an online player and
+force-fetches the authoritative snapshot through private REST. It atomically
+replaces the local snapshot only after a successful response.
 </Step>
 
 <Step title="Reconcile after delays">
 Scheduled identity reconciliation recovers delayed, missed, and unsupported
-events. Runtime snapshot refresh then distributes the recovered state.
+events. The periodic runtime sweep retries snapshots after `refreshAfter`, and
+snapshot expiry keeps authorization fail closed.
 </Step>
 </Steps>
 
@@ -93,8 +114,19 @@ events. Runtime snapshot refresh then distributes the recovered state.
 
 Velocity and Minestom connect only to the private REST endpoint assigned to
 their environment. They fetch complete snapshots at login and evaluate later
-permission checks locally. A workload must not call another project's instance
-or cross between stage and production directly.
+permission checks locally. NATS carries only a refresh signal; private REST
+remains the authoritative data path. A workload must not call another project's
+instance or cross between stage and production directly.
+
+The runtime invalidation payload contains exactly a schema version and
+Minecraft UUID:
+
+```json
+{"schemaVersion":1,"playerId":"0f287625-2442-4f55-b928-d2f53fbdf575"}
+```
+
+It contains no username, Keycloak identifier, group, role, grant, permission,
+token, or project identifier.
 
 ## Security boundaries
 
@@ -104,11 +136,24 @@ or cross between stage and production directly.
   files instead of static credentials in workload configuration.
 - A workload can read snapshots or register only the exact catalog sources
   declared in its Forge manifest.
+- Project NATS publish and subscribe subjects come from each component's
+  `events:` declaration and are enforced through its projected workload
+  identity. The bundle supplies `NATS_URL` separately; an event declaration
+  alone does not configure transport.
+- Receiving a snapshot invalidation never grants REST access. Every replacement
+  fetch still requires the independent `snapshot:read` capability.
+- The global production permission instance publishes through its dedicated
+  NATS identity credential. Keycloak and Forge relay identities do not receive
+  permission to publish the snapshot invalidation subject.
+- Stage keeps NATS traffic inside its private cluster-local broker boundary.
+  Broader Stage client-auth hardening remains separate platform work.
 - Forge authorizes Portal project requests before forwarding them. Project
   owners and editors receive write access; project viewers receive read-only
   access.
 - Keycloak invalidations contain only the identifiers and reason required to
   refresh an identity projection.
+- Runtime snapshot invalidations contain only the schema version and Minecraft
+  UUID. A failed replacement fetch keeps the previous valid snapshot.
 - Missing or expired runtime snapshots fail closed.
 - Identity state that is too stale can prevent a permission service from being
   ready until it synchronizes again.

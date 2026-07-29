@@ -22,12 +22,22 @@ services:
       - capability: catalog:register
         resources:
           - example-lobby
+events:
+  - subject: permissions.snapshot.invalidated
+    dir: sub
+helm:
+  extraEnv:
+    - name: NATS_URL
+      valueFrom: shared.nats
 ```
 
 `snapshot:read` allows the workload to fetch player snapshots.
 `catalog:register` allows it to replace manifests only for the listed source
-IDs. A permissions service declaration without an access entry grants no
-permission-service access.
+IDs. The `events` entry allows the projected workload identity to subscribe to
+snapshot invalidations. It does not configure the broker endpoint, so the
+bundle must also provide `NATS_URL` explicitly from the shared NATS transport.
+A permissions service declaration without an access entry grants no
+permission-service access, even when the event subscription is present.
 
 <Tip>
 Declare only the capabilities and catalog sources your workload uses. The
@@ -37,14 +47,17 @@ declaration.
 
 ## Configuration
 
-| Variable                               | Required when enabled | Managed behavior                | Purpose                                                          |
-|----------------------------------------|-----------------------|---------------------------------|------------------------------------------------------------------|
-| `PERMISSIONS_SERVICE_URL`              | Yes                   | Injected                        | Base URL of the permission instance assigned to the workload.    |
-| `PERMISSIONS_TOKEN_FILE`               | Yes                   | Injected                        | Path to the projected workload token.                            |
-| `GROUNDS_PERMISSION_SERVER_TYPE`       | No                    | Runtime-specific default        | Resolves server-type-scoped grants, for example `lobby`.         |
-| `GROUNDS_PERMISSION_SERVER_ID`         | No                    | Unset                           | Resolves grants scoped to one server.                            |
-| `GROUNDS_PERMISSION_ENVIRONMENT`       | No                    | Set by the platform when needed | Resolves environment-scoped grants, such as `stage` or `prod`.   |
-| `PERMISSIONS_REFRESH_INTERVAL_SECONDS` | No                    | `60`                            | Interval for refreshing snapshots of online players.            |
+| Variable                                     | Required when enabled | Managed behavior                 | Purpose                                                               |
+|----------------------------------------------|-----------------------|----------------------------------|-----------------------------------------------------------------------|
+| `PERMISSIONS_SERVICE_URL`                    | Yes                   | Injected                         | Base URL of the permission instance assigned to the workload.         |
+| `PERMISSIONS_TOKEN_FILE`                     | Yes                   | Injected                         | Path to the projected token used for private REST requests.           |
+| `NATS_URL`                                   | For live invalidation | Declared explicitly by the bundle | Broker endpoint used to receive snapshot invalidations.               |
+| `GROUNDS_TOKEN_FILE`                         | When NATS requires it | Injected for managed workloads   | Path to the projected token used for the authorized NATS subscription. |
+| `PERMISSIONS_SNAPSHOT_INVALIDATIONS_SUBJECT` | No                    | Default subject                  | Overrides `permissions.snapshot.invalidated`.                         |
+| `GROUNDS_PERMISSION_SERVER_TYPE`             | No                    | Runtime-specific default         | Resolves server-type-scoped grants, for example `lobby`.              |
+| `GROUNDS_PERMISSION_SERVER_ID`               | No                    | Unset                            | Resolves grants scoped to one server.                                 |
+| `GROUNDS_PERMISSION_ENVIRONMENT`             | No                    | Set by the platform when needed  | Resolves environment-scoped grants, such as `stage` or `prod`.        |
+| `PERMISSIONS_REFRESH_INTERVAL_SECONDS`       | No                    | `60`                             | Interval for refreshing snapshots of online players.                 |
 
 The integration is enabled when both `PERMISSIONS_SERVICE_URL` and
 `PERMISSIONS_TOKEN_FILE` are present. Supplying only one fails startup. Managed
@@ -53,7 +66,10 @@ central instance or an instance assigned to another project.
 
 The client reads the projected token file for every request, so routine token
 rotation does not require a workload restart. Never copy the token into a
-manifest, environment variable, or log message.
+manifest, environment variable, or log message. Managed workloads receive the
+event subject, broker endpoint, and token-file path from their bundle
+declaration and platform projection; put only token-file paths in
+configuration, never token values.
 
 ## Velocity
 
@@ -124,11 +140,27 @@ module context.
 
 1. The runtime fetches a snapshot through the private runtime REST API during
    player login.
-2. Once `refreshAfter` passes, the periodic sweep asks the assigned permission
-   instance for a replacement while the existing snapshot remains usable.
-3. A failed refresh keeps the previous snapshot until it expires.
-4. An expired snapshot makes every check return `false`.
-5. If login cannot obtain a valid snapshot, the runtime denies that login.
+2. For an online player, the runtime receives a NATS invalidation containing
+   only the schema version and Minecraft UUID.
+3. The runtime force-fetches the authoritative snapshot through private REST
+   and atomically replaces its local snapshot after a successful response.
+4. A failed invalidation refresh keeps the previous snapshot. Once
+   `refreshAfter` passes, the periodic sweep retries the assigned permission
+   instance while that snapshot remains usable.
+5. Snapshot expiry remains the fail-closed boundary: an expired snapshot makes
+   every check return `false`.
+6. If login cannot obtain a valid snapshot, the runtime denies that login.
+
+The invalidation carries no roles, grants, permissions, username, or project
+identifier. It is a prompt to re-read state, not an authorization result.
+Receiving it does not replace the independently authorized `snapshot:read`
+REST request. Events for offline players do not trigger a fetch because their
+next login loads the current snapshot.
+
+If NATS is unavailable during startup or reconnect, the runtime continues to
+serve from valid local snapshots. Login loading, the periodic `refreshAfter`
+sweep, and expiry provide recovery without making event transport part of the
+authorization decision.
 
 This fail-closed behavior prevents a temporary service outage from granting
 unverified permissions. Handle a `false` result as an ordinary authorization
