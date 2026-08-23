@@ -31,6 +31,46 @@ FROM ghcr.io/groundsgg/containers/velocity:latest
 Verify that the image is available locally with `docker image inspect ghcr.io/groundsgg/containers/velocity:latest`.
 </Check>
 
+## Static Backends
+
+The image bundles `plugin-agones`, which can register non-Agones backends through
+`GROUNDS_STATIC_SERVERS`. In production, keep this value in one dedicated Helm chart as an
+immutable, versioned ConfigMap. Every Java Velocity proxy must source the same required key:
+
+```yaml
+env:
+  - name: GROUNDS_STATIC_SERVERS
+    valueFrom:
+      configMapKeyRef:
+        name: velocity-static-servers-v1
+        key: GROUNDS_STATIC_SERVERS
+```
+
+The chart owns a ConfigMap such as `velocity-static-servers-v1`, with `immutable: true`, the
+`GROUNDS_STATIC_SERVERS` key, and the Helm annotation `helm.sh/resource-policy: keep`. Its value
+is a comma-separated list of `name=host:port` entries. To change the list, create a new versioned
+ConfigMap, update every proxy reference, and roll out the proxies. Keep the prior version until
+that rollout finishes, then garbage-collect it deliberately. Do not duplicate a literal value in
+each production proxy chart.
+
+For local development, a literal environment value remains convenient:
+
+```yaml
+env:
+  - name: GROUNDS_STATIC_SERVERS
+    value: "buildserver=buildserver:25565"
+```
+
+After the proxies restart, permitted players can connect with `/server buildserver`. See the
+[Velocity plugin reference](/reference/plugins/agones/velocity#static-servers) for the parser,
+startup failure behavior, and forwarding requirements.
+
+<Warning>
+The backend must use modern Velocity forwarding and the same forwarding secret as the proxies.
+Static discovery does not configure Paper or make an offline-mode backend safe to expose publicly.
+</Warning>
+
 ## Documentation
 
-For more details, see the [velocity directory](https://github.com/groundsgg/containers/tree/main/velocity) in the repository.
+- Configure discovery and forwarding with the [Velocity plugin reference](/reference/plugins/agones/velocity#static-servers).
+- Review the [velocity directory](https://github.com/groundsgg/containers/tree/main/velocity) in the container repository.

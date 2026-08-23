@@ -19,9 +19,10 @@ count:
 - the last player leaves → the runtime calls `Ready`
 - a 10 second fallback loop reconciles the state if an event is missed
 
-On Velocity, the plugin adds two responsibilities on top of proxy-side state sync:
+On Velocity, the plugin adds three responsibilities on top of proxy-side state sync:
 
 - it polls the Kubernetes API for running gameservers and registers them with the proxy
+- it registers explicitly configured non-Agones backends from `GROUNDS_STATIC_SERVERS`
 - it routes newly joining players to a lobby server and rejects logins when no lobby is available
 
 <Info>
@@ -46,7 +47,7 @@ runtime.
 The Velocity discovery path depends on three conventions that your gameserver deployment must
 follow:
 
-- the pod runs in the `games` Kubernetes namespace
+- the pod runs in the configured discovery namespace (default: `games`)
 - the Agones `GameServer` carries the label `grounds/server-type` with one of `lobby`, `game`, or
   `match`
 - the pod exposes Minecraft on port `25565` and reports its `PodIP` under `status.addresses`
@@ -68,6 +69,18 @@ flowchart LR
 `lobby` is treated specially: at least one `Ready`/`Allocated`/`Reserved` gameserver with
 `grounds/server-type=lobby` must exist for new proxy logins to succeed.
 </Note>
+
+## Static Backends
+
+Use `GROUNDS_STATIC_SERVERS` for a backend that does not run as an Agones `GameServer`, such as a
+temporary buildserver deployed as a regular Kubernetes `Deployment`. Static servers join the
+Velocity registry without participating in Agones lifecycle management or lobby selection. In
+production, every Java Velocity proxy reads the same required value from the dedicated immutable,
+versioned static-server ConfigMap; the plugin loads and caches it at startup. Local development
+may provide the value directly as an environment literal.
+
+Continue with [Velocity](/reference/plugins/agones/velocity#static-servers) for the configuration
+format, rollout and validation rules, and forwarding requirements.
 
 ## Choose Your Platform
 
@@ -93,6 +106,7 @@ flowchart LR
 Use this plugin when:
 
 - your gameserver deploys into the Grounds Agones-managed cluster
+- a regular backend must be reachable through the same Velocity proxies
 - you want Agones state to reflect real player activity instead of a static allocation call
 - your gamemode publishes its role through `grounds/server-type` so the Velocity proxy can route to
   it
