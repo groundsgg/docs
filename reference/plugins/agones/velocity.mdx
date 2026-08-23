@@ -84,15 +84,40 @@ of reaching a running state.
 ## Static Servers
 
 Use a static server when a backend runs as a regular Kubernetes `Deployment` or outside Agones.
-Set `GROUNDS_STATIC_SERVERS` on every Velocity proxy that must expose it:
+In production, a dedicated Helm chart owns one immutable, versioned ConfigMap for every Java
+Velocity proxy. The ConfigMap is retained with `helm.sh/resource-policy: keep`, allowing the old
+and new versions to overlap during a rollout:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: velocity-static-servers-v1
+  annotations:
+    helm.sh/resource-policy: keep
+immutable: true
+data:
+  GROUNDS_STATIC_SERVERS: "buildserver=buildserver:25565"
+```
+
+Each proxy must use a mandatory reference to that same key:
 
 ```yaml
 env:
   - name: GROUNDS_STATIC_SERVERS
-    value: "buildserver=buildserver:25565"
+    valueFrom:
+      configMapKeyRef:
+        name: velocity-static-servers-v1
+        key: GROUNDS_STATIC_SERVERS
 ```
 
-The value is a comma-separated list of `name=host:port` entries:
+The plugin reads and caches the value at startup. To change it, create a new ConfigMap name (for
+example, `velocity-static-servers-v2`), update every proxy reference, and roll out all proxies.
+Only garbage-collect the retained old version after the rollout completes. Do not set independent
+literal values on production proxies.
+
+For local development, set `GROUNDS_STATIC_SERVERS` directly. The value is a comma-separated list
+of `name=host:port` entries:
 
 ```text
 buildserver=buildserver:25565,events=events.stage.svc.cluster.local:25566
@@ -116,6 +141,22 @@ backend through a public `LoadBalancer`.
 After all proxies restart, use `/server buildserver` to connect to the example backend. The player
 still needs Velocity's `velocity.command.server` permission.
 </Check>
+
+## Drain Routing
+
+During an automatic drain, the proxy defers a move only for players on a backend whose current
+role is `game` or `match`. Players on `static`, `lobby`, an unknown role, or a backend with no role
+are moved immediately.
+
+For an automatically drained Java player who is currently on a static backend, the source proxy
+writes a short-lived, namespaced Minecraft transfer cookie containing that backend name. The target
+proxy waits for up to one second, consumes the cookie, and uses the named backend directly only if
+it is still registered with the `static` role. A missing, expired, invalid, or unknown cookie falls
+back to normal lobby routing. This requires Java 1.20.5 or later, matching the existing
+host-transfer minimum. Bedrock drain remains disabled.
+
+The preservation applies only to automatic drain. Generic `/region` moves and other manual proxy
+moves do not preserve the current backend.
 
 ## Lobby Routing
 
@@ -197,6 +238,12 @@ retried during the next poll.
 The plugin rejects malformed entries and duplicate names during initialization. Correct
 `GROUNDS_STATIC_SERVERS` and restart the proxy. An absent or blank value disables static
 registration.
+</Accordion>
+
+<Accordion title="Static server ConfigMap is unavailable">
+In production the environment reference is mandatory, so a missing ConfigMap or key prevents the
+proxy pod from starting. Restore the referenced version or update all proxy references to a valid
+versioned ConfigMap, then roll out the affected proxies.
 </Accordion>
 
 <Accordion title="Gameserver missing the server-type label">

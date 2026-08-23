@@ -34,7 +34,26 @@ Verify that the image is available locally with `docker image inspect ghcr.io/gr
 ## Static Backends
 
 The image bundles `plugin-agones`, which can register non-Agones backends through
-`GROUNDS_STATIC_SERVERS`. Provide a comma-separated list of `name=host:port` entries:
+`GROUNDS_STATIC_SERVERS`. In production, keep this value in one dedicated Helm chart as an
+immutable, versioned ConfigMap. Every Java Velocity proxy must source the same required key:
+
+```yaml
+env:
+  - name: GROUNDS_STATIC_SERVERS
+    valueFrom:
+      configMapKeyRef:
+        name: velocity-static-servers-v1
+        key: GROUNDS_STATIC_SERVERS
+```
+
+The chart owns a ConfigMap such as `velocity-static-servers-v1`, with `immutable: true`, the
+`GROUNDS_STATIC_SERVERS` key, and the Helm annotation `helm.sh/resource-policy: keep`. Its value
+is a comma-separated list of `name=host:port` entries. To change the list, create a new versioned
+ConfigMap, update every proxy reference, and roll out the proxies. Keep the prior version until
+that rollout finishes, then garbage-collect it deliberately. Do not duplicate a literal value in
+each production proxy chart.
+
+For local development, a literal environment value remains convenient:
 
 ```yaml
 env:
@@ -42,8 +61,9 @@ env:
     value: "buildserver=buildserver:25565"
 ```
 
-Every proxy that players can reach needs the same entry. After the proxies restart, permitted
-players can connect with `/server buildserver`.
+After the proxies restart, permitted players can connect with `/server buildserver`. See the
+[Velocity plugin reference](/reference/plugins/agones/velocity#static-servers) for the parser,
+startup failure behavior, and forwarding requirements.
 
 <Warning>
 The backend must use modern Velocity forwarding and the same forwarding secret as the proxies.

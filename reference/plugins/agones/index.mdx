@@ -74,10 +74,13 @@ flowchart LR
 
 Use `GROUNDS_STATIC_SERVERS` for a backend that does not run as an Agones `GameServer`, such as a
 temporary buildserver deployed as a regular Kubernetes `Deployment`. Static servers join the
-Velocity registry without participating in Agones lifecycle management or lobby selection.
+Velocity registry without participating in Agones lifecycle management or lobby selection. In
+production, every Java Velocity proxy reads the same required value from the dedicated immutable,
+versioned static-server ConfigMap; the plugin loads and caches it at startup. Local development
+may provide the value directly as an environment literal.
 
 Continue with [Velocity](/reference/plugins/agones/velocity#static-servers) for the configuration
-format, validation rules, and forwarding requirements.
+format, rollout and validation rules, and forwarding requirements.
 
 ## Choose Your Platform
 
