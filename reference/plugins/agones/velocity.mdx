@@ -13,6 +13,10 @@ For Agones discovery, the plugin expects the following environment:
 
 - `GROUNDS_AGONES_NAMESPACE` or `POD_NAMESPACE` identifies the namespace to query; the fallback is
   `games`
+- `GROUNDS_AGONES_ADDRESS_TYPE` must exactly match a type reported in
+  `GameServer.status.addresses`; common values are `PodIP`, `ExternalIP`, `InternalIP`, and
+  `Hostname`, with `PodIP` as the default
+- `GROUNDS_AGONES_PORT` selects the backend TCP port; the default is `25565`
 - the pod can list Agones `gameservers.agones.dev` resources in that namespace
 - the pod can read gameserver pods when a `GameServer` status does not contain the configured
   address type
@@ -52,7 +56,8 @@ it defaults to `games`. Gameservers outside that namespace are ignored.
 
 <Step title="Label the GameServer with a role">
 Set `grounds/server-type` to `lobby`, `game`, or `match` on the `GameServer` resource metadata.
-Unlabeled gameservers are skipped.
+Unlabeled gameservers are skipped. This example uses the fallback namespace `games`; set
+`metadata.namespace` to the configured discovery namespace when it differs.
 
 ```yaml
 apiVersion: agones.dev/v1
@@ -65,9 +70,12 @@ metadata:
 ```
 </Step>
 
-<Step title="Expose Minecraft on port 25565">
-The proxy registers the pod at `PodIP:25565`. The plugin does not honor Agones allocated ports —
-the gameserver must listen on the default Minecraft port inside the pod.
+<Step title="Expose Minecraft on the configured port">
+The proxy reads the address whose type matches `GROUNDS_AGONES_ADDRESS_TYPE` and connects to
+`GROUNDS_AGONES_PORT`. These default to `PodIP` and `25565`. If the selected address is missing from
+`GameServer.status.addresses`, the plugin falls back to the gameserver pod IP when Kubernetes
+exposes one; otherwise the gameserver is skipped. The plugin does not honor Agones allocated ports,
+so the gameserver must listen on the configured fixed port inside the pod.
 </Step>
 
 <Step title="Reach a running Agones state">
