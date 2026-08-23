@@ -45,9 +45,9 @@ read from the `grounds/server-type` label and cached for routing and the `/agone
 For a gameserver pod to appear in Velocity, it must satisfy the discovery contract:
 
 <Steps>
-<Step title="Deploy into the games namespace">
-The discovery query is scoped to the `games` namespace. Gameservers outside that namespace are
-ignored.
+<Step title="Deploy into the configured discovery namespace">
+The discovery query is scoped to `GROUNDS_AGONES_NAMESPACE` or `POD_NAMESPACE`; if neither is set,
+it defaults to `games`. Gameservers outside that namespace are ignored.
 </Step>
 
 <Step title="Label the GameServer with a role">
@@ -149,11 +149,13 @@ role is `game` or `match`. Players on `static`, `lobby`, an unknown role, or a b
 are moved immediately.
 
 For an automatically drained Java player who is currently on a static backend, the source proxy
-writes a short-lived, namespaced Minecraft transfer cookie containing that backend name. The target
-proxy waits for up to one second, consumes the cookie, and uses the named backend directly only if
-it is still registered with the `static` role. A missing, expired, invalid, or unknown cookie falls
-back to normal lobby routing. This requires Java 1.20.5 or later, matching the existing
-host-transfer minimum. Bedrock drain remains disabled.
+signs a short-lived, namespaced Minecraft transfer cookie with HMAC using the existing shared
+Velocity forwarding secret. It requests and receives an exact client echo of that cookie before it
+initiates the transfer. The target proxy validates the cookie signature and TTL, then uses the named
+backend directly only if it is still registered with the `static` role. If the echo does not arrive
+within one second, or the cookie is missing, expired, invalid, or names an unknown backend, the
+transfer falls back to normal routing and therefore to a lobby when one is available. This requires
+Java 1.20.5 or later, matching the existing host-transfer minimum. Bedrock drain remains disabled.
 
 The preservation applies only to automatic drain. Generic `/region` moves and other manual proxy
 moves do not preserve the current backend.

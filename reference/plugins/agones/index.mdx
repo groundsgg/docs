@@ -19,7 +19,7 @@ count:
 - the last player leaves → the runtime calls `Ready`
 - a 10 second fallback loop reconciles the state if an event is missed
 
-On Velocity, the plugin adds two responsibilities on top of proxy-side state sync:
+On Velocity, the plugin adds three responsibilities on top of proxy-side state sync:
 
 - it polls the Kubernetes API for running gameservers and registers them with the proxy
 - it registers explicitly configured non-Agones backends from `GROUNDS_STATIC_SERVERS`
@@ -47,7 +47,7 @@ runtime.
 The Velocity discovery path depends on three conventions that your gameserver deployment must
 follow:
 
-- the pod runs in the `games` Kubernetes namespace
+- the pod runs in the configured discovery namespace (default: `games`)
 - the Agones `GameServer` carries the label `grounds/server-type` with one of `lobby`, `game`, or
   `match`
 - the pod exposes Minecraft on port `25565` and reports its `PodIP` under `status.addresses`
