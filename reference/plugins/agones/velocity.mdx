@@ -1,34 +1,41 @@
 ---
 title: "Velocity"
-description: "Proxy-side Agones gameserver discovery, lobby routing, and operator command"
+description: "Proxy-side Agones and static server discovery, lobby routing, and operator command"
 ---
 
 Use the Velocity module of `plugin-agones` when you run the Grounds proxy in front of
-Agones-managed gameservers. The plugin replaces the static `velocity.toml` server list with live
-Kubernetes-driven discovery and routes joining players to a lobby.
+Agones-managed gameservers. The plugin combines Kubernetes-driven discovery with optional static
+backends and routes joining players to a lobby.
 
 ## Requirements
 
-The plugin assumes the following environment:
+For Agones discovery, the plugin expects the following environment:
 
-- the Velocity pod runs in the `games` namespace alongside its gameservers
-- the pod has read access to the Agones `gameservers.agones.dev` custom resources (`list` verb)
-- an Agones sidecar runs next to the Velocity container and exposes the SDK on
-  `http://localhost:9358`
+- `GROUNDS_AGONES_NAMESPACE` or `POD_NAMESPACE` identifies the namespace to query; the fallback is
+  `games`
+- the pod can list Agones `gameservers.agones.dev` resources in that namespace
+- the pod can read gameserver pods when a `GameServer` status does not contain the configured
+  address type
 
 <Warning>
-The plugin unregisters every server defined in `velocity.toml` during startup. Your `velocity.toml`
-`[servers]` section is effectively ignored once the plugin is loaded.
+The Grounds Velocity image contains three example backends: `lobby`, `factions`, and `minigames`.
+The plugin removes only those exact loopback placeholders during startup. It preserves every other
+Velocity registration.
 </Warning>
+
+The proxy needs an Agones SDK sidecar only when the proxy itself runs as an Agones `GameServer`.
+Without the sidecar, backend discovery and routing still work; only proxy self-state management is
+disabled.
 
 ## What the Plugin Provides
 
-Once the plugin starts, it runs two responsibilities in parallel on the proxy:
+Once the plugin starts, it runs these responsibilities on the proxy:
 
-- `GameServerStateManager` syncs the proxy's own Agones state (`Ready` or `Allocated`) with the
-  connected player count
+- `DiscoveryService` registers configured static backends
 - `DiscoveryService` polls Kubernetes every two seconds and keeps Velocity's server registry in
   sync with the running gameservers
+- `GameServerStateManager` syncs the proxy's own Agones state (`Ready` or `Allocated`) with the
+  connected player count when an SDK sidecar is present
 
 Every discovered gameserver is registered under its Kubernetes resource name. The server's role is
 read from the `grounds/server-type` label and cached for routing and the `/agones` command.
@@ -74,6 +81,42 @@ If your gameserver follows all four steps, it appears in `/agones` on the proxy 
 of reaching a running state.
 </Check>
 
+## Static Servers
+
+Use a static server when a backend runs as a regular Kubernetes `Deployment` or outside Agones.
+Set `GROUNDS_STATIC_SERVERS` on every Velocity proxy that must expose it:
+
+```yaml
+env:
+  - name: GROUNDS_STATIC_SERVERS
+    value: "buildserver=buildserver:25565"
+```
+
+The value is a comma-separated list of `name=host:port` entries:
+
+```text
+buildserver=buildserver:25565,events=events.stage.svc.cluster.local:25566
+```
+
+The plugin trims surrounding whitespace and validates the complete value at startup. Each entry
+must have a non-empty name and host, and its port must be between `1` and `65535`. Server names are
+case-insensitive; duplicates such as `BuildServer` and `buildserver` fail configuration.
+
+Static servers have the role `static`. They appear in Velocity's `/server` command and in
+`/agones`, but they are never selected as login lobbies. If a static server and an Agones
+`GameServer` use the same name, the static server takes precedence.
+
+<Warning>
+Static registration configures routing only. A Paper backend behind Velocity must also use modern
+Velocity forwarding with the same forwarding secret as the proxies. Do not expose an offline-mode
+backend through a public `LoadBalancer`.
+</Warning>
+
+<Check>
+After all proxies restart, use `/server buildserver` to connect to the example backend. The player
+still needs Velocity's `velocity.command.server` permission.
+</Check>
+
 ## Lobby Routing
 
 The plugin treats `grounds/server-type=lobby` as the entry point for new connections.
@@ -107,7 +150,8 @@ The plugin registers an operator command for inspecting the current proxy state.
 | Output scope | all registered proxy servers |
 
 The command prints every registered server with its role, address, and connected player count.
-Roles are color-coded: `lobby` (green), `game` (aqua), `match` (light purple), `unknown` (gray).
+Roles include `lobby`, `game`, `match`, and `static`; registrations without a known role appear as
+`unknown`.
 
 Example output:
 
@@ -133,10 +177,9 @@ issue redundant calls to the sidecar.
 
 <AccordionGroup>
 <Accordion title="Kubernetes client fails to initialize">
-If the plugin cannot build a Kubernetes client at startup, discovery stays disabled for the
-process lifetime. The plugin logs the reason and continues without unregistering configured
-servers, registering lobby-routing listeners, or polling Kubernetes. Existing `velocity.toml`
-servers remain registered until the proxy restarts with a working Kubernetes configuration.
+If the plugin cannot build a Kubernetes client at startup, Agones discovery stays disabled for the
+process lifetime. The plugin still removes the exact image placeholders, registers
+`GROUNDS_STATIC_SERVERS`, and installs the routing listeners.
 </Accordion>
 
 <Accordion title="Agones sidecar unreachable">
@@ -145,8 +188,15 @@ routing continue to work because they depend on the Kubernetes API, not on the s
 </Accordion>
 
 <Accordion title="Gameserver missing a PodIP">
-Gameservers without a `PodIP` entry in `status.addresses` are skipped and logged as
-`missing_pod_ip`. This usually clears up on the next poll once Agones populates the status.
+If the configured address type is missing from `GameServer.status.addresses`, the plugin reads the
+same-named pod and uses its pod IP. If neither source provides an address, the server is skipped and
+retried during the next poll.
+</Accordion>
+
+<Accordion title="Static server configuration is invalid">
+The plugin rejects malformed entries and duplicate names during initialization. Correct
+`GROUNDS_STATIC_SERVERS` and restart the proxy. An absent or blank value disables static
+registration.
 </Accordion>
 
 <Accordion title="Gameserver missing the server-type label">

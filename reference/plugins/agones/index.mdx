@@ -22,6 +22,7 @@ count:
 On Velocity, the plugin adds two responsibilities on top of proxy-side state sync:
 
 - it polls the Kubernetes API for running gameservers and registers them with the proxy
+- it registers explicitly configured non-Agones backends from `GROUNDS_STATIC_SERVERS`
 - it routes newly joining players to a lobby server and rejects logins when no lobby is available
 
 <Info>
@@ -69,6 +70,15 @@ flowchart LR
 `grounds/server-type=lobby` must exist for new proxy logins to succeed.
 </Note>
 
+## Static Backends
+
+Use `GROUNDS_STATIC_SERVERS` for a backend that does not run as an Agones `GameServer`, such as a
+temporary buildserver deployed as a regular Kubernetes `Deployment`. Static servers join the
+Velocity registry without participating in Agones lifecycle management or lobby selection.
+
+Continue with [Velocity](/reference/plugins/agones/velocity#static-servers) for the configuration
+format, validation rules, and forwarding requirements.
+
 ## Choose Your Platform
 
 <CardGroup cols={3}>
@@ -93,6 +103,7 @@ flowchart LR
 Use this plugin when:
 
 - your gameserver deploys into the Grounds Agones-managed cluster
+- a regular backend must be reachable through the same Velocity proxies
 - you want Agones state to reflect real player activity instead of a static allocation call
 - your gamemode publishes its role through `grounds/server-type` so the Velocity proxy can route to
   it

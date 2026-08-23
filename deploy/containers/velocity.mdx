@@ -31,6 +31,26 @@ FROM ghcr.io/groundsgg/containers/velocity:latest
 Verify that the image is available locally with `docker image inspect ghcr.io/groundsgg/containers/velocity:latest`.
 </Check>
 
+## Static Backends
+
+The image bundles `plugin-agones`, which can register non-Agones backends through
+`GROUNDS_STATIC_SERVERS`. Provide a comma-separated list of `name=host:port` entries:
+
+```yaml
+env:
+  - name: GROUNDS_STATIC_SERVERS
+    value: "buildserver=buildserver:25565"
+```
+
+Every proxy that players can reach needs the same entry. After the proxies restart, permitted
+players can connect with `/server buildserver`.
+
+<Warning>
+The backend must use modern Velocity forwarding and the same forwarding secret as the proxies.
+Static discovery does not configure Paper or make an offline-mode backend safe to expose publicly.
+</Warning>
+
 ## Documentation
 
-For more details, see the [velocity directory](https://github.com/groundsgg/containers/tree/main/velocity) in the repository.
+- Configure discovery and forwarding with the [Velocity plugin reference](/reference/plugins/agones/velocity#static-servers).
+- Review the [velocity directory](https://github.com/groundsgg/containers/tree/main/velocity) in the container repository.
