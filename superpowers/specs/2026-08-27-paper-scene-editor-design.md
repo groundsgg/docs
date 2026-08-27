@@ -7,7 +7,7 @@ description: "Architecture and behavioral contract for authoring validated scene
 
 ## Status
 
-Proposed for written-spec review on 2026-08-27. The architecture and behavior below reflect the approved design discussion; implementation planning starts after this document is accepted.
+Approved for implementation planning on 2026-08-27.
 
 This specification defines Phase 6 of the Scene, NPC, and Resource Pack platform. It introduces a Paper-only `plugin-scene-editor` product that lets builders create, preview, validate, and save the optional `scene.json` belonging to a build world. Cluster deployment and Phase 5 Stage acceptance are independent and may remain unavailable while this plugin is developed and tested locally.
 
@@ -43,7 +43,7 @@ The editor consumes these public operations:
 
 The plugin treats all scene-format DTOs as immutable. Each edit replaces the affected element and constructs a new `SceneDocument`. It does not mutate collection instances retained by existing documents.
 
-The editor owns authoring state and Paper previews. BuildSystem owns build worlds and `/map push`. service-maps owns authoritative derivation, publication, pins, and rollback. The editor never calls R2, Kubernetes, or service-maps directly in the first release.
+The editor owns authoring state and Paper previews. BuildSystem owns build worlds and `/map push`. The Paper module consumes published `de.eintosti:buildsystem-api:4.0.0`, declares a hard `BuildSystem` plugin dependency, and opens sessions only for worlds resolved as `BuildWorld`. service-maps owns authoritative derivation, publication, pins, and rollback. The editor never calls R2, Kubernetes, or service-maps directly in the first release.
 
 ## Scene file contract
 
