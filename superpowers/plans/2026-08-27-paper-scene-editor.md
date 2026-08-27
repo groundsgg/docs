@@ -517,11 +517,11 @@ reported no remaining P1/P2 findings.
 
 **Repository:** plugin-scene-editor feature worktree
 
-- [ ] **Step 1: Add the canonical end-to-end fixture**
+- [x] **Step 1: Add the canonical end-to-end fixture**
 
 Create a scene through common mutations using both bootstrap assets, save it through the atomic repository, decode it with released `scene-format` 0.1.0, reload it into a fresh session, and assert byte-canonical equality. Package the Paper shadow JAR and rerun its contents contract.
 
-- [ ] **Step 2: Run clean verification and review**
+- [x] **Step 2: Run clean verification and review**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-editor-release ./gradlew --no-build-cache clean check
@@ -530,6 +530,17 @@ git status --short
 ```
 
 Use `superpowers:requesting-code-review`; resolve all blocking findings and rerun verification.
+
+Local release preparation is complete through Step 2. Commit `af5fa84` adds the canonical fixture
+against the exact production bootstrap catalog; signed commit `22ceb60` normalizes the generated
+Windows wrapper so `git diff --check main...HEAD` is clean. A split clean-then-versioned-check run
+completed all Common/Paper tests, format gates, and the Paper Shadow JAR for `0.1.0`. Both Maven
+publications were installed locally and inspected: Common JAR/sources/Javadoc/POM and the
+classifierless Paper Shadow JAR are present; `plugin.yml` reports `0.1.0`; no Bukkit, Paper, or
+BuildSystem API classes are bundled. The Paper JAR and local Paper Maven artifact share SHA-256
+`50be2507ddee8fa896abd1571c202cdc63e5aa3a8f905e2546da85576579ef17`; the Common JAR SHA-256 is
+`b86dc7f3bf589ab3eab990038c660c9d7bea6ae86e7562060cd08ebc1493f069`. Two independent whole-branch
+reviews found no remaining P1/P2 after the wrapper normalization.
 
 - [ ] **Step 3: Push, create the PR, and merge after green checks**
 
