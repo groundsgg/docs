@@ -253,25 +253,25 @@ Local commit `30ee898` passed a serial clean build and both Maven publications a
 - Create: `common/src/main/kotlin/gg/grounds/scene/editor/validation/SaveEligibility.kt`
 - Create matching tests under `common/src/test/kotlin/...`
 
-- [ ] **Step 1: Write failing catalog and creation-default tests**
+- [x] **Step 1: Write failing catalog and creation-default tests**
 
 Cover exact catalog references, wrong asset kind, missing NPC bounds, duplicate IDs, player-position/yaw placement, zero pitch/roll, unit scale, null group/animation/label, `(0,2.25,0)` label offset, fixed look, null proximity, empty bindings, visible state, and automatic activation.
 
-- [ ] **Step 2: Implement catalog binding and scene creation**
+- [x] **Step 2: Implement catalog binding and scene creation**
 
 Production binding reads `GroundsAssetCatalog.catalog` and constructs immutable `grounds:actions@1` with no actions. Tests inject catalogs. New documents pin these exact references.
 
-- [ ] **Step 3: Write failing mutation tests**
+- [x] **Step 3: Write failing mutation tests**
 
 Cover create, select-independent replace, position set/here/add, rotation set/add with canonical angles, uniform positive scale, clone, label set, and remove for props/NPCs. Rejections must preserve the exact original document.
 
 Also cover a decoded document containing `ApplicationAction`: unrelated prop/NPC mutations preserve it byte-semantically, the empty action catalog makes it read-only and catalog-unverified, and no common mutation can create, replace, or silently remove it without an exact catalog definition.
 
-- [ ] **Step 4: Implement typed immutable mutations**
+- [x] **Step 4: Implement typed immutable mutations**
 
 Use scene DTO constructors/copies only. Return structured rejection values instead of throwing user-input failures. Run intrinsic validation after every candidate mutation and catalog validation for save eligibility.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-editor-gradle ./gradlew --no-build-cache :common:test
@@ -279,6 +279,8 @@ git diff --check
 git add common
 git commit -m "feat(common): add scene mutations and validation"
 ```
+
+Delivered locally as `d9c3770`. TDD and review covered exact catalog pins/defaults, every first-slice prop/NPC mutation family, canonical transforms, exact-original rejection identity, unsupported composite rejection, non-finite input, pure intrinsic/catalog status separation, SaveEligibility, and read-only preservation of unverified application actions. Final forced `:common:spotlessCheck :common:test` rerun passed against the exact locally staged v0.6.0 catalog.
 
 ---
 
