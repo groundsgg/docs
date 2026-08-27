@@ -439,19 +439,19 @@ passed, and three independent review rounds ended with no P1/P2 findings.
 - Create: `common/src/main/kotlin/gg/grounds/scene/editor/tool/RaySelection.kt`
 - Create matching tests
 
-- [ ] **Step 1: Write failing pure selection and adapter tests**
+- [x] **Step 1: Write failing pure selection and adapter tests**
 
 Cover deterministic nearest-hit selection, generic prop/NPC placeholders, labels, per-viewer selected outline/axes/ID, non-persistent entities, plugin PDC keys, and a visible fallback when rendering fails.
 
-- [ ] **Step 2: Implement server-thread preview reconciliation**
+- [x] **Step 2: Implement server-thread preview reconciliation**
 
 Reconcile from immutable document snapshots. Never mutate documents from preview state. Discard stale async results by generation.
 
-- [ ] **Step 3: Implement cleanup listeners**
+- [x] **Step 3: Implement cleanup listeners**
 
 Quit/world change releases player selection and leases. World unload/plugin disable removes all preview entities, cancels tasks, releases leases, logs dirty state, and notifies online editors.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-editor-gradle ./gradlew --no-build-cache :common:test :paper:test
@@ -459,6 +459,16 @@ git diff --check
 git add common paper
 git commit -m "feat(paper): preview scene documents safely"
 ```
+
+Delivered locally as `cd3f1c1`. Pure ray selection uses normalized world-unit distances and a
+deterministic ID tie-breaker. Paper previews reconcile immutable generation snapshots into
+non-persistent, plugin-tagged, viewer-only Display entities with generic prop/NPC bodies, labels,
+selected outline/axes/ID, and a visible text fallback. Registry ownership is transactional,
+viewer/world scoped, and retains failed removals for scoped retry. Quit, world-change, unload, and
+disable cleanup release selections/leases, cancel preview work, remove entities, revoke active-save
+capabilities before atomic replacement, log dirty sessions, and notify every online participant.
+The final forced Common/Paper test and format run executed 25 of 26 tasks successfully; two
+independent review rounds ended with no remaining P1/P2 findings.
 
 ---
 
