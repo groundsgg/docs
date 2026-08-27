@@ -297,19 +297,19 @@ Delivered locally as `d9c3770`. TDD and review covered exact catalog pins/defaul
 - Create: `common/src/main/kotlin/gg/grounds/scene/editor/SceneEditorEvents.kt`
 - Create matching tests
 
-- [ ] **Step 1: Write failing state-machine tests**
+- [x] **Step 1: Write failing state-machine tests**
 
 Cover one session per world, shared document/per-player selection, serialized mutation order, one event per success, no event/history change on rejection, canonical-byte dirty comparison, and `SceneEditStatus` across absent/clean/dirty sessions.
 
-- [ ] **Step 2: Implement bounded history**
+- [x] **Step 2: Implement bounded history**
 
 Store complete immutable snapshots, cap at 100, clear redo after a new edit, keep history after save, and make multi-step undo/redo atomic session operations.
 
-- [ ] **Step 3: Implement leases with an injected clock**
+- [x] **Step 3: Implement leases with an injected clock**
 
 Cover acquire, refusal with owner, renewal, 120-second expiry, explicit override, disconnect/world-change/deselect/delete release, and document-level operations without global element leases.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-editor-gradle ./gradlew --no-build-cache :common:test
@@ -317,6 +317,14 @@ git diff --check
 git add common
 git commit -m "feat(common): add editor sessions and leases"
 ```
+
+Delivered locally as `a40f2ff`. TDD and two review rounds covered one shared session per
+world, independent player selections, serialized mutations, FIFO post-commit events with
+listener-failure isolation, canonical-byte dirty state, generation-bound save snapshots,
+100-entry immutable history, atomic multi-step undo/redo, 120-second element leases,
+renewal/expiry/override/release behavior, and controlled no-session/input edge cases. The final
+forced `:common:spotlessCheck :common:test --rerun-tasks` run passed with all 11 Gradle tasks
+executed, and the final read-only review reported no P1/P2 findings.
 
 ---
 
