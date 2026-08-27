@@ -542,13 +542,32 @@ BuildSystem API classes are bundled. The Paper JAR and local Paper Maven artifac
 `b86dc7f3bf589ab3eab990038c660c9d7bea6ae86e7562060cd08ebc1493f069`. Two independent whole-branch
 reviews found no remaining P1/P2 after the wrapper normalization.
 
-- [ ] **Step 3: Push, create the PR, and merge after green checks**
+- [x] **Step 3: Push, create the PR, and merge with the explicitly authorized pipeline exception**
 
 Keep any runner outage visible as an external gate. Do not replace missing protected checks with an unverifiable manual claim.
+
+The repository was created private and then explicitly changed to public. The fully locally verified
+implementation was pushed and [plugin-scene-editor#1](https://github.com/groundsgg/plugin-scene-editor/pull/1)
+was merged as `d66bbb0f27007d41ac0802d1f95ae90fca33697b`. The remote Java build was not used as
+release evidence: the user explicitly authorized merging without waiting for the runner, while the
+fresh local release check executed all 29 requested tasks successfully and `git diff --check` was
+clean. Release Please bootstrap corrections were merged through
+[plugin-scene-editor#6](https://github.com/groundsgg/plugin-scene-editor/pull/6) and
+[plugin-scene-editor#7](https://github.com/groundsgg/plugin-scene-editor/pull/7).
 
 - [ ] **Step 4: Release the first editor version**
 
 Merge the Release Please PR and verify the release tag, the published `common` Maven coordinate, and the runnable Paper shadow artifact. Download both from the release/package service and rerun the Java API and JAR-contents smoke checks against the published files.
+
+Release Please merged [plugin-scene-editor#5](https://github.com/groundsgg/plugin-scene-editor/pull/5)
+as `bef5ee9eef23c0fda85bab86149e5cb1f06e2177` and created
+[v0.1.0](https://github.com/groundsgg/plugin-scene-editor/releases/tag/v0.1.0) as `grounds-bot`.
+Keep this step open: automatic publish run
+[33105049938](https://github.com/groundsgg/plugin-scene-editor/actions/runs/33105049938) failed in
+the build before publishing because it could not resolve the still-unpublished
+`gg.grounds:resourcepacks-catalog:0.6.0`. No editor Maven coordinate or remote runnable Paper
+artifact may be claimed until the upstream GitHub Packages `402 Payment Required` gate is resolved
+and Release Please's tag-triggered publish workflow is rerun successfully.
 
 - [ ] **Step 5: Record exact consumer pins**
 
