@@ -340,23 +340,23 @@ executed, and the final read-only review reported no P1/P2 findings.
 - Create: `common/src/main/kotlin/gg/grounds/scene/editor/recovery/RecoveryService.kt`
 - Create matching tests
 
-- [ ] **Step 1: Write failing load and path-security tests**
+- [x] **Step 1: Write failing load and path-security tests**
 
 Test absent, valid, and invalid root `scene.json`; exact-byte fingerprinting; normalized world root; symlink escape rejection; size bounds; and preservation of invalid bytes.
 
-- [ ] **Step 2: Write failing atomic-save tests**
+- [x] **Step 2: Write failing atomic-save tests**
 
 Inject file operations and prove sibling temp creation, flush, `ATOMIC_MOVE`, per-world serialization, concurrent fingerprint rejection, stale async generation rejection, and retention of the old file when atomic replacement is unsupported.
 
-- [ ] **Step 3: Implement canonical persistence only**
+- [x] **Step 3: Implement canonical persistence only**
 
 Accept/return scene-format results. Never expose a second serializer. Update the session base fingerprint and dirty comparison point only after successful replacement.
 
-- [ ] **Step 4: Implement explicit recovery**
+- [x] **Step 4: Implement explicit recovery**
 
 Cover byte-identical timestamped sibling backup-and-create, generated diagnostic exports below plugin data, clean reload, dirty reload refusal, and literal-confirm discard-and-reload with audit details.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-editor-gradle ./gradlew --no-build-cache :common:test
@@ -364,6 +364,16 @@ git diff --check
 git add common
 git commit -m "feat(common): persist scenes atomically"
 ```
+
+Delivered locally as `7ce3a1e`. TDD and three independent review rounds covered bounded
+no-follow reads, exact-byte SHA-256 fingerprints with distinct absence, canonical `SceneJson`
+encoding, eligibility-bound save reservations, coordinated conditional `ATOMIC_MOVE`, concurrent
+disk conflicts, atomic-only failure retention, defensive byte boundaries, invalid-file backup and
+create, diagnostic exports, clean/dirty reload rules, literal-confirm discard audit, JVM capability
+forgery, fatal-error reservation cleanup, and best-effort temp cleanup. The final forced
+`:common:spotlessCheck :common:test --rerun-tasks` run passed with all 11 Gradle tasks executed,
+and the final read-only review reported no P1/P2 findings under the documented cooperative-writer
+coordination contract.
 
 ---
 

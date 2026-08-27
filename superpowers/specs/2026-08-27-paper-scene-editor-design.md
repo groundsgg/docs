@@ -66,6 +66,14 @@ Saving uses `SceneJson.encode`. A successful save writes the returned canonical 
 
 The file repository serializes saves per world. It refuses a save if the on-disk file changed since the session loaded or last saved it. The comparison uses the SHA-256 of the exact loaded/saved bytes, with absence represented separately from an empty file.
 
+The editor repository is the sole supported writer while an editor save or recovery operation is
+running. Repository instances in the same server process coordinate through one normalized-path
+commit lock and recheck the exact fingerprint inside the conditional atomic-move boundary. Java
+NIO does not provide a portable compare-and-swap primitive for file contents: a non-cooperating
+external process can still race in the final interval between that recheck and `ATOMIC_MOVE`.
+Manual or third-party writes during an active editor operation are therefore outside the supported
+coordination contract; changes present before the conditional commit are rejected and preserved.
+
 ## Catalog model
 
 The first release uses versioned catalog snapshots from its own classpath. It does not invent a catalog-file codec or add a catalog-discovery API.
