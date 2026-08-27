@@ -481,19 +481,19 @@ independent review rounds ended with no remaining P1/P2 findings.
 - Create: `paper/src/main/kotlin/gg/grounds/scene/editor/paper/tool/EditorToolListener.kt`
 - Create matching tests
 
-- [ ] **Step 1: Write failing transform-math tests**
+- [x] **Step 1: Write failing transform-math tests**
 
 Cover X/Y/Z, yaw/pitch/roll, uniform scale, signed fine/normal/coarse steps, canonical rotation, positive scale rejection, and exact mutation equivalence with commands.
 
-- [ ] **Step 2: Write failing listener tests**
+- [x] **Step 2: Write failing listener tests**
 
 Cover exact PDC-tagged item identity, permissions/session/selection/lease gates, ray-select left click, component cycling, accepted wheel cancellation, and normal click/hotbar behavior outside active tool state.
 
-- [ ] **Step 3: Implement the tool and action bar**
+- [x] **Step 3: Implement the tool and action bar**
 
 Show element ID, component, value, step, dirty state, and lease time. Cancel `PlayerItemHeldEvent` only after a valid editor mutation is accepted.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-editor-gradle ./gradlew --no-build-cache :common:test :paper:test
@@ -501,6 +501,15 @@ git diff --check
 git add common paper
 git commit -m "feat(paper): add scene editor tool"
 ```
+
+Delivered locally as `73e9a4b`. The exact plugin-tagged Blaze Rod is available without inventing
+a scene, while all input remains gated by BuildSystem world, permission, session, selection, and
+owner lease. Main-hand ray selection uses rotated/scaled world hit bounds; right click cycles the
+seven transform components; adjacent wheel events apply signed fine/normal/coarse command-equivalent
+mutations and cancel only after acceptance. The action bar reports element, component/value, step,
+dirty state, and lease time. Quit/world-change cleanup removes component state. The final forced
+Common/Paper test and format run executed 25 of 26 tasks successfully, and two independent reviews
+reported no remaining P1/P2 findings.
 
 ---
 
