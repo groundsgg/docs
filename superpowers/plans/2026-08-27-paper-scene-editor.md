@@ -154,13 +154,17 @@ git status --short
 
 Use `superpowers:requesting-code-review`; resolve every blocking finding and rerun the commands.
 
-- [ ] **Step 2: Push, create the PR, and merge after green checks**
+- [x] **Step 2: Push, create the PR, and merge after green checks**
 
 Do not wait on `arc-linux` indefinitely. If required hosted checks cannot start, keep the verified branch and record the release gate rather than weakening branch protection.
+
+Delivered by resourcepacks PR #26. CI run `33076082670` passed and the PR was squash-merged as `bc69e647c6111edfa8e6efaf9c2f79715f6d51d6`.
 
 - [ ] **Step 3: Complete Release Please for 0.6.0**
 
 Let Release Please update `version.txt`, changelog, and release metadata. On that release branch, rerun `clean check` with the exact new `version.txt` value. Merge its release PR, verify tag `v0.6.0`, Maven package `gg.grounds:resourcepacks-catalog:0.6.0`, and immutable PackSet artifacts. Do not activate a cluster channel while the cluster is down.
+
+Release PR #24 and its clean verification run `33077019256` were merged as `a1ccb3d4981c268253744f88142d2c849082006c`; tag `v0.6.0` exists. Immutable release run `33077618746` built and locally verified all four artifacts, then failed at the catalog Maven upload with GitHub Packages `402 Payment Required`. Keep this step open until Maven, CDN/release assets, and Stable advancement are complete.
 
 - [ ] **Step 4: Record exact producer evidence**
 
@@ -188,7 +192,7 @@ Capture merge SHA, tag URL, Maven coordinate, PackSet checksums, and any queued 
 
 Create the GitHub repository with the same visibility and merge settings as sibling Grounds plugin repositories. Initialize `main`, then create an isolated `feat/scene-editor-mvp` worktree. Do not reuse the dirty docs or plugin template checkouts.
 
-- [ ] **Step 2: Copy only conventions, not product code**
+- [x] **Step 2: Copy only conventions, not product code**
 
 Use `plugin-grounds-platform` and `plugin-permissions` as structure exemplars. Configure exact released inputs:
 
@@ -206,7 +210,7 @@ paper compile-only API: de.eintosti:buildsystem-api:4.0.0
 
 Set plugin name `GroundsSceneEditor`, main class `gg.grounds.scene.editor.paper.GroundsSceneEditorPlugin`, API version matching the current Paper convention, hard `depend: [BuildSystem]`, root `/scene`, and the permissions from the approved design. Expand `${VERSION}` explicitly with `ProcessResources`; `paper-conventions` does not do this itself.
 
-- [ ] **Step 3: Add the public service boundary first**
+- [x] **Step 3: Add the public service boundary first**
 
 Create the Java-friendly contract:
 
@@ -218,11 +222,11 @@ fun interface SceneEditStatus {
 
 Add a Java compilation test proving callers see `boolean hasUnsavedChanges(UUID)` without Kotlin-specific types.
 
-- [ ] **Step 4: Add packaging tests**
+- [x] **Step 4: Add packaging tests**
 
 Prove the deployable Paper shadow JAR contains `SceneEditStatus`, `scene-format`, and the pinned catalog exactly once, leaves `SceneEditStatus` unrelocated, expands `${VERSION}`, and excludes test libraries. Configure Paper's Maven publication to replace the disabled/empty standard JAR with `shadowJar`, following `plugin-grounds-runtime/paper/build.gradle.kts`; publish both `common` and the runnable Paper artifact. Use the default Grounds artifact naming unless deployment tooling proves a fixed versioned filename is required.
 
-- [ ] **Step 5: Verify and commit the scaffold**
+- [x] **Step 5: Verify and commit the scaffold**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-editor-gradle ./gradlew --no-build-cache clean check
@@ -230,6 +234,8 @@ git diff --check
 git add .
 git commit -m "build: scaffold Paper scene editor"
 ```
+
+Local commit `30ee898` passed a serial clean build and both Maven publications against an isolated Maven repository populated from the exact `v0.6.0` tag. The public GitHub repository remains intentionally uncreated until repository visibility is explicitly approved; the remote package outage is not represented as a successful release.
 
 ---
 
