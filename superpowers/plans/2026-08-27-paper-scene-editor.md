@@ -39,14 +39,14 @@
 - Both have no animations and empty editor metadata.
 - `GroundsAssetCatalog.catalog.assets` is immutable and deterministically ordered.
 
-- [ ] **Step 1: Create an isolated feature worktree**
+- [x] **Step 1: Create an isolated feature worktree**
 
 ```bash
 git fetch origin
 git worktree add ../.worktrees/resourcepacks-scene-bootstrap -b feat/scene-bootstrap-assets origin/main
 ```
 
-- [ ] **Step 2: Write failing catalog API tests**
+- [x] **Step 2: Write failing catalog API tests**
 
 Replace the empty-catalog assertions with exact key, kind, bounds, ordering, version-reference, Java-access, and mutation-rejection assertions. Extend the parity fixture to require both projected model paths.
 
@@ -58,11 +58,11 @@ GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew --no-build-cache :res
 
 Expected: failure because the generated catalog is still empty.
 
-- [ ] **Step 3: Generate the catalog from one declarative source**
+- [x] **Step 3: Generate the catalog from one declarative source**
 
-Add one ordered `internal` definition map in `GroundsAssets.kt` and retain the public Java-facing `GroundsAssets.all: Set<AssetKey>` as its immutable key set. Change `generateCatalogBuildInfo` so `GroundsAssetCatalog` consumes the internal definitions rather than generating `Collections.unmodifiableMap(linkedMapOf())` with no entries. Keep the existing public owners, types, and Java ABI unchanged.
+Add one ordered private definition map in `GroundsAssets.kt` and retain the public Java-facing `GroundsAssets.all: Set<AssetKey>` as its immutable key set. Keep the existing public owners, types, and Java ABI unchanged. The selected Gradle build version must reach the runtime catalog for both releases and exact edge builds.
 
-- [ ] **Step 4: Run the focused tests**
+- [x] **Step 4: Run the focused tests**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew --no-build-cache :resourcepacks-catalog:check :resourcepacks-product:test --tests '*CatalogParityValidatorTest'
@@ -71,7 +71,7 @@ git diff --check
 
 Expected: catalog API tests and the parity fixture pass against the two exact projected model paths. Full pack composition remains red until Task 2 supplies the source models.
 
-- [ ] **Step 5: Commit the catalog declaration**
+- [x] **Step 5: Commit the catalog declaration**
 
 ```bash
 git add resourcepacks-catalog
@@ -93,7 +93,7 @@ git commit -m "feat(catalog): declare scene editor bootstrap assets"
 - Modify: `resourcepacks-product/src/test/kotlin/gg/grounds/resourcepacks/product/PackComposerTest.kt`
 - Modify: `resourcepacks-catalog/src/test/kotlin/gg/grounds/resourcepacks/catalog/PackArtworkLicenseContractTest.kt`
 
-- [ ] **Step 1: Write failing composition and license tests**
+- [x] **Step 1: Write failing composition and license tests**
 
 Require these exact content-pack entries:
 
@@ -104,33 +104,34 @@ assets/grounds/models/npc_bodies/editor/guide.json
 
 Require both source JSON files to be covered by the repository's artwork/content provenance contract.
 
-- [ ] **Step 2: Add deliberately authored minimal models**
+- [x] **Step 2: Add deliberately authored minimal models**
 
 Add deterministic JSON models using Minecraft parent/texture references and no copied binary artwork. Record them as Grounds-authored source in `art/content/LICENSE` while preserving the existing vendor/MCModels attribution text and tests. The marker is a one-block editor marker; the guide is a simple bootstrap NPC-body model. Do not add image files or vendor assets.
 
-- [ ] **Step 3: Capture and compose the files safely**
+- [x] **Step 3: Capture and compose the files safely**
 
 Extend `ProductGraph` to capture both sources with `HeldSourceFile`, bounded size, and pinned bytes. Feed byte-backed entries through `ContentContribution`; do not pass mutable paths into pack composition. Preserve no-follow behavior and exact release-input capture.
 
-- [ ] **Step 4: Verify model/catalog parity and the built pack**
+- [x] **Step 4: Verify model/catalog parity and the built pack**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew --no-build-cache :resourcepacks-catalog:check :resourcepacks-product:test
-GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew --no-build-cache clean check -PpackSetVersion=0.6.0
+GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew --no-build-cache clean check -PpackSetVersion="$(tr -d '\n' < version.txt)"
 git diff --check
 ```
 
-Build a local release-shaped PackSet into a fresh absent output path and inspect the ZIP:
+Build the current branch's release-shaped PackSet into a fresh absent output path and inspect the ZIP. The feature branch must use the exact value still present in `version.txt`; Release Please changes it to 0.6.0 later:
 
 ```bash
-git rev-parse HEAD
-GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew :resourcepacks-product:buildPackSet -PpackSetVersion=0.6.0 -PprovenanceCommit=<HEAD_SHA> -PpublicationType=release -PpublicationId=v0.6.0 -PreleaseOutput=/tmp/scene-packset-0.6.0
-unzip -l /tmp/scene-packset-0.6.0/grounds-content-pack-v0.6.0.zip
+scene_pack_version="$(tr -d '\n' < version.txt)"
+scene_pack_commit="$(git rev-parse HEAD)"
+GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew :resourcepacks-product:buildPackSet -PpackSetVersion="$scene_pack_version" -PprovenanceCommit="$scene_pack_commit" -PpublicationType=release -PpublicationId="v$scene_pack_version" -PreleaseOutput=/tmp/scene-packset-bootstrap
+unzip -l "/tmp/scene-packset-bootstrap/grounds-content-pack-v${scene_pack_version}.zip"
 ```
 
 Expected: both exact model paths exist and parity validation passes.
 
-- [ ] **Step 5: Commit the pack content**
+- [x] **Step 5: Commit the pack content**
 
 ```bash
 git add art/content resourcepacks-product resourcepacks-catalog/src/test
@@ -143,10 +144,10 @@ git commit -m "feat(pack): add scene editor bootstrap models"
 
 **Repository:** resourcepacks feature worktree
 
-- [ ] **Step 1: Run full verification and request review**
+- [x] **Step 1: Run full verification and request review**
 
 ```bash
-GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew --no-build-cache clean check -PpackSetVersion=0.6.0
+GRADLE_USER_HOME=/tmp/scene-resourcepacks-gradle ./gradlew --no-build-cache clean check -PpackSetVersion="$(tr -d '\n' < version.txt)"
 git diff --check origin/main...HEAD
 git status --short
 ```
@@ -159,7 +160,7 @@ Do not wait on `arc-linux` indefinitely. If required hosted checks cannot start,
 
 - [ ] **Step 3: Complete Release Please for 0.6.0**
 
-Let Release Please update `version.txt`, changelog, and release metadata. Merge its release PR, verify tag `v0.6.0`, Maven package `gg.grounds:resourcepacks-catalog:0.6.0`, and immutable PackSet artifacts. Do not activate a cluster channel while the cluster is down.
+Let Release Please update `version.txt`, changelog, and release metadata. On that release branch, rerun `clean check` with the exact new `version.txt` value. Merge its release PR, verify tag `v0.6.0`, Maven package `gg.grounds:resourcepacks-catalog:0.6.0`, and immutable PackSet artifacts. Do not activate a cluster channel while the cluster is down.
 
 - [ ] **Step 4: Record exact producer evidence**
 
