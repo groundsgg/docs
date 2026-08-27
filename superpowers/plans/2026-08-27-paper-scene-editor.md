@@ -390,25 +390,25 @@ coordination contract.
 - Create: `paper/src/main/kotlin/gg/grounds/scene/editor/paper/PaperScheduler.kt`
 - Create matching MockBukkit tests
 
-- [ ] **Step 1: Write failing lifecycle/service tests**
+- [x] **Step 1: Write failing lifecycle/service tests**
 
 Prove enable composition, catalog initialization failure, command registration, `SceneEditStatus` registration, reverse-order close/unregister, and no mutable global singleton.
 
-- [ ] **Step 2: Implement lifecycle composition**
+- [x] **Step 2: Implement lifecycle composition**
 
 Keep `JavaPlugin` limited to dependency construction and registration. Run Bukkit work on the server thread and file work asynchronously with session-generation checks.
 
-- [ ] **Step 3: Write failing command/permission/completion tests**
+- [x] **Step 3: Write failing command/permission/completion tests**
 
 Cover every first-slice path from the approved design, exact permissions, console-only catalog status exception, finite-number parsing, asset-kind completion, pagination, partial-path completion, and read-only display of preserved application actions.
 
 `PaperSessionResolver` must query the published BuildSystem API for the player's current `BuildWorld`; ordinary loaded Bukkit worlds are rejected. MockBukkit tests cover a missing BuildWorld, a valid build world, world change, and BuildSystem service loss. The hard plugin dependency makes a completely absent BuildSystem an enable-time failure rather than an ambiguous editor mode.
 
-- [ ] **Step 4: Implement commands as adapters over common operations**
+- [x] **Step 4: Implement commands as adapters over common operations**
 
 Commands must not reconstruct DTOs independently. Use Adventure components and deterministic problem ordering. `/scene save` says saved, never published.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 GRADLE_USER_HOME=/tmp/scene-editor-gradle ./gradlew --no-build-cache :paper:test
@@ -416,6 +416,16 @@ git diff --check
 git add paper
 git commit -m "feat(paper): expose scene editor commands"
 ```
+
+Delivered locally as `2cf36d6`, with supporting Common hardening in `e66a808`, `c80ebae`,
+`880193a`, and `db4a59f`. TDD covers transactional plugin lifecycle, BuildSystem service and exact
+world resolution, scheduler shutdown races, lazy valid/absent/invalid scene bootstrap, atomic
+first-command recovery, generation-bound reload/discard, all first-slice prop/NPC mutations,
+owner-bound leases and administrative takeover, exact leaf permissions, kind- and
+session-aware completion, pagination, finite-number rejection, preserved read-only application
+actions, deterministic diagnostics, and local-only save wording. The final forced
+`:common:spotlessCheck :common:test :paper:spotlessCheck :paper:test --rerun-tasks` verification
+passed, and three independent review rounds ended with no P1/P2 findings.
 
 ---
 
