@@ -1,0 +1,112 @@
+---
+title: "Databases"
+description: "How persistent data works for your app — why a pushed app has no managed database today, and how to connect your own."
+---
+
+This page is about where your app's data lives: player progress, plugin data files, anything you need to survive a deploy. The short version: **a pushed app does not get a managed database, and it does not get durable storage from the platform.** A pushed app runs as a plain Deployment or an Agones Fleet — pod-local disk is **ephemeral** and is lost when the pod is replaced on your next push. For anything you need to keep, connect an external database and pass the connection string in as an [encrypted secret](/build/runtime/environment-and-secrets).
+
+## What survives a push, and what doesn't
+
+When you push to `dev`, forge replaces the previous deployment. The new pod starts from your image with a clean filesystem — nothing the old pod wrote to disk carries over, because forge does not attach a persistent volume to a pushed app.
+
+| Where your data is | Survives a `dev` push? |
+|---|---|
+| In an **external database** you connect to | Yes — it lives outside the cluster, untouched by your deploy |
+| **Baked into your image** (resource files, defaults) | Yes — it's part of every build |
+| **Pod-local disk** (files your pod writes at runtime) | No — the new pod gets a clean filesystem |
+| **In memory** | No — every push is a fresh process |
+
+On `staging` it's stricter still: each push spins up a fresh [preview environment](/build/concepts/preview-environments), so **nothing carries across staging pushes**. A clean slate every time is the point of a preview.
+
+<Warning>
+Do not rely on pod-local disk for anything you need after a redeploy. Writing player data or world state to a file in the container is fine for a single run, but it is **gone the moment you push again** — there is no managed volume reattaching it. Persist anything that matters in a database you control.
+</Warning>
+
+For the full lifecycle of what a push replaces, see [Pushes](/build/concepts/pushes).
+
+## There is no automatic per-app database
+
+A pushed app — a `plugin-paper`, `plugin-velocity`, `gamemode`, or `service` — runs in your namespace with no database attached. **Forge does not provision Postgres (or any database) for it.** There is no per-app database URL injected, no schema created, no connection string to discover.
+
+<Note>
+**Managed Postgres for developer apps is on the roadmap, not a today capability.** The platform runs Postgres for its own services and for shared dev-workspace infrastructure, but there is no supported flow that hands a pushed app its own provisioned database. If you need one, raise it in `#grounds-platform` with your app and data shape so it can be tracked.
+</Note>
+
+## Connect an external database
+
+This is the supported pattern today: run the database wherever you like (a managed Postgres, your own Redis, a hosted provider), and inject the connection details as an encrypted secret so they are never baked into your JAR or your manifest.
+
+<Steps>
+<Step title="Decide what your app reads">
+  Pick the env var names your code reads at startup — `DATABASE_URL`, `DB_PASSWORD`, whatever your framework expects.
+
+  Names **cannot** start with `GROUNDS_` (reserved for platform built-ins like `GROUNDS_TOKEN`). Everything else is yours.
+</Step>
+<Step title="Store the connection string as a secret">
+  Set sensitive values as encrypted secrets — not plain env vars — from the **Env** tab in the [portal](/build/portal). Forge encrypts them at rest and injects them at deploy time.
+
+  See [Environment and secrets](/build/runtime/environment-and-secrets) for the exact flow, naming and size rules, and the secrets rollout caveat.
+</Step>
+<Step title="Read it in your app">
+  Forge injects the secret into your container as an ordinary environment variable (via a Kubernetes `secretKeyRef`), so your code reads it like any other env var.
+
+  ```java
+  String url = System.getenv("DATABASE_URL");
+  ```
+</Step>
+<Step title="Push">
+  ```bash
+  grounds push
+  ```
+
+  Env vars and secrets you set are merged into the workload on the next push. Don't put connection strings in `grounds.yaml` — that file describes *what* you ship, not credentials.
+</Step>
+</Steps>
+
+<Warning>
+Encrypted secrets are **rolling out** and may not be enabled on every forge instance yet. The encryption key has to be provisioned platform-side first; until it is, a secret write returns a clear `503 secrets_unavailable` error and you'll see it in the CLI. Plain (non-secret) env vars are unaffected and always work. If a secret write 503s, that's a platform-config gap on the instance, not a mistake on your end — flag it in `#grounds-platform`. Full detail lives in [Environment and secrets](/build/runtime/environment-and-secrets).
+</Warning>
+
+## What about the Postgres in dev workspaces?
+
+If you've used a [test environment](/build/test-environment/index), you may have seen a Postgres running inside it. That is **shared throwaway infrastructure for the whole workspace bundle**, not a database provisioned for your specific app:
+
+- It's a disposable, fixed-credential Postgres that lives only inside the per-engineer workspace.
+- It exists for bundled platform services to share, and it is wiped with the workspace.
+- It is **not** how a pushed app gets durable storage, and it does not exist in production.
+
+Don't build on it as if it were your app's database. If your app needs Postgres, use the external-database pattern above and keep the connection string in a secret.
+
+## Limits and honest caveats
+
+<AccordionGroup>
+<Accordion title="Pod-local disk does not survive a push">
+  A pushed app has no managed volume. Files your pod writes at runtime live on ephemeral pod storage and are gone when the pod is replaced on your next push. Anything you need to keep belongs in a database you control.
+</Accordion>
+<Accordion title="Staging keeps nothing">
+  Every `staging` push is a fresh [preview environment](/build/concepts/preview-environments). Data written in one staging push is not visible in the next — by design.
+</Accordion>
+<Accordion title="No managed Postgres for apps yet">
+  There is no `grounds db create`, no auto-injected `DATABASE_URL`, no per-app schema. If a doc or example implies a pushed app gets a database automatically, that's aspirational — it isn't wired in the push flow today.
+</Accordion>
+<Accordion title="Secrets depend on platform config">
+  Encrypted secret writes can 503 if the forge instance hasn't been provisioned with its secret-encryption key. That gates only the encrypted path; plain env vars keep working. See [Environment and secrets](/build/runtime/environment-and-secrets).
+</Accordion>
+</AccordionGroup>
+
+## Related
+
+<CardGroup cols={2}>
+<Card title="Environment and secrets" icon="lock" href="/build/runtime/environment-and-secrets">
+  Set plain env vars and encrypted secrets — the supported way to pass a database connection string to your app.
+</Card>
+<Card title="Pushes" icon="rocket" href="/build/concepts/pushes">
+  What a push replaces and what survives it.
+</Card>
+<Card title="Preview environments" icon="flask" href="/build/concepts/preview-environments">
+  Why staging pushes keep nothing — each one is a clean slate.
+</Card>
+<Card title="Manifest reference" icon="file-code" href="/build/manifest">
+  Every field in `grounds.yaml`. Note: there is no database field — credentials go in secrets, not the manifest.
+</Card>
+</CardGroup>
