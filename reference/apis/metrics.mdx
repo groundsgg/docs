@@ -1,0 +1,105 @@
+---
+title: "Metrics API"
+description: "Scrape the Grounds metrics assigned to your API key in the Prometheus text format."
+---
+
+The Metrics API lets an external service or partner read selected Grounds metrics, such as players online, with its own Prometheus or any tool that understands the Prometheus text format. Each API key returns only the metrics Grounds assigned to it.
+
+<Info>
+Prerequisite: a metrics API key from Grounds. Ask your Grounds contact for one and say which metrics you need. Keys are issued and scoped by Grounds; there is no self-service.
+</Info>
+
+## Endpoint
+
+```text
+GET https://api.grounds.gg/v1/metrics
+```
+
+The path is exact: `/v1/metrics/` with a trailing slash is a different route and returns `404`.
+
+## Authentication
+
+Send your key as a bearer token on every request.
+
+<ParamField header="Authorization" type="string" required>
+  `Bearer <your-key>`. Keys start with `gmk_`.
+</ParamField>
+
+Grounds shows the key once, when it is issued, and stores only its SHA-256 hash, so a lost key cannot be recovered. Ask for a new one instead. To rotate a key, request a new one, switch to it, and then ask Grounds to revoke the old one. Issuing and revoking a key takes effect within a few minutes.
+
+<Warning>
+Treat the key like a password. Keep it in a secret store or a file readable only by your scraper, never in a repository or a URL.
+</Warning>
+
+## Request
+
+The endpoint takes no query parameters and no body. Parameters such as `?query=` or `?match[]=` are ignored: the metrics you receive are fixed by your key.
+
+<RequestExample>
+```bash cURL
+curl -s https://api.grounds.gg/v1/metrics \
+  -H "Authorization: Bearer $GROUNDS_METRICS_KEY"
+```
+</RequestExample>
+
+## Response
+
+A successful response is `200 OK` with `Content-Type: text/plain; version=0.0.4; charset=utf-8`: the [Prometheus text exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), the same format a `/metrics` endpoint or Prometheus federation returns.
+
+<ResponseExample>
+```text 200
+# TYPE grounds_players_online untyped
+grounds_players_online 128
+# TYPE grounds_players_by_mode untyped
+grounds_players_by_mode{mode="bedwars"} 40
+grounds_players_by_mode{mode="duel"} 22
+```
+</ResponseExample>
+
+The metric names and labels above are examples. Your key's metrics are agreed with Grounds when the key is issued.
+
+- **Values are evaluated when you request them.** Each value is the latest sample Grounds holds for that series.
+- **Series without recent data are left out.** A series whose newest sample is older than five minutes is not in the response. Treat a missing series as "no data", not as `0`.
+- **Every metric is `untyped`.** The response has no `# HELP` lines and no timestamps, so your scraper stamps each sample with its own scrape time.
+- **Responses are never cached.** Every response carries `Cache-Control: no-store`.
+
+## Rate limit
+
+Each key may make **30 requests per minute**, counted in fixed one-minute windows. A request over the limit returns `429` with a `Retry-After` header in seconds.
+
+A scrape interval of 15 seconds uses 4 requests per minute. Grounds metrics change slowly, so 30 or 60 seconds is usually enough.
+
+## Errors
+
+| Status | Meaning | What to do |
+|--------|---------|------------|
+| `401 Unauthorized` | The `Authorization` header is missing, is not `Bearer <key>`, or the key is unknown or revoked. The response carries `WWW-Authenticate: Bearer realm="grounds metrics"`. | Check the header and the key. A newly issued key can take a few minutes to become active. |
+| `404 Not Found` | The path is not exactly `/v1/metrics`. | Remove any trailing slash or extra path. |
+| `405 Method Not Allowed` | The method is not `GET`. The response carries `Allow: GET`. | Use `GET`. |
+| `429 Too Many Requests` | The key exceeded 30 requests in the current minute. | Wait `Retry-After` seconds, then lengthen your scrape interval. |
+| `502 Bad Gateway` | Grounds could not evaluate one of your metrics. The whole response fails, so you never receive a partial set. | Retry on your next scrape. If it persists, contact Grounds. |
+
+Error bodies are short plain-text messages, such as `unauthorized`, and are not meant to be parsed.
+
+## Scrape with Prometheus
+
+1. Save your key in `/etc/prometheus/grounds-metrics-key`, readable only by the user Prometheus runs as. Prometheus trims surrounding whitespace, so a trailing newline is fine.
+2. Add a scrape job that reads the key from that file:
+
+```yaml prometheus.yml
+scrape_configs:
+  - job_name: grounds
+    scheme: https
+    metrics_path: /v1/metrics
+    scrape_interval: 60s
+    honor_labels: true
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/grounds-metrics-key
+    static_configs:
+      - targets: ["api.grounds.gg"]
+```
+
+`honor_labels: true` keeps the labels Grounds sends as they are, as for any federated source.
+
+To confirm it works, open **Status → Targets** in Prometheus. The `grounds` target should be `UP`. If a scrape fails, Prometheus shows the HTTP status there; look it up in [Errors](#errors).
