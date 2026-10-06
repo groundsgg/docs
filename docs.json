@@ -131,7 +131,13 @@
       {
         "tab": "Reference",
         "pages": [
-          "reference/apis/index",
+          {
+            "group": "APIs",
+            "pages": [
+              "reference/apis/index",
+              "reference/apis/metrics"
+            ]
+          },
           {
             "group": "Plugins SDK",
             "pages": [
