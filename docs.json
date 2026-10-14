@@ -36,6 +36,7 @@
             "group": "NPCs and resource packs",
             "pages": [
               "build/content/index",
+              "build/content/concepts",
               "build/content/scene-editor",
               "build/content/scene-map-pipeline",
               "build/content/packset-build"

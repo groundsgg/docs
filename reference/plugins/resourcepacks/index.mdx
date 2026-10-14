@@ -5,6 +5,8 @@ description: "Understand ordered packs, catalogs, channels, immutable publicatio
 
 A PackSet is the unit of Grounds asset distribution. It binds the ordered ZIP stack, JVM catalog, Minecraft compatibility, integrity hashes, and source provenance into one validated manifest. Consumers select a **channel** or an **immutable release**, rather than constructing a stack of unrelated URLs.
 
+For an introduction to individual packs, contributions, catalogs, and their relationship to scenes, read [the content concepts](/build/content/concepts).
+
 ## Pack order and ownership
 
 `grounds-global` contains `grounds-content` first and `grounds-platform` second. The later platform pack has higher client priority. The order is part of the contract; preserve it when building an Adventure request.
