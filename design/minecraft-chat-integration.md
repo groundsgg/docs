@@ -168,3 +168,28 @@ Das Packprodukt bleibt bis zur Clientabnahme offen: Schon sein Merge würde auto
 Der Chat-Branch enthält zusätzlich den aktuellen Mute-Enforcement-Stand von `origin/main`. Mute-Prüfungen, Server-Routing und die Reihenfolge von Privatnachricht-Zustellung und Echo bleiben erhalten; neu hinzugekommene Mute-Rückmeldungen sind ebenfalls lokalisiert. Nach dieser Integration wurden alle Chatmodule erneut gebaut und geprüft (351 Testfälle).
 
 Die freigegebene Kontext-/Level-Trennung ist in den verlinkten Feature-PRs umgesetzt und erneut geprüft: 42 Bibliothekstests, alle 13 betroffenen Plugin-Builds erfolgreich; insgesamt 1550 erfasste Testfälle, 1544 erfolgreich und sechs bestehende Scene-Editor-Skips. Der unabhängige Review fand keine verlorenen Metadaten. Veröffentlichungs- und Clientabnahmegrenzen bleiben bestehen.
+
+## Offene Integrationsgates
+
+- GitHub verlangt eine unabhängige Review für [Agones 87](https://github.com/groundsgg/plugin-agones/pull/87), [Player 49](https://github.com/groundsgg/plugin-player/pull/49) und [Docs 51](https://github.com/groundsgg/docs/pull/51).
+- [Social 23](https://github.com/groundsgg/plugin-social/pull/23) besteht regulären Build und Docker-Prüfung. Seine zusätzliche Vorschau scheitert vor dem Signieren an fehlendem `envsubst`. Die Korrektur in [.github 34](https://github.com/groundsgg/.github/pull/34) besteht Workflow-Vertrag und Buildx-Smokecheck und wartet auf die vorgeschriebene Review.
+- [Notifications 18](https://github.com/groundsgg/plugin-notifications/pull/18) besteht den eigenständigen lokalen Build einschließlich der drei Artefaktverträge. Die GitHub-CI kann den privaten Minestom-Fork noch nicht lesen. Die Maven-Quelle und die Weitergabe von `PACKAGES_TOKEN` sind ergänzt; der CI-Lesetoken benötigt Zugriff auf das private Minestom-Paket und muss diesem Repository zur Verfügung stehen. Build-Lesetoken und Veröffentlichungs-Token bleiben getrennt.
+- [Containers 287](https://github.com/groundsgg/containers/pull/287) stellt Paper und Velocity auf Grounds Runtime 0.2.0 um; beide Image-Builds sind grün. Der Merge bleibt nach Ablehnung durch die automatische Freigabeprüfung offen, weil eine Image-Veröffentlichung den produktiven `velocity:latest`-Pfad beeinflussen könnte. Live-Aktivierung und fehlende Agones-Integration bleiben ausdrücklich ausstehend.
+- [Packprodukt 45](https://github.com/groundsgg/resourcepacks/pull/45) wartet auf die Sichtprüfung im Java-26.3-Client. Es wurde weder der Edge-/Stable-Kanal umgestellt noch die Font-Allowlist aktiviert.
+
+Die [Lobby-Integration 146](https://github.com/groundsgg/minestom-lobby/pull/146) verwendet die veröffentlichten Versionen Chat 2.3.0, Lobby 2.10.0 und Permissions 1.1.0. Eigenständiger Build, Formatierung und alle 104 Host-Tests sind erfolgreich; das ausführbare Gesamt-JAR enthält alle fünf gewählten Provider. Die Abhängigkeiten lösen Minestom 2026.10.07-26.3-grounds, Runtime API 0.8.0, i18n 0.4.0 sowie Adventure und MiniMessage 5.2.0 auf. Der PR bleibt im Entwurf, bis Notifications das CI-Zugriffsgate bestanden hat, veröffentlicht und mit seiner tatsächlichen neuen Version eingebunden ist.
+
+## Veröffentlichte Versionen
+
+| Repository | Version | Veröffentlichung |
+| --- | --- | --- |
+| library-i18n | 0.4.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/library-i18n/actions/runs/38645852984) |
+| plugin-proxy | 2.6.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-proxy/actions/runs/38647306625) |
+| plugin-scene-editor | 0.6.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-scene-editor/actions/runs/38647063044) |
+| plugin-grounds-runtime | 0.2.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-grounds-runtime/actions/runs/38647486640) |
+| plugin-coins | 0.3.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-coins/actions/runs/38649875652) |
+| plugin-lobby | 2.10.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-lobby/actions/runs/38650290901) |
+| plugin-permissions | 1.1.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-permissions/actions/runs/38649507762) |
+| plugin-match | 0.11.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-match/actions/runs/38650302344) |
+| plugin-resourcepacks | 1.1.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-resourcepacks/actions/runs/38649667471) |
+| plugin-chat | 2.3.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-chat/actions/runs/38650751397) |
