@@ -1,0 +1,97 @@
+---
+title: "PackSet architecture and contracts"
+description: "Understand ordered packs, catalogs, channels, immutable publications, and selection."
+---
+
+A PackSet is the unit of Grounds asset distribution. It binds the ordered ZIP stack, JVM catalog, Minecraft compatibility, integrity hashes, and source provenance into one validated manifest. Consumers select a **channel** or an **immutable release**, rather than constructing a stack of unrelated URLs.
+
+## Pack order and ownership
+
+`grounds-global` contains `grounds-content` first and `grounds-platform` second. The later platform pack has higher client priority. The order is part of the contract; preserve it when building an Adventure request.
+
+| Repository/module | Responsibility |
+| --- | --- |
+| `library-resource-pack` API | Typed contributions, metadata, vanilla-path claims, and validation policies |
+| `library-resource-pack` builder | Validate/compose contributions and write deterministic ZIP artifacts |
+| `library-gui` | Theme declarations and the typed GUI contribution |
+| `resourcepacks` product | Own final content/platform definitions, artwork, release graph, and publication |
+| `resourcepacks-catalog` | JVM declarations: `GroundsGuiIds`, `GroundsGuiTheme`, `GroundsAssets`, `GroundsAssetCatalog` |
+| `resourcepacks-contract` | Strict canonical manifest/channel decoding and validation policy |
+| `resourcepacks-client` | Background resolution, immutable snapshots, retries, and disk cache |
+| `plugin-resourcepacks` | Config integration, Velocity delivery, deduplication, and player status |
+| Forge/Portal | Inspect publications and manage the fixed Stage selection |
+
+## Four identities to keep separate
+
+| Identity | Example | Meaning |
+| --- | --- | --- |
+| PackSet ID | `grounds-global` | Distribution product |
+| Publication | Release `v1.1.0` or build's full commit SHA | Immutable publication directory |
+| Product/catalog version | `1.1.0` or an Edge version | Exact version of declarations and artifacts |
+| Config document version | `10` as a string | Concurrency token for operator selection changes |
+
+An asset catalog pin is exact. A runtime compiled against `resourcepacks-catalog:1.0.0` does not automatically acquire a different catalog because the client receives a newer ZIP. The action catalog has its own independent revision and Maven artifact.
+
+## Distribution layout
+
+The CDN origin is `https://cdn.grounds.gg`:
+
+```text
+resourcepacks/packsets/grounds-global/
+  channels/stable.json
+  channels/edge.json
+  releases/v<semver>/
+    manifest.json
+    grounds-content-pack-v<semver>.zip
+    grounds-platform-pack-v<semver>.zip
+    grounds-resourcepack-catalog-v<semver>.jar
+  builds/<full-lowercase-commit>/
+    manifest.json
+    ... immutable build artifacts ...
+```
+
+A channel document is mutable; a release/build directory is immutable. The channel binds a sequence and publication target to a manifest URL, exact SHA-256, and size. Stable targets releases; Edge targets builds. Reused Edge pack URLs may refer to earlier builds only when the final pack hashes and size match; the catalog and manifest remain current-commit objects.
+
+## Manifest schema
+
+Manifest schema is **2**. Config and scene schema numbers are separate.
+
+| Field | Contract |
+| --- | --- |
+| `schemaVersion` | `2` |
+| `packSet` | `grounds-global` |
+| `publication` | `{type: release/build, id}` |
+| `version` | Product version |
+| `minecraft` | Exact Minecraft version and resource-pack format |
+| `catalog` | ID, version, Maven coordinate, file, SHA-256, size |
+| `packs` | Ordered entries with role, ID, UUID, required, URL, SHA-1, SHA-256, size, format |
+| `provenance` | Repository and full lowercase commit |
+
+SHA-1 is the Minecraft delivery hash. SHA-256 and sizes bind distribution/catalog bytes. A fixed UUID identifies each logical pack; it is not a unique request ID or release identity.
+
+The JVM contract rejects noncanonical JSON, duplicate keys, invalid field/type/value combinations, and mismatched origins/publication roots. The resolver checks the expected target, manifest hash/size, and requested source before accepting state. Do not hand-edit a published manifest or treat a hash as permission to accept an arbitrary URL.
+
+## Channel and pin semantics
+
+With `source.pin` absent or null, the plugin follows `source.channel`. A release pin overrides the channel but retains that channel in the document for use when the pin is cleared. Release IDs are canonical `v<major>.<minor>.<patch>` without prerelease suffixes; the Portal/Forge request uses the version **without** `v`.
+
+A channel switch clears a pin. A release pin does not advance Stable or Edge. A rollback selects an older compatible immutable release; it does not overwrite CDN objects.
+
+## Minecraft compatibility
+
+Current product/contract baseline is Minecraft **26.3**, pack format **97**. Forge can inspect historical manifests, but its Stage selection mutation rejects release pins with a different Minecraft version or format. For example, a 26.2/88 publication is inspectable but cannot be pinned through the current Stage selector.
+
+<Note>
+Publication, configuration, proxy resolution, and client acceptance are four distinct states. A successful publish does not activate the product; a successful selection write does not prove every player has accepted it.
+</Note>
+
+Continue with [build/publication](/build/content/packset-build), [client API](/reference/plugins/resourcepacks/client-api), [Velocity configuration](/reference/plugins/resourcepacks/velocity), and [operator UI](/build/portal/resource-packs).
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Product publication](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/README.md)
+- [Public contract](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-contract/src/main/kotlin/gg/grounds/resourcepacks/contract/PackSetContractJson.kt)
+- [Object layout](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-product/src/main/kotlin/gg/grounds/resourcepacks/product/PackSetObjectLayout.kt)
+- [Stage compatibility](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/resourcepacks/selection.ts)

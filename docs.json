@@ -33,6 +33,15 @@
             ]
           },
           {
+            "group": "NPCs and resource packs",
+            "pages": [
+              "build/content/index",
+              "build/content/scene-editor",
+              "build/content/scene-map-pipeline",
+              "build/content/packset-build"
+            ]
+          },
+          {
             "group": "Concepts",
             "pages": [
               "build/concepts/projects-and-teams",
@@ -72,7 +81,8 @@
                 "pages": [
                   "build/portal/index",
                   "build/portal/control-center-access",
-                  "build/portal/control-center-step-up"
+                  "build/portal/control-center-step-up",
+                  "build/portal/resource-packs"
                 ]
               },
               "build/observability"
@@ -125,6 +135,12 @@
               "deploy/keycloak-minecraft-idp/installation",
               "deploy/keycloak-minecraft-idp/configuration"
             ]
+          },
+          {
+            "group": "Resource pack operations",
+            "pages": [
+              "deploy/resourcepacks/operations"
+            ]
           }
         ]
       },
@@ -135,7 +151,8 @@
             "group": "APIs",
             "pages": [
               "reference/apis/index",
-              "reference/apis/metrics"
+              "reference/apis/metrics",
+              "reference/apis/resource-packs"
             ]
           },
           {
@@ -168,6 +185,22 @@
                   "reference/plugins/in-game-permissions/runtime-integration",
                   "reference/plugins/in-game-permissions/permission-catalog",
                   "reference/plugins/in-game-permissions/infrastructure"
+                ]
+              },
+              {
+                "group": "Scenes and NPCs",
+                "pages": [
+                  "reference/plugins/scenes/format",
+                  "reference/plugins/scenes/editor-api",
+                  "reference/plugins/scenes/runtime"
+                ]
+              },
+              {
+                "group": "PackSets",
+                "pages": [
+                  "reference/plugins/resourcepacks/index",
+                  "reference/plugins/resourcepacks/client-api",
+                  "reference/plugins/resourcepacks/velocity"
                 ]
               }
             ]

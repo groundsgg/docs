@@ -1,0 +1,70 @@
+---
+title: "PackSet operations and troubleshooting"
+description: "Verify selection changes, proxy convergence, player behavior, compatibility, and recovery."
+---
+
+Check publication, Config selection, proxy resolution, and player acceptance separately. The [Portal](/build/portal/resource-packs) provides inspection and Stage selection; it does not orchestrate fleet restarts or immediately replace packs for connected players.
+
+## Operator acceptance procedure
+
+<Steps>
+<Step title="Capture the current state">Record environment, Config version, channel/pin, and proxy target fingerprints. Verify the available release matches the runtime Minecraft/format contract.</Step>
+<Step title="Make one guarded change">Use the Portal confirmation or [Forge API](/reference/apis/resource-packs) with the current expected version. A `409` requires a fresh read and review.</Step>
+<Step title="Check Config and proxy convergence">Read the new document/version and inspect each target proxy's source, current/fallback snapshot, and resolved publication. A write response alone is insufficient.</Step>
+<Step title="Check a connected player">Remain connected during selection. There must be no immediate broadcast, forced disconnect, or fleet restart from this operation.</Step>
+<Step title="Switch or reconnect">Change backend server or reconnect. Check that the selected PackSet is offered/applied. Downloads from the Minecraft cache can complete quickly.</Step>
+<Step title="Verify rollback and final state">Repeat with an older compatible release, then restore the intended channel/pin. Check proxy and player behavior again.</Step>
+</Steps>
+
+For NPC/map acceptance, also verify authored placement, labels, the navigator click action, collision, and viewer-private hover behavior with two players. Those checks belong to the map/scene host and are not replaced by PackSet counters.
+
+## Deployment settings
+
+| Forge variable | Meaning |
+| --- | --- |
+| `RESOURCE_PACKS_CONFIG_URL` | Private Config Service origin |
+| `RESOURCE_PACKS_CONFIG_TOKEN_FILE` | Projected/authenticated workload token file |
+| `RESOURCE_PACKS_SELECTION_MUTATIONS_ENABLED` | `true` or `false`; defaults to `false` |
+
+Enable mutations only after all target runtimes understand release pins, have the expected compatibility contract, and pass selection/rollback/concurrency/next-connection acceptance. Reads can be available with writes disabled.
+
+Config must validate bearer identity and authorize the exact document writer. Keep the service private and preserve the deployment's network isolation policy. Token rotation must continue working without copying long-lived credentials into a file or log.
+
+## Troubleshooting matrix
+
+| Symptom | What to check | Recovery |
+| --- | --- | --- |
+| No packs offered | Config readiness, `enabled`, client status, source match, writable cache | Restore valid configuration/source; do not invent defaults for `NOT_READY` |
+| Old pack after a Config change | New snapshot resolution and whether the player crossed a backend connection | Wait for source resolution, then switch/reconnect |
+| Old world/NPC after map pin move | Which map the running lobby loaded | Start a lobby using the selected map; there is no scene hot reload |
+| PackSet `DEGRADED` | Last validated fallback belongs to current source | Restore CDN/network; inspect fallback target while degraded |
+| New source remains unavailable | Do not deliver retained old-source fallback | Fix new source or explicitly select a known-good compatible release |
+| Release pin rejected | Canonical ID, availability, manifest binding, Minecraft/format | Choose a compatible available release; do not bypass backend validation |
+| Config update conflicts | Current document version and another operator's change | Read/review and retry with a fresh version |
+| Selector `503` | Mutation flag, Config URL/token file, timeout, private reachability | Restore dependency/configuration; then refresh the UI |
+| Inspection `502` | GitHub release manifest digest, CDN size/hash, strict contract | Repair the publication through its workflow; never overwrite immutable bytes |
+| Downloaded/accepted metrics look ambiguous | Multiple requests share logical pack UUIDs | Treat target attribution `unknown` honestly; use fresh connections for a clear acceptance run |
+| Scene derivation INVALID | Diagnostic path/code, catalogs, required actions, root sidecar | Correct source, save, upload a new version; SYSTEM retry is not a content fix |
+| Scene startup fails | Present invalid sidecar or unsupported host capability | Fix/roll back the selected map; do not silently skip its scene |
+| Audit metric increments after successful write | Config write may already have succeeded | Read current version before any retry; restore audit storage independently |
+
+## Compatibility and rollback
+
+The current Stage selector accepts release pins only for Minecraft 26.3 / format 97. Historical 26.2 / format 88 releases can be inspected but cannot serve as a compatible rollback target for that runtime.
+
+A pin is immutable selection. Switching back to Edge/Stable clears it. A rollback creates a new Config document version, preserves the immutable CDN history, and is adopted at the next server connection. It is not a server-process rollback.
+
+## Recorded Stage acceptance
+
+On October 14, 2026, the implementation chat recorded completed backend/runtime acceptance for compatible pins `1.1.0` and `1.0.0`, stale-version rejection, incompatible release rejection, and convergence of both Java proxies without restarts. The user confirmed the live Portal/player walkthrough: no immediate update, application after switch/reconnect, rollback, and restoration to Edge/no pin. The recorded final Config version was `10` with selector writes enabled.
+
+This is dated acceptance evidence, not a live-state assertion. Re-read the current deployment before operating it. The [implementation masterplan](https://grounds.atlassian.net/wiki/spaces/GARCHITECT/pages/257622018) also records a user-approved exception: Core NetworkPolicy enforcement remained **off**, and the separate failed 95% isolation acceptance bound was not waived. Completion of the feature checklist does not establish network-isolation acceptance or Production selector support.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Mutation flag/default](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/config.ts)
+- [Selection validation](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/resourcepacks/selection.ts)
+- [Delivery behavior](https://github.com/groundsgg/plugin-resourcepacks/blob/e34725c57730cc9821cd652ddc5121f1f7045c88/README.md)
+- [Scene startup and shutdown](https://github.com/groundsgg/minestom-lobby/blob/628da000fc01bf541078e4160b441cbe7e361a25/README.md)

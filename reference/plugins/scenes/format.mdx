@@ -1,0 +1,143 @@
+---
+title: "Scene format and NPC model"
+description: "Use the strict scene document, exact catalogs, interactions, and action types."
+---
+
+`gg.grounds:scene-format` owns the platform-neutral document model and canonical JSON codec. It exposes Adventure text components, but no Bukkit, Minestom, Jackson, or service-maps objects. `scene-testkit` is a test dependency only.
+
+## JVM dependency
+
+```kotlin build.gradle.kts
+dependencies {
+    implementation("gg.grounds:scene-format:0.4.3")
+    testImplementation("gg.grounds:scene-testkit:0.4.3")
+}
+```
+
+Resolve these artifacts from the `groundsgg/library-scene` GitHub Packages Maven repository with authorized package-read credentials. Use JVM 25; keep testkit off the runtime classpath.
+
+## Document and identity
+
+A map has zero or one root `scene.json`. Absence means no scene. Hosts decide where to find the file; the format library does not scan directories.
+
+| Field | Type | Contract |
+| --- | --- | --- |
+| `schemaVersion` | Integer | Exactly `1` |
+| `id` | `SceneId` | Namespaced lowercase ID, such as `grounds:lobby/main` |
+| `metadata` | `SceneMetadata` | Name, nullable description, and set of tags |
+| `catalogs.assets` | `CatalogReference` | Exact asset catalog ID and version |
+| `catalogs.actions` | `CatalogReference` | Exact action catalog ID and version |
+| `groups` | List of `SceneGroup` | Local ID, display name, editor visibility |
+| `elements` | List of `SceneElement` | Props, composite props, or NPCs |
+
+`SceneId`, `AssetKey`, `ActionKey`, and `CatalogId` use `namespace:path/segments`. Segments contain lowercase letters, digits, `.`, `_`, or `-`; empty, `.` and `..` path segments are invalid. `LocalId` is one lowercase segment. Catalog versions are nonempty printable ASCII without whitespace.
+
+## Element types
+
+Every element has `id`, nullable `group`, a `transform`, `visible`, and `activation` (`AUTOMATIC` or `ALWAYS`). Position uses world blocks; Euler rotation uses degrees; scale is positive on every axis. Numeric values must be finite. Angles normalize to the range from -180 inclusive to 180 exclusive.
+
+| Type | JSON discriminator | Additional fields |
+| --- | --- | --- |
+| `Prop` | `prop` | `asset`, nullable `initialAnimation` |
+| `CompositeProp` | `composite_prop` | Parts with local IDs, prop assets, and local transforms |
+| `Npc` | `npc` | Body, label, label offset, look behavior, animation, interaction bounds, proximity, bindings, collision |
+
+A composite part's transform is local to its root. A targeted action uses `ElementTarget(element, part)`; `part = null` selects the root. Parts are not independent top-level elements.
+
+## NPC fields
+
+| Field | Contract |
+| --- | --- |
+| `body` | An asset of kind `NPC_BODY` in the exact asset catalog |
+| `label` | Nullable safe Adventure component; no click/hover events or insertion |
+| `labelOffset` | Local `Vec3` offset for the label |
+| `look` | `Fixed` or `TrackNearest(maxDistance, yawOnly, maxTurnDegreesPerSecond)` |
+| `interactionBounds` | Local center and strictly positive size |
+| `proximity` | Optional sensor with positive enter radius and a larger exit radius |
+| `bindings` | Ordered trigger bindings with conditions, cooldown, debounce, and actions |
+| `collision` | `NONE`, `SOLID`, or `BOUNCE`; default is `NONE` |
+
+`TrackNearest` updates the generation-owned runtime transform used by rendering, labels, geometry, and effect targets. Reactivation resets it to the authored transform. Proximity's separate enter/exit radii prevent repeated toggling near an edge.
+
+Bounce has either legacy `bounceStrength` (default `6.0`) or optional `bounceDistance` in blocks. Both values range from 0 through 20. In the Kotlin model, a distance cannot coexist with a non-default legacy strength. In JSON, `bounceDistance` and `bounceStrength` are mutually exclusive keys: omit `bounceStrength` entirely when specifying distance, even if you would have set it to `6.0`. Travel distance is approximate and depends on collisions in the world.
+
+## Trigger and condition reference
+
+| Trigger enum | Meaning |
+| --- | --- |
+| `LEFT_CLICK`, `RIGHT_CLICK` | Targeted player input |
+| `HOVER_ENTER`, `HOVER_LEAVE` | Start or stop targeting the NPC |
+| `PROXIMITY_ENTER`, `PROXIMITY_LEAVE` | Cross the proximity sensor boundary |
+
+Bindings contain `conditions`, `cooldownMillis`, `debounceMillis`, and at least one action. Durations are nonnegative. Conditions can require `HandCondition(MAIN/OFF)`, sneaking state, permission, or game mode (`SURVIVAL`, `CREATIVE`, `ADVENTURE`, `SPECTATOR`). A permission is printable ASCII without whitespace.
+
+## Action reference
+
+| Kotlin type / JSON `type` | Parameters |
+| --- | --- |
+| `StartAnimationAction` / `start_animation` | `target`, `animation` |
+| `StopAnimationAction` / `stop_animation` | `target`, nullable `animation` |
+| `PlaySoundAction` / `play_sound` | `sound`, positive `volume`, positive `pitch` |
+| `SetViewerScaleAction` / `set_viewer_scale` | `target`, positive `multiplier`, nonnegative `transitionMillis` |
+| `SetViewerHighlightAction` / `set_viewer_highlight` | `target`, `enabled`, nonnegative `transitionMillis` |
+| `SendMessageAction` / `send_message` | Safe `message` component |
+| `SendActionBarAction` / `send_action_bar` | Safe `message` component |
+| `ShowTitleAction` / `show_title` | `title`, `subtitle`, `fadeInMillis`, `stayMillis`, `fadeOutMillis` |
+| `EmitParticleAction` / `emit_particle` | `target`, `particle`, nonnegative `count`, `offset`, nonnegative `speed` |
+| `ApplicationAction` / `application` | Catalog `key`, typed `arguments` map |
+
+Application argument variants are `StringArgument`, `LongArgument`, `DecimalArgument`, `BooleanArgument`, `EnumArgument`, and `AssetArgument` (JSON types `string`, `long`, `decimal`, `boolean`, `enum`, `asset`). The action catalog validates names, types, required parameters, enum values, and referenced assets. Arbitrary command execution and resource-pack operations are not scene actions.
+
+<Warning>
+A valid scene document can still be unsupported by a host. The current lobby rejects animations, viewer-scale actions, sound, and particle actions during preflight. Use the [runtime capability boundary](/reference/plugins/scenes/runtime) before authoring these features.
+</Warning>
+
+## Decode, validate, and encode
+
+`SceneJson.decode(bytes)` returns `SceneDecodeResult.Success(scene)` or `Failure(problems)`. `SceneJson.encode(scene)` returns `SceneEncodeResult.Success(bytes)` or `Failure(problems)`. `SceneValidation.validateIntrinsic(scene)` checks document invariants; `validateCatalogs(scene, assets, actions)` also checks exact references and capabilities. Use full catalog validation before accepting a scene.
+
+This function can be included in a JVM consumer with `scene-format` on its classpath:
+
+```kotlin SceneLoading.kt
+import gg.grounds.scene.format.*
+import java.nio.file.Files
+import java.nio.file.Path
+
+fun readValidatedScene(
+    path: Path,
+    assets: AssetCatalog,
+    actions: ActionCatalog,
+): SceneDocument {
+    val bytes = Files.newInputStream(path).use { it.readNBytes(16 * 1024 * 1024 + 1) }
+    val scene = when (val decoded = SceneJson.decode(bytes)) {
+        is SceneDecodeResult.Success -> decoded.scene
+        is SceneDecodeResult.Failure -> error(decoded.problems.joinToString("\n"))
+    }
+    val validation = SceneValidation.validateCatalogs(scene, assets, actions)
+    check(validation.isValid) { validation.problems.joinToString("\n") }
+    return scene
+}
+```
+
+Persist only `SceneJson.encode` output. A successful decode does not justify using a partially compatible scene or inventing a replacement catalog version.
+
+## Input limits
+
+| Limit | Maximum |
+| --- | --- |
+| JSON bytes / nesting | 16 MiB / 64 levels |
+| String / numeric token | 65,536 / 128 characters |
+| Groups / elements | 4,096 / 100,000 |
+| Composite parts | 4,096 |
+| Bindings per NPC / actions per binding | 128 / 128 |
+| Application arguments | 64 |
+
+Failures include structured paths, codes, identities where available, and messages. Preserve those diagnostics in editor and derivation feedback. Never treat an invalid document as partially usable.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Public model and codec](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-format/src/main/kotlin/gg/grounds/scene/format)
+- [Wire discriminators](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-format/src/main/kotlin/gg/grounds/scene/format/internal/SceneWire.kt)
+- [Collision contract](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-format/src/main/kotlin/gg/grounds/scene/format/NpcCollision.kt)

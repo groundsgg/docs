@@ -1,0 +1,97 @@
+---
+title: "Scene editor command and integration API"
+description: "Reference all editor commands, permissions, session services, and persistence boundaries."
+---
+
+The editor publishes `gg.grounds:plugin-scene-editor-common` and `gg.grounds:plugin-scene-editor-paper`. `common` is Bukkit-free; `paper` adapts BuildSystem worlds, player input, scheduling, preview entities, and permission checks. Do not build a runtime host against the Paper editor API.
+
+## Command reference
+
+`kind` below is `prop` or `npc`. Element IDs are local lowercase IDs. Parameters in angle brackets are values you supply, not literal command text.
+
+| Command after `/scene` | Parameters and behavior |
+| --- | --- |
+| `create` | `<scene-id> <display-name...>`; create an in-memory scene |
+| `info`, `validate`, `save`, `reload` | No arguments |
+| `catalogs status` | Report catalog readiness |
+| `history` | Inspect shared session history |
+| `undo`, `redo` | Optional positive step count |
+| `tool give` | Give the tagged editor tool |
+| `prop list`, `npc list` | Optional positive page number; 20 entries per page |
+| `<kind> <id> create` | `<asset-key>`; use current player placement |
+| `<kind> <id> select` | Acquire the selection/lease |
+| `<kind> <id> position here` | Use current player placement |
+| `<kind> <id> position set` | `<x> <y> <z>` |
+| `<kind> <id> position add` | `<dx> <dy> <dz>` |
+| `<kind> <id> rotation set` | `<yaw> <pitch> <roll>` |
+| `<kind> <id> rotation add` | `<yaw> <pitch> <roll>` offsets |
+| `<kind> <id> scale set` | `<positive-scale>`; uniform |
+| `<kind> <id> clone` | `<new-id>` |
+| `<kind> <id> remove` | Remove the element |
+| `npc <id> label set` | `<text...>`; literal text |
+| `npc <id> action set` | `<trigger> <action-key>`; parameterless catalog application action |
+| `npc <id> collision set` | `none`, `solid`, or `bounce` |
+| `npc <id> collision strength` | Legacy strength from 0 through 20 |
+| `npc <id> collision distance` | Approximate travel distance from 0 through 20 blocks |
+| `lease status`, `lease release`, `lease override` | `<element-id>` |
+| `recovery backup-and-create` | `<scene-id> <display-name...>` |
+| `recovery export` | Export an open session's diagnostic data |
+| `recovery discard-and-reload confirm` | Explicitly discard unsaved session edits and reload |
+
+Trigger command values are case-insensitive names of the six [SceneTrigger variants](/reference/plugins/scenes/format#trigger-and-condition-reference). Numeric arguments must be finite. The command UI supports props and NPCs; the format's composite model and all general-purpose binding parameters are not exposed as additional commands.
+
+The action command installs an unconditioned, zero-cooldown/zero-debounce application binding for the selected trigger. It replaces existing simple bindings of that shape and preserves more complex bindings. It does not add a main-hand condition or hover highlights automatically; use the typed scene model for those bindings.
+
+## Permission mapping
+
+| Capability | Permission |
+| --- | --- |
+| Help/root | `grounds.scene` |
+| Edit command alternatives and transform tool | `grounds.scene.edit` |
+| Create, inspect, validate, reload, history, undo, redo | `grounds.scene.<operation>` or `grounds.scene.edit` |
+| Give tool | `grounds.scene.tool.give` or `grounds.scene.edit` |
+| Save | `grounds.scene.save` |
+| Inspect catalogs | `grounds.scene.catalogs.status` |
+| Element command | `grounds.scene.<kind>.<operation>[.<mode>]` or `grounds.scene.edit` |
+| Lease status | `grounds.scene.lease.status` or `grounds.scene.edit` |
+| Release lease | `grounds.scene.lease.release`, `grounds.scene.lease.override`, or `grounds.scene.edit`; ownership also enforced |
+| Override lease | `grounds.scene.lease.override` |
+| Recovery | `grounds.scene.recovery.<operation>` or `grounds.scene.recovery` |
+
+`grounds.scene` defaults to operator and grants edit, save, recovery, catalog status, and lease override as children. Save/recovery/override are distinct from an edit-only grant. Consult the existing [in-game permission system](/reference/plugins/in-game-permissions/index) when assigning these capabilities.
+
+## Common session API
+
+Construct `EditorSessionService(catalogs, clock, eventErrorHandler)` with the host's `SceneCatalogBinding`. The service serializes state transitions and exposes immutable snapshots.
+
+| API family | Public methods | Responsibility |
+| --- | --- | --- |
+| Open | `open`, `openFromLoad`, `openFromRepository` | Open a document with its persistence fingerprint; non-create overloads preserve an absent source |
+| Read | `session`, `validation`, `previewSnapshot`, `hasUnsavedChanges` | Inspect state without exposing mutable session internals |
+| Selection | `select`, `overrideSelection`, `selection`, `deselect`, `releasePlayer` | Player selection and element ownership |
+| Lease | `leaseStatus`, `releaseLease` | Inspect/release element leases |
+| Edit | `mutate`, `undo`, `redo` | Validate and install a mutation/history transition |
+| Persistence | `save`, `prepareReload`, `replaceFromLoad`, `recoverInvalidAndOpen` | File conflict checks and guarded reload/recovery |
+| Events | `addListener`, `removeListener` | Accepted mutations emit one `SceneEditorEvent(worldId, actor, name, target)` |
+| Shutdown | `closeWorld`, `closeAll` | Release world/session resources |
+
+`SceneMutations` creates typed operations; `mutate` returns `MutationOutcome` with an accepted flag and structured rejection where applicable. Failed operations do not install a partial document. Event listener failures are passed to the configured error handler.
+
+Implementations integrating map uploads should depend on `SceneEditStatus`, whose single method is `hasUnsavedChanges(worldId: UUID): Boolean`. They do not need to read editor internals or capture the preview entities.
+
+## Persistence API
+
+`WorldSceneRepository(root)` owns only the root sidecar and returns structured `SceneLoadResult` / `SceneSaveResult`. `SceneFingerprint.Absent` represents a truly absent base; a loaded file carries its exact fingerprint. Save uses canonical bytes, a compare-before-replace check, and the atomic file-store boundary. A conflict is not permission to retry an overwrite.
+
+Session reload uses a prepared snapshot so an edit accepted during asynchronous I/O cannot be discarded by a stale reload completion. Paper performs file work asynchronously and installs results on its main thread. Save/reload reservations prevent overlapping state changes from pretending to have persisted newer edits.
+
+For adapter implementations, inspect the linked source signatures for the complete structured result variants; handle all variants explicitly rather than treating every nonexceptional return as success.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Session API and result types](https://github.com/groundsgg/plugin-scene-editor/blob/30b01d3c68dc41b7858bc2bf4226bf8387a446e8/common/src/main/kotlin/gg/grounds/scene/editor/session/EditorSessionService.kt)
+- [Exact command grammar](https://github.com/groundsgg/plugin-scene-editor/blob/30b01d3c68dc41b7858bc2bf4226bf8387a446e8/paper/src/main/kotlin/gg/grounds/scene/editor/paper/command/SceneCommandDispatcher.kt)
+- [Permissions](https://github.com/groundsgg/plugin-scene-editor/blob/30b01d3c68dc41b7858bc2bf4226bf8387a446e8/paper/src/main/kotlin/gg/grounds/scene/editor/paper/command/SceneCommandAuthorizer.kt)
+- [Repository result contracts](https://github.com/groundsgg/plugin-scene-editor/blob/30b01d3c68dc41b7858bc2bf4226bf8387a446e8/common/src/main/kotlin/gg/grounds/scene/editor/repository)

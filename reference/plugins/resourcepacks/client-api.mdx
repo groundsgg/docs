@@ -1,0 +1,77 @@
+---
+title: "PackSet JVM client API"
+description: "Resolve channels and release pins asynchronously with validated snapshots and source-specific cache."
+---
+
+Use `gg.grounds:resourcepacks-client` for PackSet resolution and `resourcepacks-contract` for format/policy validation. This client owns metadata fetching and validated snapshots. It does not send resource packs to a player; a platform adapter owns delivery.
+
+## Sources
+
+`PackSetSource(baseUri, packSet, PackSetChannel.STABLE/EDGE)` follows a channel. `PackSetSource.release(baseUri, packSet, "v1.1.0")` selects an immutable release. `requestUri` identifies the actual channel or release-manifest request, and `cacheKey` binds the normalized origin, PackSet, and selection.
+
+Use `selection` and `target` for channel/release-aware code. Deprecated `source.channel`, `source.channelUri`, and `snapshot.channel` are channel-only and throw for release selections.
+
+## Lifecycle API
+
+| Method | Result and behavior |
+| --- | --- |
+| `PackSetClient(config, transport, scheduler)` | Defaults to JDK HTTP transport and a dedicated scheduler |
+| `start()` | Start background resolution; repeated calls are harmless |
+| `state()` | Read current immutable `PackSetClientState` without network I/O |
+| `refreshNow()` | `CompletionStage<RefreshResult>`; concurrent refreshes share in-flight work |
+| `reconfigure(source)` | Start resolving a new source; stale old-generation completions cannot become current |
+| `addListener(listener)` | Return an `AutoCloseable` subscription |
+| `close()` | Detach listeners, cancel work, drain lifecycle ownership; repeated close is supported |
+
+`RefreshResult.Activated(snapshot)` reports newly activated state, `Unchanged(snapshot)` reports retained validated state, and `Failed(reason)` reports a refresh failure. Inspect `state()` for fallback and failure state. Do not block a player-login or instance thread waiting for a refresh.
+
+## Configuration defaults
+
+| `PackSetClientConfig` | Default |
+| --- | --- |
+| `source` | Required |
+| `cacheDirectory` | Required |
+| `refreshInterval` | 60 seconds |
+| `connectTimeout` / `requestTimeout` | 5 / 5 seconds |
+| `maxChannelBytes` | 65,536 |
+| `maxManifestBytes` | 1,048,576 |
+
+Channels continue refreshing periodically. Release pins resolve an initial immutable snapshot and reuse validated local state without periodic polling. Failed resolution uses retry handling rather than blocking player transitions.
+
+## State and snapshots
+
+`PackSetClientState` contains `source`, nullable `current`, nullable `degradedFallback`, `status`, and nullable `lastError`.
+
+| Status | Interpretation |
+| --- | --- |
+| `STARTING` | Initial source resolution is in progress |
+| `READY` | Validated current state is available |
+| `DEGRADED` | Refresh failed; inspect the validated fallback and source before delivery |
+| `UNAVAILABLE` | No usable validated state |
+| `CLOSED` | Terminal state; listeners are detached |
+
+`PackSetSnapshot` contains the selected source, resolved target, validated manifest, immutable ordered `packs`, and fingerprint. Each `ResolvedPack` contains `order`, `role`, `id`, `uuid`, `uri`, `sha1`, `sha256`, `size`, and `required`. `publication` exposes release/build identity independently of selection mode.
+
+Reconfiguration can retain old state for diagnostics, but an adapter must deliver only a snapshot whose source matches the configured source. A previous channel's fallback is not a fallback for a new release pin or origin.
+
+## Cache and integrity
+
+The disk cache is keyed by the exact source. Cached state is revalidated against the contract before use. Metadata byte limits, expected publication roots, channel binding, manifest hashes/sizes, and compatibility prevent silently accepting unrelated data.
+
+The client validates distribution metadata. Minecraft clients fetch the referenced ZIPs during delivery; product publication verifies final CDN artifact bytes. Do not claim that reading `state()` downloaded each ZIP into the server's cache.
+
+## Contract API
+
+`PackSetContractJson.decodeChannel(bytes)` uses the Grounds default policy. The overload taking a `PackSetValidationPolicy` and expected `PackSetChannel` also verifies the requested channel. `decodeManifest(bytes, policy)` returns `ManifestDecodeResult.Success` or structured failure diagnostics. Use library encoders for canonical bytes; handwritten JSON that is semantically similar can still be rejected as noncanonical.
+
+An arbitrary HTTPS origin in a policy/configuration is an operator capability. Keep it inside an authenticated administrative boundary and never accept it from an unauthenticated player input.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Client lifecycle](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-client/src/main/kotlin/gg/grounds/resourcepacks/client/PackSetClient.kt)
+- [Source selection](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-client/src/main/kotlin/gg/grounds/resourcepacks/client/PackSetSource.kt)
+- [Configuration defaults](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-client/src/main/kotlin/gg/grounds/resourcepacks/client/PackSetClientConfig.kt)
+- [Snapshot data](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-client/src/main/kotlin/gg/grounds/resourcepacks/client/PackSetSnapshot.kt)
+- [Strict decoder](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-contract/src/main/kotlin/gg/grounds/resourcepacks/contract/PackSetContractJson.kt)

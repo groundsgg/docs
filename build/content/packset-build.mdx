@@ -1,0 +1,82 @@
+---
+title: "Build and publish a PackSet"
+description: "Compose typed contributions, use the shared GUI catalog, and publish reproducible assets."
+---
+
+The `resourcepacks` product owns the final pack definitions and publication workflow. Feature libraries contribute assets; they do not write or distribute the final platform pack themselves.
+
+## Contribution API
+
+`gg.grounds:resource-pack-api` contains `PackContribution`, `ContributionId`, `PackEntry`, format ranges, vanilla claims, and policy types. Product code adds `resource-pack-builder` for `ResourcePackComposer`, `DirectoryPackWriter`, and `ZipPackWriter`. Consumer tests can use `resource-pack-testkit`.
+
+A contribution supplies its unique ID, supported formats, and file entries. A product supplies `PackDefinition`, all contributions, and policy. `composer.validate(definition, contributions)` exposes all problems; `compose` rejects an invalid result. Directory output supports inspection; ZIP output reports path, byte size, SHA-1, and SHA-256.
+
+There is no JSON merging or last-writer-wins behavior. Duplicate paths and contribution IDs fail validation. Vanilla paths under `assets/minecraft/` are forbidden by default; an allowed vanilla path requires an exclusive exact claim that belongs to the same contribution's actual entry. Rendering capabilities must have the required provider, and file/count/size/format limits are validated.
+
+## GUI theme and catalog integration
+
+`GroundsGuiTheme.theme` is the shared theme declaration. Use `GroundsGuiIds` constants rather than duplicating string IDs:
+
+| Catalog constant | Value |
+| --- | --- |
+| `NAMESPACE` | `grounds` |
+| `PANEL_MENU` | `menu` |
+| `ICON_CLOSE`, `ICON_BACK`, `ICON_NEXT`, `ICON_BLANK` | `close`, `back`, `next`, `blank` |
+| `TOOLTIP_DEFAULT` | `default` |
+| `FRAME_HOVER` | `hover` |
+
+The declaration covers the 176 × 168 menu panel (Y offset -6), icons, tooltip assets, and hover frame at format 97. `library-gui` converts a theme to a typed pack contribution; the product composes it with content assets. The JVM catalog contains metadata/declarations, not ZIP bytes or a delivery client.
+
+Inventory GUI integration uses one GUI instance per player, allowing language and reactive state to be private. The shared theme keeps the server-side GUI identifiers and client contribution aligned. A custom GUI is not a separate PackSet delivery implementation: use the globally delivered platform pack and the matching catalog dependency. See the [GUI implementation reference](https://github.com/groundsgg/library-gui) for its DSL.
+
+`GroundsAssets.all` lists declared asset keys. `GroundsAssetCatalog.catalog` declares `grounds:editor/guide` as `NPC_BODY` and `grounds:editor/marker` as `PROP`. These declarations let scene validation establish compatibility; renderer factories still decide how to render each asset on the server.
+
+## Local build
+
+Use JVM 25, the repository Gradle wrapper, and authorized GitHub Packages credentials. `version.txt` is the authoritative SemVer source. Run from a clean `resourcepacks` checkout, with the source commit matching the bytes being built and an output directory that does not exist:
+
+```bash
+PACKSET_VERSION="$(tr -d '\n' < version.txt)"
+PACKSET_COMMIT="$(git rev-parse HEAD)"
+PACKSET_OUTPUT="$(mktemp -d)/packset"
+./gradlew :resourcepacks-product:buildPackSet \
+  -PpackSetVersion="$PACKSET_VERSION" \
+  -PprovenanceCommit="$PACKSET_COMMIT" \
+  -PpublicationType=release \
+  -PpublicationId="v$PACKSET_VERSION" \
+  -PreleaseOutput="$PACKSET_OUTPUT"
+```
+
+Expected output is exactly the content ZIP, platform ZIP, catalog JAR, and `manifest.json`. Identical explicit inputs must produce identical bytes in fresh builds. This local build does not publish or select a PackSet.
+
+## Stable release workflow
+
+<Steps>
+<Step title="Review product changes">Update contributions, art, catalog declarations, and compatibility together. CI checks validation and determinism.</Step>
+<Step title="Use Release Please">Conventional commits drive the generated release PR and `v*` tag. Release publication starts from the tag; do not invent a manual version/tag to work around release automation.</Step>
+<Step title="Publish immutable artifacts">The workflow publishes Maven, immutable R2 objects, verifies public CDN bytes, and attaches exact GitHub Release assets. Existing identical objects are accepted; existing different bytes fail create-or-compare.</Step>
+<Step title="Advance Stable last">Only after those gates pass does the protected Stable job conditionally advance `channels/stable.json`. Repeating the same tag/run is unchanged; stale sequences cannot overwrite a newer channel.</Step>
+<Step title="Select separately">Use the [Portal selection workflow](/build/portal/resource-packs) if the intended environment should follow the channel or pin that release.</Step>
+</Steps>
+
+## Edge workflow
+
+An exact `main` push produces `0.0.0-edge.<run-number>.g<first-12-commit-hex>`. Edge publication waits for CI on the same commit. It validates the prior Edge pointer and manifest before reusing a pack URL; reuse requires equal SHA-1, SHA-256, and size. Catalog/manifest are always emitted for the current commit. Public CDN verification precedes conditional channel advancement.
+
+Malformed or cross-PackSet prior state fails closed. Missing prior state starts without reuse. Immutable objects use `public, max-age=31536000, immutable`; channels remain mutable and conditionally advanced.
+
+## Credentials and provenance
+
+Private package resolution uses the authorized masked GitHub token supplied to Gradle. R2 publication credentials are restricted to the protected publication/channel jobs; public CDN checks receive none. Keep artwork licensing/provenance in the product's asset origins and component licenses; reference/vendor packs are not automatically licensed for republication.
+
+When publication fails, rerun the same release workflow after fixing its cause. Create-or-compare makes byte-identical retries safe; changing bytes under an existing release ID must fail.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Typed composition contract](https://github.com/groundsgg/library-resource-pack/blob/efb0542fcf07b07515f7ccea8715726e565de867/README.md)
+- [Product build and release](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/README.md)
+- [Shared theme](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-catalog/src/main/kotlin/gg/grounds/resourcepacks/catalog/GroundsGuiTheme.kt)
+- [GUI IDs](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-catalog/src/main/kotlin/gg/grounds/resourcepacks/catalog/GroundsGuiIds.kt)
+- [Scene asset declarations](https://github.com/groundsgg/resourcepacks/blob/b6ec976e8ecba665ba97b7d7f457a8a45e93556d/resourcepacks-catalog/src/main/kotlin/gg/grounds/resourcepacks/catalog/GroundsAssets.kt)

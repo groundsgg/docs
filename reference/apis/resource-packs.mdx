@@ -1,0 +1,173 @@
+---
+title: "Resource Pack HTTP API"
+description: "Reference Forge publication reads and optimistic Stage selection updates."
+---
+
+Forge exposes publication inspection and a fixed Stage selector under `/v1/resource-packs`. Authenticate with an authorized Forge bearer token. Reads require `ADMIN_AREA_ACCESS`; writes additionally require `RESOURCE_PACKS_MANAGE`.
+
+<ParamField header="Authorization" type="string" required>
+`Bearer` followed by the caller's Forge access token. Set it through your normal authenticated client; never embed it in documentation or source control.
+</ParamField>
+
+## Endpoint summary
+
+| Method and path | Response | Cache-Control |
+| --- | --- | --- |
+| `GET /v1/resource-packs/releases` | `{releases: ResourcePackReleaseSummary[]}` | `private, max-age=300` |
+| `GET /v1/resource-packs/releases/{version}` | `PackSetView` | `private, max-age=3600, immutable` |
+| `GET /v1/resource-packs/edge` | `EdgePackSetView` | `private, max-age=60` |
+| `GET /v1/resource-packs/selection` | `ResourcePackSelectionView` | `private, no-store` |
+| `PUT /v1/resource-packs/selection` | Updated `ResourcePackSelectionView` | `private, no-store` |
+
+These routes define no endpoint-specific rate limit or pagination parameter. Do not infer an unlimited upstream quota: release reads use GitHub and are bounded to its first page with `per_page=30`. Drafts, prereleases, and noncanonical tags are filtered out.
+
+## Releases and Edge
+
+<ParamField path="version" type="string" required>
+Canonical `major.minor.patch` without `v`, leading zeroes, or prerelease/build suffixes. Example: `1.1.0`.
+</ParamField>
+
+`ResourcePackReleaseSummary` contains `version`, `tag`, ISO timestamp `publishedAt`, and GitHub `htmlUrl`. A release detail read binds the CDN manifest's SHA-256/size to the GitHub Release manifest asset and expected `release` publication identity.
+
+`PackSetView` fields are:
+
+| Field | Response shape |
+| --- | --- |
+| `schemaVersion`, `packSet`, `version` | `2`, `grounds-global`, product version |
+| `publication` | `{type: "release" or "build", id: string}` |
+| `minecraft` | `{version: string, resourcePackFormat: number}` |
+| `catalog` | `{id, version, coordinate, file, sha256, size}` |
+| `packs[]` | `{order, role, id, uuid, required, url, sha1, sha256, size, resourcePackFormat}` |
+| `provenance` | `{repository: string, commit: string}` |
+
+`EdgePackSetView` contains `channel: {sequence, targetId, manifestSha256, manifestSize}`, `resolvedAt` (ISO timestamp), and `packSet: PackSetView`. It does not return the upstream channel's manifest URL in `channel`. Forge validates channel → manifest hash/size → build/provenance binding before returning it.
+
+## Read the selection
+
+<ResponseExample>
+```json Channel selection
+{
+  "environment": "stage",
+  "version": "10",
+  "selection": { "mode": "channel", "channel": "edge" },
+  "restartRequired": false,
+  "livePlayersUpdate": "next-server-connect",
+  "mutationEnabled": true
+}
+```
+
+```json Release selection
+{
+  "environment": "stage",
+  "version": "11",
+  "selection": {
+    "mode": "release",
+    "release": "1.1.0",
+    "fallbackChannel": "edge"
+  },
+  "restartRequired": false,
+  "livePlayersUpdate": "next-server-connect",
+  "mutationEnabled": true
+}
+```
+</ResponseExample>
+
+These are illustrative document versions. Always read the current value. `mutationEnabled` reports backend capability; it does not replace caller authorization or prove every proxy has converged.
+
+## Update the selection
+
+<ParamField body="expectedVersion" type="string" required>
+Current Config document version. Canonical positive decimal string from `1` through `9223372036854775807`; no quotes inside the value, zero, signs, or leading zeroes.
+</ParamField>
+
+<ParamField body="selection" type="object" required>
+Either `{mode: "channel", channel: "stable" or "edge"}` or `{mode: "release", release: "1.1.0"}`. Unknown fields are rejected. There is no environment, arbitrary origin, PackSet, enabled, required, or prompt write parameter.
+</ParamField>
+
+<RequestExample>
+```json Pin compatible release
+{
+  "expectedVersion": "10",
+  "selection": { "mode": "release", "release": "1.1.0" }
+}
+```
+
+```json Resume Edge and clear pin
+{
+  "expectedVersion": "11",
+  "selection": { "mode": "channel", "channel": "edge" }
+}
+```
+</RequestExample>
+
+A release must still be in the available release list, have a valid inspected manifest, and match Stage's current Minecraft `26.3` / format `97` contract. A channel change clears the pin. Release mode preserves the current channel in Config; clients cannot set `fallbackChannel` directly.
+
+Forge reads Config, checks `expectedVersion`, then writes with Config's `If-Match: "<version>"`. The upstream compare protects against a second change between Forge's read and write. On conflict, GET the latest selection, reassess the intended change, and submit with the new version. Do not retry stale writes automatically.
+
+A successful update preserves unrelated delivery settings and returns the new document version. It triggers neither a restart nor a live resource-pack broadcast. Forge records `resourcepacks.selection.update` with actor, from/to selections, previous/new versions, and target Stage. An audit failure increments its failure metric and logs a sanitized warning; it does not undo a successful Config write or turn the response into a write failure.
+
+## Complete read-then-write example
+
+Run from an authenticated operator environment with `FORGE_API_URL` and `FORGE_TOKEN` already set. This script deliberately performs a **Stage write** and uses `jq`; do not run it merely to inspect a deployment.
+
+```bash
+set -euo pipefail
+: "${FORGE_API_URL:?Set the Forge API origin}"
+: "${FORGE_TOKEN:?Provide an authorized access token}"
+SELECTION_JSON="$(curl --fail-with-body --silent --show-error \
+  "$FORGE_API_URL/v1/resource-packs/selection" \
+  -H "Authorization: Bearer $FORGE_TOKEN")"
+EXPECTED_VERSION="$(printf '%s' "$SELECTION_JSON" | jq -er '.version')"
+UPDATE_BODY="$(jq -n --arg version "$EXPECTED_VERSION" \
+  '{expectedVersion: $version, selection: {mode: "channel", channel: "edge"}}')"
+curl --fail-with-body --silent --show-error \
+  -X PUT "$FORGE_API_URL/v1/resource-packs/selection" \
+  -H "Authorization: Bearer $FORGE_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data "$UPDATE_BODY"
+```
+
+## Error reference
+
+| Status | Condition |
+| --- | --- |
+| `400` | Invalid selection body/version or invalid write input |
+| `401` | Missing/invalid caller authentication |
+| `403` | Missing required platform permission |
+| `404` | Release/Edge read not found, or the Config selection document is absent |
+| `409` | Concurrent document update, selected release no longer available, or incompatible release |
+| `502` | Invalid upstream/manifest/contract response or failed integrity binding |
+| `503` | Selection writes disabled, Config token/URL unavailable, timeout/transport failure |
+
+Selection errors return `{error: string}`. Publication loader errors return `{error: string, kind: "github" | "channel" | "manifest" | "contract"}`; a loader not-found error during selection is mapped to `409` instead of an inspection `404`.
+
+```json Invalid update
+{"error":"Selection update is invalid"}
+```
+
+```json Version conflict
+{"error":"Selection configuration changed concurrently"}
+```
+
+```json Incompatible pin
+{"error":"Selected release is incompatible with Stage (Minecraft 26.3, resource pack format 97)"}
+```
+
+## Config Service boundary
+
+Forge's server-side client uses only these fixed private paths:
+
+- Read: `/v1/config/apps/network/envs/stage/namespaces/resourcepacks/documents/global`
+- Write: `/v1/config/admin/apps/network/envs/stage/namespaces/resourcepacks/documents/global`
+
+It reads the projected token file per request, allowing token rotation; sends bearer auth; requires a valid quoted numeric ETag; uses a 5-second timeout, 65,536-byte response bound, and manual redirect handling. The Config body is `{contentJson: string}`; write also records `updatedBy`. Portal clients must use Forge, not the private Config admin endpoint.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Publication routes](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/routes/resourcePacks.ts)
+- [Selection routes](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/routes/resourcePackSelection.ts)
+- [Selection validation and semantics](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/resourcepacks/selection.ts)
+- [Config bridge](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/resourcepacks/selectionConfig.ts)
+- [Response types](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/resourcepacks/types.ts)

@@ -1,0 +1,105 @@
+---
+title: "Minestom scene runtime API"
+description: "Integrate renderer factories, action handlers, effects, player policy, and asynchronous lifecycle."
+---
+
+`gg.grounds:scene-minestom` turns a validated scene into logical elements, renderer handles, NPC labels, interaction geometry, and viewer-specific state. The host owns file loading, catalog resolution, application services, and supported renderer/effect capabilities. The runtime does no file or network I/O.
+
+## JVM dependency
+
+```kotlin build.gradle.kts
+dependencies {
+    implementation("gg.grounds:scene-minestom:0.4.3")
+}
+```
+
+Resolve the artifact from the `groundsgg/library-scene` GitHub Packages Maven repository. The host owns the Minestom version and instance lifecycle; use the runtime API compatible with that host.
+
+## Create a runtime
+
+`SceneRuntimeFactory.create(request)` returns `CompletionStage<SceneRuntimeCreationResult>`. Handle `Success(runtime)` or `Failure(problems)`. Do not admit players on the assumption that scheduling creation means it succeeded.
+
+| `SceneRuntimeRequest` field | Required value |
+| --- | --- |
+| `scene` | Fully decoded document |
+| `assets`, `actions` | Exact catalogs referenced by the document |
+| `identity` | `SceneRuntimeIdentity(sceneId, mapId, mapVersion)` |
+| `instance` | Owning Minestom `Instance` |
+| `renderers` | `SceneAssetRendererRegistry` |
+| `effects` | `SceneEffectSink` |
+| `playerPolicy` | `ScenePlayerPolicy` |
+| `actionRegistry` | `SceneActionRegistry` |
+| `clock` | Optional monotonic clock; default `System.nanoTime()` |
+| `config` | Optional `SceneRuntimeConfig` |
+
+Resolve the runtime identity from the map you actually loaded. Sharing cached bytes between map pins must not collapse distinct published map identities.
+
+## Renderer SPI
+
+`SceneAssetRendererRegistry.rendererFor(asset, kind)` returns a factory or `null` for an unsupported capability. `SceneAssetRendererFactory.create(context)` asynchronously returns a `RenderedAssetHandle`. Context contains the owning instance, element/part ID, asset key, and root/local transforms.
+
+| Handle method | Host responsibility |
+| --- | --- |
+| `applyTransform` | Apply root and optional part transform |
+| `applyViewerState` | Apply private scale/highlight state for one player |
+| `clearViewerState` | Remove private state for that player |
+| `startAnimation`, `stopAnimation`, `advanceAnimation` | Implement only animations declared and supported by the host |
+| `close` | Release every resource owned by this handle |
+
+Readiness resolves factories and application handlers once and retains immutable capability snapshots. Registries are not repeatedly queried after activation. Do not return a renderer for a capability your implementation cannot execute.
+
+`SceneViewerVisualState` includes scale/highlight values and optional transitions with monotonic start, duration, start value, target value, and current value. Zero-duration transitions are immediate. Viewer state and animation state are keyed by resolved element and optional composite part; a part action must not affect another part.
+
+## Actions, effects, and player policy
+
+`SceneActionRegistry.handlerFor(key)` returns a `SceneActionHandler` or `null`. A handler's `execute(context)` returns `CompletionStage<SceneActionResult>`: `Success`, `Rejected(diagnostic)`, or `Failure(diagnostic, cause)`.
+
+`SceneActionContext` contains runtime identity, triggering player, element ID, trigger, nullable hand, accepted monotonic time, typed arguments, and viewer state. Keep the instance thread free: never wait on service I/O inside it. Recheck the player's connection and owning instance when asynchronous application work completes.
+
+`SceneEffectSink.supports(asset, kind)` declares effects; `playSound` targets a player and `emitParticle` targets an instance/point. `ScenePlayerPolicy.isEligible(player)` controls participation, while `hasPermission(player, permission)` evaluates permission conditions. An unavailable permission provider should deny rather than invent a grant.
+
+## Activation and interaction
+
+| `SceneRuntimeConfig` | Default |
+| --- | --- |
+| `cellEdge` | 32 blocks |
+| `activationDistance` | 64 blocks |
+| `deactivationDistance` | 80 blocks |
+| `deactivationGraceMillis` | 5,000 ms |
+| `spatialIntervalTicks` | 10 ticks |
+| `transitionBudgetPerTick` | 256 |
+
+Automatic activation uses a spatial index, separate activation/deactivation distances, and a grace period. `ALWAYS` elements do not depend on normal distance activation. Transition budgeting limits work performed in one tick. Invisible NPCs remain logical/spatial participants and can emit proximity triggers, but create no renderer, label, or Interaction resources and cannot be targeted by hover or click.
+
+Collision operates on authored/transformed NPC bounds. `SOLID` prevents entry; `BOUNCE` pushes a player away. Distance mode estimates travel and is affected by the surrounding world. Collision is independent of an application click action.
+
+## Threading and shutdown
+
+Call APIs that touch Minestom state from the owning instance thread. Retain `runtime.close(): CompletionStage<Void>` and await it during host teardown while instance ticks are still available. Close is asynchronous and idempotent; repeated calls share the cleanup operation. Pending renderer/entity attachments must drain before shutdown reports successful cleanup.
+
+Java adapters can subclass `JavaSceneAssetRendererRegistry`, `JavaRenderedAssetHandle`, `JavaSceneEffectSink`, and `JavaSceneActionRegistry`. Identifier-bearing contexts expose String `get...Value()` accessors. `SceneRuntimeJava.identity(sceneId, mapId, mapVersion)` constructs an identity without requiring Java callers to invoke Kotlin value-class constructors.
+
+## Current lobby host
+
+The current `minestom-lobby` dependency pins are `scene-minestom:0.4.3`, `resourcepacks-catalog:1.0.0`, and `plugin-lobby-scene-catalog:2.0.0`, with the installed `plugin-lobby-minestom:2.6.0` navigator service. These are source pins as of October 14, 2026, not a claim about every live deployment.
+
+| Capability | Lobby behavior |
+| --- | --- |
+| `grounds:editor/guide`, `grounds:editor/marker` | Explicit placeholder renderer factories; no general model renderer |
+| Root/local transforms and authored scale | Supported |
+| Labels and viewer-private highlights | Supported |
+| `grounds:lobby/open_navigator` | Parameterless action; requires the installed service and an eligible connected player |
+| Message, action bar, title actions | Supported by runtime |
+| Animation, viewer-scale actions, sound, particles | Rejected during host preflight |
+
+A present invalid/unsupported root sidecar fails startup. With a scene selected, player configuration waits up to 30 seconds for the runtime gate; failure, disconnect, or host close assigns no spawn instance. This gate is separate from Agones readiness. Cleanup failure or timeout is reported, not treated as success.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Runtime request and interface](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneRuntime.kt)
+- [Renderer contract](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneRendering.kt)
+- [Application actions](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneActions.kt)
+- [Lobby preflight](https://github.com/groundsgg/minestom-lobby/blob/628da000fc01bf541078e4160b441cbe7e361a25/src/main/kotlin/gg/grounds/minestom/lobby/scene/LobbySceneLoader.kt)
+- [Current dependency pins](https://github.com/groundsgg/minestom-lobby/blob/628da000fc01bf541078e4160b441cbe7e361a25/build.gradle.kts)
