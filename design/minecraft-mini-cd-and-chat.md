@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.4 · Stand: 14. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.5 · Stand: 14. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Veröffentlichung und visuelle Clientabnahme stehen aus.
 
@@ -69,13 +69,13 @@ Die folgenden Regeln gelten für die geplante Darstellung von Lobby-, Match-, Gr
 | Systemmeldung | [Logo] Grounds · Kategorie › Nachricht | Logo und feste Grounds-Kennung |
 | NPC-Dialog im Chat | [NPC-Porträt] [NPC] Name › Dialog | NPC-Kennung; nicht wie ein realer Spieler tarnen |
 
-Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, keine wörtlich anzuzeigenden Texte. Ohne passende Grafikunterstützung entfallen Kopf/Porträt; das Systemlogo wird durch [Grounds] ersetzt. Beispielsweise: „[Grounds] Warnung › Neustart in 5 Minuten.“
+Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, keine wörtlich anzuzeigenden Texte. Ohne passende Grafikunterstützung entfallen Kopf/Porträt; das Systemlogo wird durch [Grounds] ersetzt. Beispielsweise: „[Grounds] Allgemein › Neustart in 5 Minuten.“
 
 Öffentlicher und Gruppenchat behalten dieselbe Texthelligkeit. Ein Kanal wird durch ein kurzes Label unterschieden, wenn sein Kontext sonst mehrdeutig ist. „Team“ im Match und „Staff“ für Mitarbeiter sind unterschiedliche Kanäle.
 
 Ein Rangbadge ist nur bei tatsächlichem Bedarf zulässig; keine Kette aus Rang, Level, Titel und Cosmetics vor jeder Nachricht. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
 
-Systemkategorien sind kurz und verständlich: Info, Erfolg, Warnung, Fehler, Freunde, Party, Match und Story. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels oder Formatierung erzeugen.
+Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde und erhält das Level Fehler. Das Level bestimmt die Statusfarbe des Kontextlabels; es ersetzt das Kontextlabel nicht. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels oder Formatierung erzeugen.
 
 ## 5. Sprache und Beispiele
 
@@ -86,11 +86,12 @@ Grounds spricht freundlich, direkt und praktisch. Eine Meldung nennt Ergebnis od
 | Spielerchat | [Kopf] Lukas › Hat jemand Lust auf ein Duell? |
 | Party-Einladung | [Logo] Grounds · Party › Mia lädt dich ein. [Annehmen] |
 | Queue | [Logo] Grounds · Match › Du wartest auf ein 1vs1. |
-| Bestätigung | [Logo] Grounds · Erfolg › Deine Einstellungen wurden gespeichert. |
-| Neustart | [Logo] Grounds · Warnung › Neustart in 5 Minuten. |
-| Fehler | [Logo] Grounds · Fehler › Diese Aktion ist gerade nicht möglich. Versuch es gleich noch einmal. |
+| Bestätigung (`GENERAL` / `SUCCESS`) | [Logo] Grounds · Allgemein › Deine Einstellungen wurden gespeichert. |
+| Neustart (`GENERAL` / `WARNING`) | [Logo] Grounds · Allgemein › Neustart in 5 Minuten. |
+| Fehler (`GENERAL` / `ERROR`) | [Logo] Grounds · Allgemein › Diese Aktion ist gerade nicht möglich. Versuch es gleich noch einmal. |
+| Freundesfehler (`FRIENDS` / `ERROR`) | [Logo] Grounds · Freunde › Deine Freundesliste ist voll. |
 | Freiwillige Story | [Logo] Grounds · Story › In der Werkstatt gibt es Neuigkeiten. |
-| Join im relevanten Umfeld | [Logo] Grounds · Info › Mia ist angekommen. |
+| Join im relevanten Umfeld | [Logo] Grounds · Allgemein › Mia ist angekommen. |
 
 Aktionsklammern bezeichnen echte unterstützte Aktionen; sie dürfen nicht wie klickbare Schaltflächen aussehen, wenn der Client keine Aktion anbietet. Für Bedrock erhält jede notwendige Aktion einen dort nutzbaren Weg, etwa einen geprüften Befehl oder ein Formular. Solange dieser fehlt, keine vorgetäuschte Klickbarkeit. Unbekannte Fehlerursachen werden nicht als angeblich bekannter Zustand ausgegeben.
 
@@ -139,7 +140,7 @@ Für Bedrock wird die im Zielclient verwendete Chat-/HUD-Oberfläche separat auf
 
 ## 9. Einordnung in die vorhandene Architektur
 
-Das bestehende plugin-chat-Konzept beschreibt Server-, Gruppen-, Privat- und Staffchat sowie Ausgabe an mehreren Stellen. Neue Vorlagen sollen aus einer gemeinsamen semantischen Definition entstehen: Absenderart, Kategorie, Kanal, relevante Spieler, Nachricht und erlaubte Aktionen. Erst am Ausgabeweg werden Clientfähigkeiten, Packzustand und Darstellung gewählt. Die lokale Umsetzung folgt dieser Trennung; Routing und Kanalberechtigungen behalten ihre bestehenden Verträge.
+Das bestehende plugin-chat-Konzept beschreibt Server-, Gruppen-, Privat- und Staffchat sowie Ausgabe an mehreren Stellen. Neue Vorlagen sollen aus einer gemeinsamen semantischen Definition entstehen: Absenderart, Kategorie, Level, Kanal, relevante Spieler, Nachricht und erlaubte Aktionen. Erst am Ausgabeweg werden Clientfähigkeiten, Packzustand und Darstellung gewählt. Die lokale Umsetzung folgt dieser Trennung; Routing und Kanalberechtigungen behalten ihre bestehenden Verträge.
 
 Kein für Java fertig gerendertes Bild-/Object-Component-Format ungeprüft an alle Empfänger senden. Bestehende Systemausgaben anderer Plugins müssen bei der späteren Integration erfasst werden: Social, Queue/Match, Moderation, Story, Befehlsantworten und Join/Leave.
 
@@ -198,7 +199,7 @@ Jedes Plugin besitzt seine fachlichen Nachrichtenschlüssel und `messages*.prope
 
 Die gemeinsame Bibliothek besitzt die Layoutvorlagen einschließlich Platzhalterreihenfolge, Trennzeichen, Markenbezeichnung und Kategorien. Dazu gehören `layout.text-prefix`, `layout.graphical-prefix` und `layout.player` im Bundle `gg.grounds.i18n.system`. Sprachvarianten dürfen die Reihenfolge verändern. Privat- und Staffkanäle besitzen ebenfalls übersetzbare Vorlagen mit Komponentenplatzhaltern für Absender, Empfänger und Nachricht. Keine sprachlichen Präfixe werden im Plugin-Code zusammengesetzt.
 
-Der Renderer besitzt Farben und grafische Komponenten. Die Nachrichtenschlüssel tragen explizite semantische Kategorien; eine Kategorie wird nicht aus dem englischen Text oder dessen Farbe erraten. Clientfähigkeiten bestimmen ausschließlich die Darstellung, niemals Sprache, Berechtigung oder Routing.
+Der Renderer besitzt Farben und grafische Komponenten. Die Nachrichtenschlüssel tragen Kategorie und Level als unabhängige semantische Felder; beides wird nicht aus dem englischen Text oder dessen Farbe erraten. `SystemCategory` enthält nur Kontexte, `SystemLevel` nur Statuswerte. Das Standardlayout zeigt `<category>`; übersetzbare Vorlagen können zusätzlich `<level>` anzeigen. Der Renderer bestimmt Statusfarben, während i18n Kontext- und Levelbezeichnungen sowie deren Platzierung besitzt. Clientfähigkeiten bestimmen ausschließlich die Darstellung, niemals Sprache, Berechtigung oder Routing.
 
 - `send`: lokalisierte Systemnachricht mit gemeinsamem Kategorienpräfix.
 - `sendRendered`: bereits zusammengesetzte Systemkomponenten mit demselben Präfix; Klick- und Hoveraktionen bleiben erhalten.

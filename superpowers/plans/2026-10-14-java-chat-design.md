@@ -13,7 +13,7 @@ description: "Implementiere das Grounds-Chatdesign für Java 26.3 mit originalem
 
 **Tech Stack:** Kotlin/JVM, Adventure, Grounds-Minestom-Fork 2026.10.02-26.3-grounds.1, Velocity, library-i18n, resourcepacks, JUnit, Gradle.
 
-**Spec:** [Mini-CD v0.4](../../design/minecraft-mini-cd-and-chat.md), [Confluence](https://grounds.atlassian.net/wiki/spaces/gkd/pages/300154881).
+**Spec:** [Mini-CD v0.5](../../design/minecraft-mini-cd-and-chat.md), [Confluence](https://grounds.atlassian.net/wiki/spaces/gkd/pages/300154881).
 
 ## Global Constraints
 
@@ -92,7 +92,7 @@ Historischer Ausgangsstand vor der Umsetzung am 14. Oktober 2026; der aktuelle S
 - Der Standardrenderer reproduziert das bestehende Prefix-Verhalten. Ein explizit installierter Minecraft-Renderer erzeugt die neue Markenzeile für geeignete Empfänger.
 
 - [ ] Tests zuerst: render und sendUnprefixed bleiben unverändert; send verwendet den Empfängerrenderer; bestehende Factoryaufrufe und Java-Overloads bleiben kompatibel.
-- [ ] Kategorien werden über eine explizite MessageKey-Zuordnung bestimmt. Fehler-/Usage-/Reportkeys erhalten geprüfte Kategorien; kein Raten aus zufälligen Textfarben.
+- [ ] Kontext und Level werden über explizite MessageKey-Metadaten bestimmt. Fehler-/Usage-/Reportkeys erhalten geprüfte Statuslevel und behalten ihren fachlichen Kontext; kein Raten aus zufälligen Textfarben.
 - [ ] Readiness erst nach erfolgreichem Ladeereignis des exakt angebotenen Platformpacks setzen. Ein bloß gesendetes, abgelehntes, fehlgeschlagenes oder veraltetes Pack setzt chatFontReady nicht.
 - [ ] Assetfähigkeit wird zusätzlich gegen die tatsächlich eingeführte Chat-Pack-Version bzw. einen bekannten Manifest-/Packhash geprüft. Eine Auswahl älterer PackSets setzt sie zurück. Die konkreten Releasepins werden nach Veröffentlichung aus den echten Releaseartefakten übernommen; vorher bleibt die Produktivfunktion deaktiviert.
 - [ ] Disconnect, Packwechsel und Shutdown löschen den Zustand. Ein verspätetes Statusereignis für den vorherigen Packfingerprint darf ihn nicht wieder aktivieren.
@@ -192,7 +192,7 @@ Die lokale Quellcodeumsetzung ist abgeschlossen. Die ursprünglichen Detailcheck
 - [x] Spieler-, Privat- und Staffausgabe je Empfänger; sichere Komponenten, Emoji-Hilfe und bestehende Reporting-Verträge geprüft.
 - [x] Feste Nachrichten aller aktiven Plugins auditiert und gefundene Ausgaben vereinheitlicht. Umfang und bewusste Grenzen stehen in der Integrationsdokumentation.
 - [x] Vertrauenswürdige Edition, bestätigter Packzustand, Proxy-/Minestom-Bridge und zustellungsbezogenes Social-Rendering integriert.
-- [x] Build-/Formatierungsprüfungen und 1538 Testfälle: 1532 erfolgreich, 6 bestehende Scene-Editor-Skips, keine Fehler. Unabhängiger Review der Integrations- und Lifecycle-Grenzen abgeschlossen.
+- [x] Build-/Formatierungsprüfungen und 1550 Testfälle: 1544 erfolgreich, 6 bestehende Scene-Editor-Skips, keine Fehler. Unabhängiger Review der Integrations- und Lifecycle-Grenzen abgeschlossen.
 - [x] Mini-CD und Integration in Docs sowie Confluence dokumentiert. Die Integrationsseite liegt unter `design/minecraft-chat-integration` statt des ursprünglich geplanten zweiten Minecraft-Pfads.
 - [ ] Bibliothek und gemeinsame Proxy-API veröffentlichen; echte Consumer-Versionspins aktualisieren und eigenständige CI-Builds prüfen.
 - [x] Änderungen committen und PRs für die betroffenen Repositories erstellen; alle Quellcodeänderungen sind committet und als Entwurfs-PRs veröffentlicht.
@@ -200,3 +200,7 @@ Die lokale Quellcodeumsetzung ist abgeschlossen. Die ursprünglichen Detailcheck
 - [ ] Tatsächlich erzeugten Plattformpack-Hash nach Abnahme freigeben und Stage aktivieren. `CHAT_FONT_PACK_SHA1S` bleibt standardmäßig leer.
 
 Die Tests verwenden lokale Composite-Builds für die geänderte i18n-Bibliothek und Proxy-API. Erfolgreiche lokale Prüfung ist keine Veröffentlichung oder Live-Aktivierung. Die konkreten Verträge, Testzahlen und Veröffentlichungsreihenfolge stehen in [Minecraft Chat: Plugin-Integration](../../design/minecraft-chat-integration.md).
+
+## Freigegebene Präzisierung: Kontext und Level
+
+Der Benutzer hat die Trennung ausdrücklich zur Umsetzung freigegeben. `SystemCategory` enthält nur fachliche Kontexte; `SystemLevel` enthält die Statuswerte. Gemeinsame Renderer reichen beide Felder unabhängig weiter, Plugin-Keys behalten ihren fachlichen Kontext auch bei Fehlern. Standards sind `GENERAL` und `INFO`; Labels und optionale Platzierung beider Felder bleiben in i18n. Die Änderungen gehen in die bestehenden Entwurfs-PRs. Neue Tests prüfen alle Kontext-/Level-Kombinationen, Default-Keys, Lokalisierung, Richtext-Verträge sowie fachliche Consumer-Zuordnungen.

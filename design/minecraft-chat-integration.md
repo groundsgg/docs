@@ -5,9 +5,17 @@ description: "Gemeinsame i18n-Layouts, geprüfte Plugin-Migrationen und Veröffe
 
 ## Zuständigkeiten
 
-`library-i18n` besitzt Systemlayouts, Kategorien und das Spielerlayout. Jedes Plugin besitzt seine fachlichen Übersetzungskeys. `plugin-chat/common` erzeugt sichere Absender-, Kopf- und Emoji-Komponenten. `plugin-resourcepacks` meldet tatsächliche Clientfähigkeiten über die gemeinsame Proxy-API. Die Mini-CD legt die [Gestaltungsregeln](/design/minecraft-mini-cd-and-chat) fest.
+`library-i18n` besitzt Systemlayouts, Kontext- und Levelbezeichnungen sowie das Spielerlayout. Jedes Plugin besitzt seine fachlichen Übersetzungskeys. `plugin-chat/common` erzeugt sichere Absender-, Kopf- und Emoji-Komponenten. `plugin-resourcepacks` meldet tatsächliche Clientfähigkeiten über die gemeinsame Proxy-API. Die Mini-CD legt die [Gestaltungsregeln](/design/minecraft-mini-cd-and-chat) fest.
 
 Layout und Wortlaut werden in `messages*.properties` gepflegt. Code darf keine sprachlichen Präfixe oder feste Reihenfolge sprachlicher Komponenten herstellen. Farben und Clientprüfung bleiben im Renderer. Richtext-Platzhalter erhalten explizite Komponenten; freie Strings bleiben unparsed.
+
+## Kontext und Level
+
+`SystemCategory` beschreibt ausschließlich den Kontext: `GENERAL`, `FRIENDS`, `PARTY`, `MATCH`, `STORY`. `SystemLevel` beschreibt unabhängig davon `INFO`, `SUCCESS`, `WARNING`, `ERROR`. `SystemMessageKey` bietet beide Felder mit den Standards `GENERAL` und `INFO`; bestehende einfache `MessageKey`-Implementierungen bleiben gültig.
+
+Eine Freundeslisten-Ablehnung verwendet beispielsweise `FRIENDS` mit `ERROR`, ein erfolgreicher Partybeitritt `PARTY` mit `SUCCESS`. Das Layout zeigt weiterhin den Kontext. Das Level bestimmt dessen Farbe; Textinhalt, Klickaktionen und explizite Komponentenstile bleiben erhalten. `<category>` und das optionale `<level>` werden unabhängig lokalisiert und können in den i18n-Layouts platziert werden. Der Ausgabeweg entscheidet weiterhin, ob die Nachricht vom System oder einem Spieler stammt.
+
+Alle Plugin-Keys und direkte `SystemMessages.format`-Aufrufe werden mit diesen zwei unabhängigen Feldern gepflegt. Fachliche Zuordnungen sind explizit; es gibt keine Laufzeitheuristik anhand von Keynamen oder Farben.
 
 ## Repository-Abgleich
 
@@ -103,23 +111,23 @@ Remote-Social-Ausgaben verwenden den empfängerbezogenen `PlayerMessageRenderer`
 
 ## Verifizierter lokaler Stand
 
-Am 14. Oktober 2026 wurden in den betroffenen Modulen insgesamt 1538 Testfälle erfasst: 1532 erfolgreich ausgeführt, 6 bestehende Scene-Editor-Tests übersprungen, keine Fehler. Die relevanten Build- und Formatierungsprüfungen sind erfolgreich. Ein unabhängiger Code-Review prüfte insbesondere Registry-Eigentümerschaft, konkrete Spielersitzungen, Shutdown und konkurrierende Packereignisse.
+Am 14. Oktober 2026 wurden in den betroffenen Modulen insgesamt 1550 Testfälle erfasst: 1544 erfolgreich ausgeführt, 6 bestehende Scene-Editor-Tests übersprungen, keine Fehler. Die relevanten Build- und Formatierungsprüfungen sind erfolgreich. Ein unabhängiger Code-Review prüfte insbesondere Registry-Eigentümerschaft, konkrete Spielersitzungen, Shutdown und konkurrierende Packereignisse.
 
 | Repository / Testumfang | Testfälle | Übersprungen |
 | --- | ---: | ---: |
-| library-i18n | 37 | 0 |
-| plugin-chat | 350 | 0 |
+| library-i18n | 42 | 0 |
+| plugin-chat | 351 | 0 |
 | plugin-proxy | 138 | 0 |
 | plugin-player | 49 | 0 |
-| plugin-social | 26 | 0 |
-| plugin-coins | 12 | 0 |
+| plugin-social | 27 | 0 |
+| plugin-coins | 13 | 0 |
 | plugin-match | 20 | 0 |
-| plugin-notifications | 45 | 0 |
+| plugin-notifications | 46 | 0 |
 | plugin-permissions | 197 | 0 |
 | plugin-agones | 105 | 0 |
-| plugin-scene-editor | 176 | 6 |
-| plugin-lobby | 85 | 0 |
-| plugin-grounds-runtime | 5 | 0 |
+| plugin-scene-editor | 177 | 6 |
+| plugin-lobby | 86 | 0 |
+| plugin-grounds-runtime | 6 | 0 |
 | plugin-resourcepacks | 114 | 0 |
 | resourcepacks: product + catalog | 179 | 0 |
 
@@ -157,4 +165,6 @@ Zuerst `library-i18n` veröffentlichen, danach den i18n-Pin der Proxy-API anhebe
 | plugin-scene-editor | [Review](https://github.com/groundsgg/plugin-scene-editor/pull/30) |
 | plugin-social | [Review](https://github.com/groundsgg/plugin-social/pull/23) |
 
-Der Chat-Branch enthält zusätzlich den aktuellen Mute-Enforcement-Stand von `origin/main`. Mute-Prüfungen, Server-Routing und die Reihenfolge von Privatnachricht-Zustellung und Echo bleiben erhalten; neu hinzugekommene Mute-Rückmeldungen sind ebenfalls lokalisiert. Nach dieser Integration wurden alle Chatmodule erneut gebaut und geprüft (350 Testfälle).
+Der Chat-Branch enthält zusätzlich den aktuellen Mute-Enforcement-Stand von `origin/main`. Mute-Prüfungen, Server-Routing und die Reihenfolge von Privatnachricht-Zustellung und Echo bleiben erhalten; neu hinzugekommene Mute-Rückmeldungen sind ebenfalls lokalisiert. Nach dieser Integration wurden alle Chatmodule erneut gebaut und geprüft (351 Testfälle).
+
+Die freigegebene Kontext-/Level-Trennung ist in den bestehenden Entwurfs-PRs umgesetzt und erneut geprüft: 42 Bibliothekstests, alle 13 betroffenen Plugin-Builds erfolgreich; insgesamt 1550 erfasste Testfälle, 1544 erfolgreich und sechs bestehende Scene-Editor-Skips. Der unabhängige Review fand keine verlorenen Metadaten. Veröffentlichungs- und Clientabnahmegrenzen bleiben bestehen.
