@@ -174,7 +174,7 @@ Die freigegebene Kontext-/Level-Trennung ist in den verlinkten Feature-PRs umges
 - GitHub verlangt eine unabhängige Review für [Agones 87](https://github.com/groundsgg/plugin-agones/pull/87), [Player 49](https://github.com/groundsgg/plugin-player/pull/49) und [Docs 51](https://github.com/groundsgg/docs/pull/51).
 - [Social 23](https://github.com/groundsgg/plugin-social/pull/23) besteht regulären Build und Docker-Prüfung. Seine zusätzliche Vorschau scheitert vor dem Signieren an fehlendem `envsubst`. Die Korrektur in [.github 34](https://github.com/groundsgg/.github/pull/34) besteht Workflow-Vertrag und Buildx-Smokecheck und wartet auf die vorgeschriebene Review.
 - [Notifications 18](https://github.com/groundsgg/plugin-notifications/pull/18) besteht den eigenständigen lokalen Build einschließlich der drei Artefaktverträge. Die GitHub-CI kann den privaten Minestom-Fork noch nicht lesen. Die Maven-Quelle und die Weitergabe von `PACKAGES_TOKEN` sind ergänzt; der CI-Lesetoken benötigt Zugriff auf das private Minestom-Paket und muss diesem Repository zur Verfügung stehen. Build-Lesetoken und Veröffentlichungs-Token bleiben getrennt.
-- [Containers 287](https://github.com/groundsgg/containers/pull/287) stellt Paper und Velocity auf Grounds Runtime 0.2.0 um; beide Image-Builds sind grün. Der Merge bleibt nach Ablehnung durch die automatische Freigabeprüfung offen, weil eine Image-Veröffentlichung den produktiven `velocity:latest`-Pfad beeinflussen könnte. Live-Aktivierung und fehlende Agones-Integration bleiben ausdrücklich ausstehend.
+- [Containers 287](https://github.com/groundsgg/containers/pull/287) ist nach ausdrücklicher Freigabe möglicher produktiver Image-Auswirkungen gemergt. [Image-Veröffentlichung](https://github.com/groundsgg/containers/actions/runs/38652505129) und CI sind erfolgreich. Feste Tags: `ghcr.io/groundsgg/velocity:sha-e291dc4` und `ghcr.io/groundsgg/paper:sha-e291dc4`. Die Agones-Integration wartet weiterhin auf deren Pflichtreview.
 - [Packprodukt 45](https://github.com/groundsgg/resourcepacks/pull/45) wartet auf die Sichtprüfung im Java-26.3-Client. Es wurde weder der Edge-/Stable-Kanal umgestellt noch die Font-Allowlist aktiviert.
 
 Die [Lobby-Integration 146](https://github.com/groundsgg/minestom-lobby/pull/146) verwendet die veröffentlichten Versionen Chat 2.3.0, Lobby 2.10.0 und Permissions 1.1.0. Eigenständiger Build, Formatierung und alle 104 Host-Tests sind erfolgreich; das ausführbare Gesamt-JAR enthält alle fünf gewählten Provider. Die Abhängigkeiten lösen Minestom 2026.10.07-26.3-grounds, Runtime API 0.8.0, i18n 0.4.0 sowie Adventure und MiniMessage 5.2.0 auf. Der PR bleibt im Entwurf, bis Notifications das CI-Zugriffsgate bestanden hat, veröffentlicht und mit seiner tatsächlichen neuen Version eingebunden ist.
@@ -193,3 +193,17 @@ Die [Lobby-Integration 146](https://github.com/groundsgg/minestom-lobby/pull/146
 | plugin-match | 0.11.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-match/actions/runs/38650302344) |
 | plugin-resourcepacks | 1.1.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-resourcepacks/actions/runs/38649667471) |
 | plugin-chat | 2.3.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-chat/actions/runs/38650751397) |
+
+## Lokale Java-26.3-Sichtprüfung
+
+Für den ersten Clienttest ist ein separates Testpaket unter `artifacts/chat-test-2026-10-15` vorbereitet. Es startet das geprüfte Lobby-JAR und eine lokale Testhilfe mit den echten Produktionsrenderern sowie den originalen Privat-/Teamübersetzungen. Der Server ist unter `localhost:25566` erreichbar; das Vorschau-Pack wird direkt angeboten. Start unter Windows:
+
+```powershell
+wsl.exe --distribution Ubuntu --cd /home/lukas/grounds/artifacts/chat-test-2026-10-15 /bin/sh ./start.sh
+```
+
+Im Client das Pack akzeptieren und `/chatpreview all` ausführen. Einzelprüfungen: `system`, `chat`, `emoji`, `text`, `graphics`, `pack`, `status`, `de`, `en`, `fr`, `es`. Native Köpfe und erfolgreiche Packbereitschaft bleiben unabhängig. Das Testpaket enthält eine Start-/Stoppanleitung, Prüfschritte, Quellstände und Prüfsummen. Die Beispieltexte sind Testdaten; Kontextlabels und Privat-/Teamlayouts stammen aus den produktiven Übersetzungen.
+
+Der HTTP-Packdownload wurde aus Windows mit exakt passender SHA-1 geprüft. Minecraft meldet Protokoll 777 / Version 26.3. Die Testhilfe prüft zusätzlich 80 Kontext-/Level-/Sprachkombinationen und lehnt falsche Sitzungen oder unbekannte Packangebote bei der Fontfreigabe ab. Eine tatsächliche Sichtabnahme durch einen Minecraft-Client wird damit nicht behauptet.
+
+Diese lokale Sichtprüfung ersetzt keine Netzwerk- und Serviceintegration: Social, Coins, Match, Moderationsdurchsetzung, Report-Versand, Geyser und Proxy-/Backend-Packwechsel benötigen die passende Integrationsumgebung. Die Testhilfe ist ausschließlich im lokalen Testpaket enthalten und wird nicht in Produktivserver eingebaut. Die Produktions-Font-Allowlist bleibt unverändert.
