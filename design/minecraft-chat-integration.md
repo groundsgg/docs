@@ -1,0 +1,160 @@
+---
+title: "Minecraft Chat: Plugin-Integration"
+description: "Gemeinsame i18n-Layouts, geprüfte Plugin-Migrationen und Veröffentlichungsreihenfolge."
+---
+
+## Zuständigkeiten
+
+`library-i18n` besitzt Systemlayouts, Kategorien und das Spielerlayout. Jedes Plugin besitzt seine fachlichen Übersetzungskeys. `plugin-chat/common` erzeugt sichere Absender-, Kopf- und Emoji-Komponenten. `plugin-resourcepacks` meldet tatsächliche Clientfähigkeiten über die gemeinsame Proxy-API. Die Mini-CD legt die [Gestaltungsregeln](/design/minecraft-mini-cd-and-chat) fest.
+
+Layout und Wortlaut werden in `messages*.properties` gepflegt. Code darf keine sprachlichen Präfixe oder feste Reihenfolge sprachlicher Komponenten herstellen. Farben und Clientprüfung bleiben im Renderer. Richtext-Platzhalter erhalten explizite Komponenten; freie Strings bleiben unparsed.
+
+## Repository-Abgleich
+
+GitHub-Abgleich vom 14. Oktober 2026: 104 sichtbare Repositories, davon 60 unterschiedliche lokale Checkouts. Alle `plugin-*`-Repositories sind lokal vorhanden. Ergänzt wurden fehlende Plugin-Checkouts für Coins, Match, Analytics und Platform Router. Nicht jeder lokale Hauptcheckout war aktuell; die Umstellung arbeitet deshalb in isolierten Worktrees von frisch abgeglichenem `origin/main`.
+
+44 weitere Repositories sind lokal nicht vorhanden. Eine vollständige Kopie sämtlicher Services, Beispiele, Games und Infrastruktur ist für diese Plugin-Migration nicht erforderlich.
+
+<Accordion title="Fehlende lokale Repository-Checkouts">
+
+```text
+1vs1-demo
+claude-rp-test
+cloudflare-prometheus-exporter
+disgit-hook
+duel
+external-dns-bunny-webhook
+game-bedwars
+grnds-link
+grounds-anticheat
+grounds-clickhouse-writer
+grounds-infra-lib
+grounds-instatus-sync
+grounds-landing
+grounds-pulumi-archive
+grounds-recorder
+grpc-client
+grpc-server
+headlamp-upcloud-clusters
+keycloak-web
+library-data-access
+library-jvm-modules
+library-minigame-api
+mc-stress
+menu-demo
+minestom
+multi-plugin-sample
+nats-consumer
+nats-producer
+nats-recorder
+platform-vcluster-template
+prism
+pvp-demo
+sample-leaderboard-plugin
+scoop-bucket
+service-coins
+service-leaderboard
+service-match
+service-proxy-registry
+service-social
+valkey-consumer
+valkey-publisher
+valkey-viewer
+valkey-writer
+website
+```
+
+</Accordion>
+
+## Auditumfang
+
+| Plugin | Angepasste Ausgabe |
+| --- | --- |
+| Chat | Systemfeedback, Report-Beleg, Global-/Privat-/Stafflayout, Emoji-Hilfe, Reporting-Menütexte |
+| Proxy | Online-, Regions- und MOTD-Befehlsantworten |
+| Player | Link/Unlink, Sprache, Login-Standardtexte, vertrauenswürdige Edition-Markierung |
+| Social | Freunde, Party, Blocklisten und zusammengesetzte Party-Listen |
+| Coins | Kontostand und Fehlerantworten |
+| Match | Queue, Rejoin, Leaderboard, Assignment und Lobbybefehle |
+| Notifications | Feste Texte, dynamische Systemausgabe und lokalisierte Aktionslayouts |
+| Permissions | Feste menschliche Antworten und Login-Denial |
+| Agones | Befehle, Lobby-Move, Drain-/Restart- und Logintexte |
+| Scene Editor | Befehle, Lifecycle und menschliche Fehlerbausteine |
+| Grounds Runtime | Menschliche Diagnoseüberschriften für Spieler |
+| Resourcepacks | Java-Fontassets, bestätigte Darstellungsfähigkeiten, Lifecycle und lokalisierter Pack-Disconnect |
+| Config, Grounds Platform, Analytics, Platform Router | Keine eigene feste Chat-Ausgabe im Audit gefunden |
+| Server Discovery | Archivierter Repositorybestand; nicht als aktive zweite Implementierung geändert |
+
+EN, DE, FR und ES bleiben die vorhandenen Sprachvarianten der meisten Plugins. Der Scene Editor besitzt EN und DE; andere Sprachen fallen bewusst auf die Quellsprache zurück. Vor dem Client-Locale-Austausch verwenden Login-Denials die Quellsprache. Explizite Operator-Overrides in `messages.yml` bleiben wörtlich erhalten; neue leere Overrides verwenden die Übersetzungskeys.
+
+Actionbars, Inventartitel und Disconnect-Dialoge verwenden `render` und erhalten keinen Chatpräfix. Maschinenlesbare Diagnosen, beliebige Komponenten aus Transport-APIs, externe Fehlertexte und Konsolenausgaben behalten ihren jeweiligen Vertrag. Dynamische Texte werden nicht nachträglich als MiniMessage geparst.
+
+## Clientzustand
+
+Native Java-Köpfe und die Fontbereitschaft sind unabhängig. Die Proxy-API liefert standardmäßig zwei falsche Flags; eine fehlende oder fehlerhafte Abfrage bleibt lesbarer Text. Floodgate wird anhand seiner API abgefragt, damit verknüpfte Bedrock-Spieler mit einer Mojang-UUID korrekt erkannt werden.
+
+`CHAT_FONT_PACK_SHA1S` ist eine explizite, standardmäßig leere Allowlist der tatsächlich freigegebenen Plattformpack-Hashes. Ein gesendetes oder akzeptiertes Pack schaltet keine Grafiken frei; erst die erfolgreiche Ladebestätigung eines tatsächlich angebotenen erlaubten Packs zählt. Mehrdeutige wiederverwendete UUIDs mit unterschiedlichen Hashes bleiben Text. Identische bereits geladene Clientpacks bleiben beim Backendwechsel gültig. Die bestehende Pack-Deduplizierung bleibt erhalten; allein das Chatdesign löst keinen erneuten Download oder Ressourcen-Reload aus. Ein tatsächlich neues Angebot setzt die Bereitschaft bis zur erfolgreichen Ladebestätigung zurück.
+
+Die Minestom- und Paper-Lokalausgaben werden je Empfängersprache gerendert. Minestom erkennt Java anhand der vertrauenswürdig weitergeleiteten Edition-Markierung und des Protokolls. Der Proxy überträgt den bestätigten Fontstatus über `grounds:chat_style` an die konkrete aktuelle Backendverbindung. Die Minestom-Spielerinstanz speichert ihn unter `Tag.Boolean("grounds:chat-font-ready")`; neue Instanzen beginnen mit `false`, Disconnect und Modulstopp löschen den Zustand. Lokale Chatzeilen, Lobby-Systemmeldungen und Benachrichtigungen lesen denselben Zustand.
+
+Der binäre Vertrag umfasst exakt 26 Bytes in Big Endian: Version `1` als Byte, Ziel-UUID als zwei Longs, eine positive monotone Revision als Long und Bereitschaft `0` oder `1` als Byte. UUID und tatsächlicher Ereignisspieler müssen übereinstimmen. Ältere oder doppelte Revisionen überschreiben keinen neueren Zustand. Ungültige Pakete bleiben ohne Grafik; aufgezeichnete Events einer beendeten Spieler- oder Modulinstanz können keine neue Instanz aktivieren. Der Proxy behandelt eingehende Clientpakete auf diesem Kanal selbst und leitet sie nicht ungeprüft weiter.
+
+Remote-Social-Ausgaben verwenden den empfängerbezogenen `PlayerMessageRenderer` der gemeinsamen Proxy-API. Die Transportdaten bleiben semantische Übersetzungskeys mit Argumenten. Erst die zustellende Instanz entscheidet über Sprache und Logo. Unbekannte oder dekorierte Komponenten bleiben unverändert im bestehenden Ausgabeweg; fehlende oder inkompatible Renderer liefern die ursprüngliche Komponente weiter. Der Provider wird atomar registriert und nur von seinem tatsächlichen Eigentümer entfernt.
+
+## Verifizierter lokaler Stand
+
+Am 14. Oktober 2026 wurden in den betroffenen Modulen insgesamt 1538 Testfälle erfasst: 1532 erfolgreich ausgeführt, 6 bestehende Scene-Editor-Tests übersprungen, keine Fehler. Die relevanten Build- und Formatierungsprüfungen sind erfolgreich. Ein unabhängiger Code-Review prüfte insbesondere Registry-Eigentümerschaft, konkrete Spielersitzungen, Shutdown und konkurrierende Packereignisse.
+
+| Repository / Testumfang | Testfälle | Übersprungen |
+| --- | ---: | ---: |
+| library-i18n | 37 | 0 |
+| plugin-chat | 350 | 0 |
+| plugin-proxy | 138 | 0 |
+| plugin-player | 49 | 0 |
+| plugin-social | 26 | 0 |
+| plugin-coins | 12 | 0 |
+| plugin-match | 20 | 0 |
+| plugin-notifications | 45 | 0 |
+| plugin-permissions | 197 | 0 |
+| plugin-agones | 105 | 0 |
+| plugin-scene-editor | 176 | 6 |
+| plugin-lobby | 85 | 0 |
+| plugin-grounds-runtime | 5 | 0 |
+| plugin-resourcepacks | 114 | 0 |
+| resourcepacks: product + catalog | 179 | 0 |
+
+## Veröffentlichung und Abnahme
+
+Die Codeänderungen sind auf `feat/java-chat-unification` in separaten Worktrees committet und als Entwurfs-PRs auf GitHub veröffentlicht. Die Tests verbinden die geänderte i18n-Bibliothek und Proxy-API als lokale Composite-Builds. Die vorhandenen veröffentlichten Versionspins enthalten die neuen APIs noch nicht.
+
+1. Geänderte `library-i18n` und `plugin-proxy-api` prüfen und veröffentlichen.
+2. Abhängige Plugin-Pins auf die tatsächlich veröffentlichten Versionen aktualisieren und deren eigenständige CI-Builds prüfen.
+3. Das Java-Pack bauen und seinen tatsächlichen SHA-1 nach visueller Abnahme freigeben.
+4. Java 26.3 im echten Client prüfen: Köpfe, Logo, Zeilenumbruch, GUI-/Chatskalierung, Report-Klicks und Packwechsel.
+5. Bedrock-Grafiken und optionale Shader separat umsetzen und abnehmen.
+
+Eine lokale erfolgreiche Testausführung bedeutet keine Veröffentlichung oder Live-Aktivierung.
+
+## Review- und Release-Reihenfolge
+
+Zuerst `library-i18n` veröffentlichen, danach den i18n-Pin der Proxy-API anheben und diese veröffentlichen. Anschließend die Consumer auf die tatsächlich veröffentlichten Versionen anheben. Das Packprodukt kann parallel geprüft werden; seine Aktivierung folgt erst auf die Clientabnahme. Die Entwürfe behalten die tatsächlichen bestehenden Versionspins und können bis zu diesen Releases in ihrer eigenständigen CI wegen fehlender neuer APIs fehlschlagen. Lokale Composite-Prüfung und eigenständige CI sind getrennte Nachweise.
+
+| Repository | Entwurfs-PR |
+| --- | --- |
+| library-i18n | [Review](https://github.com/groundsgg/library-i18n/pull/10) |
+| plugin-proxy | [Review](https://github.com/groundsgg/plugin-proxy/pull/77) |
+| resourcepacks | [Review](https://github.com/groundsgg/resourcepacks/pull/45) |
+| plugin-agones | [Review](https://github.com/groundsgg/plugin-agones/pull/87) |
+| plugin-chat | [Review](https://github.com/groundsgg/plugin-chat/pull/46) |
+| plugin-coins | [Review](https://github.com/groundsgg/plugin-coins/pull/5) |
+| plugin-grounds-runtime | [Review](https://github.com/groundsgg/plugin-grounds-runtime/pull/6) |
+| plugin-lobby | [Review](https://github.com/groundsgg/plugin-lobby/pull/89) |
+| plugin-match | [Review](https://github.com/groundsgg/plugin-match/pull/19) |
+| plugin-notifications | [Review](https://github.com/groundsgg/plugin-notifications/pull/18) |
+| plugin-permissions | [Review](https://github.com/groundsgg/plugin-permissions/pull/36) |
+| plugin-player | [Review](https://github.com/groundsgg/plugin-player/pull/49) |
+| plugin-resourcepacks | [Review](https://github.com/groundsgg/plugin-resourcepacks/pull/31) |
+| plugin-scene-editor | [Review](https://github.com/groundsgg/plugin-scene-editor/pull/30) |
+| plugin-social | [Review](https://github.com/groundsgg/plugin-social/pull/23) |
+
+Der Chat-Branch enthält zusätzlich den aktuellen Mute-Enforcement-Stand von `origin/main`. Mute-Prüfungen, Server-Routing und die Reihenfolge von Privatnachricht-Zustellung und Echo bleiben erhalten; neu hinzugekommene Mute-Rückmeldungen sind ebenfalls lokalisiert. Nach dieser Integration wurden alle Chatmodule erneut gebaut und geprüft (350 Testfälle).
