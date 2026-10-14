@@ -118,7 +118,7 @@ Historischer Ausgangsstand vor der Umsetzung am 14. Oktober 2026; der aktuelle S
 
 - [ ] Mit dependencyInsight die tatsächlich aufgelösten Adventure-APIs und Serializer in Minestom und Velocity vergleichen. Native ObjectComponent-Erzeugung nur mit einer auf beiden Java-Hosts kompatiblen API implementieren; keine Adventure-Schattierung.
 - [ ] Tests zuerst für Kopf/kein Kopf, ‹Name › Nachricht›, helle Nachrichtfarbe, vorhandene Rankfarben, ungültige Rankfarbe und unveränderte vom Aufrufer übergebene Component-Stile.
-- [ ] Emoji-Tests: genau fünf Ersetzungen, sechster Alias bleibt Text, unbekannte Aliase bleiben unverändert, Fallback enthält keine reservierten Glyphen, Markup wie <red> bleibt wörtlicher Text.
+- [ ] Emoji-Tests: genau fünf Ersetzungen, sechster Alias bleibt Text, unbekannte Aliase bleiben unverändert, Fallback enthält keine reservierten Glyphen, Markup wie `<red>` bleibt wörtlicher Text.
 - [ ] Ein expliziter Literalfilter verhindert, dass frei eingegebene reservierte Chatglyphen als Systemzeichen erscheinen.
 - [ ] Die bisherigen Längenregeln am Eingang erhalten; Surrogat-/Unicode-Grenzen prüfen. Es wird zunächst das feste Alias-Set unterstützt, keine angebliche vollständige Unicode-Emoji-Normalisierung.
 - [ ] :common:test und die bestehenden Codec-/Reporting-Tests ausführen.
