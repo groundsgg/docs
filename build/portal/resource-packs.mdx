@@ -1,0 +1,72 @@
+---
+title: "Resource packs in the Portal"
+description: "Inspect Stable and Edge PackSets, pin compatible Stage releases, and roll back safely."
+---
+
+Open **Admin → Content → Resource packs** at [platform.grounds.gg/admin/content/resource-packs](https://platform.grounds.gg/admin/content/resource-packs). The page combines publication inspection with a separate **Stage** selection card.
+
+## Access
+
+You need `ADMIN_AREA_ACCESS` to inspect publications and selection. Changes also require `RESOURCE_PACKS_MANAGE` and the deployment's selection-write capability (`mutationEnabled`). The frontend hides no server-side requirement: Forge enforces both permissions.
+
+The Portal URL is a production web endpoint, but this selector targets only `network/stage/resourcepacks/global`. There is no environment picker that turns it into a Production PackSet control.
+
+## Understand the page
+
+| Area | What it shows |
+| --- | --- |
+| Active resource pack selection | Configured mode, effective configured channel/release, document version, restart state, last refresh |
+| Current Edge PackSet | Resolved channel sequence, manifest hash/size/time, build provenance, catalog, and pack entries |
+| Stable releases table | Version, tag, published time, GitHub Release link |
+| Selected Stable PackSet | Publication, Minecraft/format, catalog metadata, ordered packs with hashes/sizes/URLs |
+
+Selecting a release row changes the **inspection** view and the `?version=` URL parameter. It does not change the active selection. The first listed release is initially selected for inspection when the URL has no version.
+
+The table shows the filtered latest GitHub release page (up to 30 upstream releases); it is not a search over all historical publications. Historical entries can be inspected even when incompatible with the current Stage runtime.
+
+## Pin a release
+
+<Steps>
+<Step title="Refresh the active state">Use **Refresh** in the Stage selection card. Verify the current mode and document version. A failed refresh shows the last known selection and disables writes.</Step>
+<Step title="Inspect a compatible release">Select the release row. Check Minecraft **26.3** and resource-pack format **97**, provenance, and pack order. The current Stage backend rejects other release compatibility values.</Step>
+<Step title="Request the change">Use **Pin release &lt;version&gt;**. Review the dialog's Stage target and before/after selection.</Step>
+<Step title="Confirm once">Choose **Confirm change**. The request carries the version captured when the dialog opened. If another operator changed it, refresh/review and confirm a new change; do not repeatedly submit the old version.</Step>
+<Step title="Verify delivery">Check the new card state, then switch backend server or reconnect with a Minecraft client. An already-connected player must not receive an immediate pack broadcast. A cached pack may load very quickly.</Step>
+</Steps>
+
+## Roll back or resume a channel
+
+For a rollback, inspect an older compatible release and pin it through the same confirmation flow. Rollback uses an existing immutable release and creates a new Config document version.
+
+Choose **Use Stable** or **Use Edge** to follow that channel and clear any release pin. Pinning a release preserves the prior channel as its fallback selection for unpinning; explicitly choosing another channel changes it.
+
+The card reports **Restart required: No** and that online players update on their next server connection. This describes delivery behavior; it is not a fleet restart action or proof that all players already have the selected pack.
+
+## Disabled and error states
+
+| UI condition | Resolution |
+| --- | --- |
+| Selection changes disabled for deployment | Operator must complete runtime rollout gates before enabling the backend mutation flag |
+| Missing permission | Obtain `ADMIN_AREA_ACCESS` and `RESOURCE_PACKS_MANAGE` through normal access administration |
+| Loading/refreshing permissions or selection | Wait for a successful refresh; retained data is insufficient to write |
+| Refresh failed, showing last known selection | Restore backend availability, then refresh successfully |
+| Confirmation became stale | Close it, review the latest state, and open a new confirmation |
+| `409` after confirmation | Review refreshed state and backend error; concurrent change, unavailable release, or incompatibility can reject the write |
+| Edge/release inspection failed | Check publication/CDN/manifest integrity independently of the selection document |
+
+Read-query cache freshness is 5 minutes for the releases list, 1 minute for Edge, and 30 seconds for selection. Immutable release details have infinite stale time. These are query cache thresholds, not a promise of automatic periodic polling; use Refresh when checking selection.
+
+## Developer integration
+
+Portal hooks are `useResourcePackReleases`, `useResourcePackRelease(version)`, `useEdgePackSet`, `useResourcePackSelection`, and `useUpdateResourcePackSelection`. A successful mutation invalidates the selection query; write retries are disabled. The dialog retains the expected document version and blocks stale confirmation.
+
+Use the [HTTP reference](/reference/apis/resource-packs) for payloads and error behavior and the [operational acceptance checklist](/deploy/resourcepacks/operations) for proxy/player verification.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Page composition and release inspection](https://github.com/groundsgg/grounds-portal/blob/62818c5138aa50fd684d267c5ab15540348fd458/src/components/content/resource-packs-page.tsx)
+- [Selection and confirmation](https://github.com/groundsgg/grounds-portal/blob/62818c5138aa50fd684d267c5ab15540348fd458/src/components/content/resource-pack-selection.tsx)
+- [Queries and mutation behavior](https://github.com/groundsgg/grounds-portal/blob/62818c5138aa50fd684d267c5ab15540348fd458/src/lib/api/resource-packs.ts)
+- [Backend authorization](https://github.com/groundsgg/grounds-forge/blob/fdbfd636bf776e3aeea7e70718e8989da3a437a6/src/main.ts)

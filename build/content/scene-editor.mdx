@@ -1,0 +1,131 @@
+---
+title: "Create and edit NPCs in game"
+description: "Author scene NPCs and props with the Paper editor, transform tool, leases, and recovery."
+---
+
+Use `plugin-scene-editor` in a Paper **BuildSystem** world. The plugin resolves the current build-world root through BuildSystem, edits a shared in-memory document, and saves `scene.json` at that root. Ordinary worlds and console callers are not scene-authoring targets.
+
+## Prerequisites
+
+- A build-server image containing BuildSystem and the Paper scene editor.
+- Permission to enter and edit the build world.
+- `grounds.scene.edit` for editing and `grounds.scene.save` for saving. `/scene` help uses `grounds.scene`; the permission catalog also allows individual command grants.
+- Catalogs available to the installed editor. Check `/scene catalogs status`.
+
+The current editor pins `resourcepacks-catalog:1.0.0`. New scenes use action catalog `grounds:actions` revision `2`; existing scenes keep their serialized supported revision. Maven artifact versions and action catalog revisions are separate.
+
+## Create a navigator NPC
+
+Choose a clear location in the build world. Creation uses your current position and yaw.
+
+<Steps>
+<Step title="Create or open the scene">
+For a world without a sidecar:
+
+```text
+/scene create grounds:lobby/main Main lobby
+/scene info
+/scene catalogs status
+```
+
+In a world with an existing valid sidecar, `/scene info` opens it lazily. Do not create a second scene.
+</Step>
+<Step title="Create and label the NPC">
+
+```text
+/scene npc navigator create grounds:editor/guide
+/scene npc navigator select
+/scene npc navigator label set Lobby Navigator
+/scene npc navigator action set right_click grounds:lobby/open_navigator
+```
+
+The application action takes no arguments. The command accepts only parameterless actions present in the scene's exact action catalog. Labels entered through this command are literal text.
+</Step>
+<Step title="Place and configure">
+
+```text
+/scene npc navigator position here
+/scene npc navigator rotation set 90 0 0
+/scene npc navigator scale set 1
+/scene npc navigator collision set bounce
+/scene npc navigator collision distance 3
+```
+
+Rotation order is yaw, pitch, roll, in degrees. Distance is approximate travel in blocks, between 0 and 20. Use `none` for a non-colliding NPC or `solid` to block movement without bouncing.
+</Step>
+<Step title="Validate and save">
+
+```text
+/scene validate
+/scene save
+/scene info
+```
+
+Wait for successful save feedback. Saving writes the canonical sidecar; it does not publish or activate a map. Follow the [map pipeline](/build/content/scene-map-pipeline) to deliver it to a lobby.
+</Step>
+</Steps>
+
+## Use the transform tool
+
+Run `/scene tool give` to receive the tagged blaze rod named **Scene Editor Tool**. An ordinary renamed blaze rod does not count as the tool.
+
+| Input | Result |
+| --- | --- |
+| Main-hand left click | Ray-select the nearest supported element, if its lease is available |
+| Right click | Cycle transform component forwards |
+| Sneak + right click | Cycle component backwards |
+| Adjacent hotbar scroll while holding the tool | Change the selected component; keep the tool selected after an accepted edit |
+| Sneak while scrolling | Fine step |
+| Sprint while scrolling | Coarse step; sneaking takes precedence |
+
+Components cycle through X, Y, Z, yaw, pitch, roll, and uniform scale. The action bar shows element ID, value, step, dirty state, and remaining lease time.
+
+| Component | Fine | Normal | Coarse |
+| --- | --- | --- | --- |
+| Position (blocks) | 0.01 | 0.1 | 1 |
+| Rotation (degrees) | 1 | 5 | 15 |
+| Uniform scale | 0.01 | 0.05 | 0.25 |
+
+Tool edits and command edits use the same mutation pipeline. Preview entities are editor-owned and are not serialized into the map as NPC entities; the authoritative data is the sidecar.
+
+## Work with other builders
+
+Selections use per-element leases. When another builder owns an element, selection/editing is refused rather than silently overwriting their work. Different elements can be edited in the shared world session.
+
+```text
+/scene lease status navigator
+/scene lease release navigator
+```
+
+An owner can release their lease. An administrator with `grounds.scene.lease.override` can use `/scene lease override navigator` to take over and select it. Do not use override merely to bypass another builder's active edit.
+
+History belongs to the shared world session. `/scene history`, `/scene undo`, and `/scene redo` inspect or move that history; undo/redo also accept a step count. They are not private per-player histories.
+
+## Recover safely
+
+<AccordionGroup>
+<Accordion title="Unsaved edits block reload or a map push">
+Save first with `/scene save`. `/scene reload` reloads a clean session. To explicitly discard edits, use `/scene recovery discard-and-reload confirm`; the literal `confirm` is required. When the scene editor is enabled and its status service reports unsaved changes, BuildSystem blocks the map push before scheduling archive/upload work. It queries `SceneEditStatus.hasUnsavedChanges(worldId)`; an inspection exception also blocks the push.
+</Accordion>
+<Accordion title="The sidecar is malformed">
+The editor keeps invalid bytes unchanged. Use `/scene recovery export` for an open-session diagnostic export. When an invalid source is awaiting recovery, `/scene recovery backup-and-create grounds:lobby/main Main lobby` backs up those exact bytes and creates a replacement. Keep the generated backup for review.
+</Accordion>
+<Accordion title="Save reports that the file changed">
+The save compares the loaded file fingerprint with the current file before replacement. Inspect external changes, export your work if needed, then reload or reconcile. Retrying without reconciliation must not overwrite another writer's changes.
+</Accordion>
+<Accordion title="An action is unavailable">
+Check `/scene catalogs status` and the scene's action catalog revision. Legacy revision `1` is intentionally empty. Existing documents are not silently migrated to revision `2`; an upgrade requires an explicit document/catalog change and full validation.
+</Accordion>
+</AccordionGroup>
+
+See the [complete command and integration reference](/reference/plugins/scenes/editor-api) for permissions, extension points, and persistence results.
+
+## Implementation sources
+
+Verified against the main-branch source on October 14, 2026.
+
+- [Command implementation](https://github.com/groundsgg/plugin-scene-editor/blob/30b01d3c68dc41b7858bc2bf4226bf8387a446e8/paper/src/main/kotlin/gg/grounds/scene/editor/paper/command/SceneCommand.kt)
+- [Tool inputs](https://github.com/groundsgg/plugin-scene-editor/blob/30b01d3c68dc41b7858bc2bf4226bf8387a446e8/paper/src/main/kotlin/gg/grounds/scene/editor/paper/tool/EditorToolListener.kt)
+- [Catalog dependency pins](https://github.com/groundsgg/plugin-scene-editor/blob/30b01d3c68dc41b7858bc2bf4226bf8387a446e8/common/build.gradle.kts)
+
+- [BuildSystem push guard](https://github.com/groundsgg/buildsystem/blob/a7c169f74e548dd608f19a8771b09418d560d163/buildsystem-grounds/src/main/java/gg/grounds/buildsystem/command/SceneEditorPushGuard.java)
