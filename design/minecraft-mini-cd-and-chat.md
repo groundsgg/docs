@@ -7,7 +7,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 Version 0.5 · Stand: 14. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
-Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Veröffentlichung und visuelle Clientabnahme stehen aus.
+Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Die visuelle Clientabnahme steht aus.
 
 ## 1. Grundlage und Gestaltungsprinzip
 
@@ -214,7 +214,7 @@ Das Java-Pack besitzt `grounds:chat`: das originale 128×128-G auf U+E100, acht 
 
 Eine Proxy-Ausgabe darf das Logo nur nach bestätigtem erfolgreichem Laden eines tatsächlich angebotenen Packs mit explizit freigegebenem SHA-1 verwenden. Die Operator-Allowlist `CHAT_FONT_PACK_SHA1S` ist standardmäßig leer. Versenden oder Akzeptieren des Packs allein zählt nicht als geladen. Ein neues Pack-Angebot, Ladefehler oder ein Disconnect setzen die grafische Darstellung auf die lesbare Textausgabe zurück. Bei einem Backendwechsel startet die neue Spielerinstanz ohne Fontbereitschaft und erhält einen aktuellen Proxy-Snapshot; die bestätigten identischen Clientpacks bleiben gültig und werden nicht allein für das Chatdesign neu geladen. Alte oder mehrdeutige Packbestätigungen schalten keine Grafik frei. Bedrock und unbekannte Fähigkeiten erhalten keine Java-Objektkomponenten.
 
-Die Umstellung wird in isolierten lokalen Branches und Composite-Builds geprüft. Neue Bibliotheks- und API-Funktionen müssen vor der Veröffentlichung der abhängigen Plugins veröffentlicht und deren Abhängigkeiten auf die tatsächlichen Versionen angehoben werden. Ein erfolgreicher Composite-Build ersetzt weder diese Veröffentlichungsreihenfolge noch die visuelle Abnahme im echten Java-26.3-Client. Shader, Bedrock-Grafiken und Clientabnahme bleiben getrennte Folgearbeit.
+Die Umstellung wurde zunächst in isolierten Branches und Composite-Builds geprüft. Nach Veröffentlichung von library-i18n 0.4.0 und plugin-proxy-api 2.6.0 wurden alle 13 betroffenen Plugin-Builds eigenständig mit den veröffentlichten Artefakten geprüft. Die visuelle Abnahme im echten Java-26.3-Client bleibt vor der Packveröffentlichung erforderlich. Shader, Bedrock-Grafiken und Clientabnahme bleiben getrennte Folgearbeit.
 
 ### Empfängergebundene Darstellung
 

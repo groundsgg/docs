@@ -133,21 +133,21 @@ Am 14. Oktober 2026 wurden in den betroffenen Modulen insgesamt 1550 Testfälle 
 
 ## Veröffentlichung und Abnahme
 
-Die Codeänderungen sind auf `feat/java-chat-unification` in separaten Worktrees committet und als Entwurfs-PRs auf GitHub veröffentlicht. Die Tests verbinden die geänderte i18n-Bibliothek und Proxy-API als lokale Composite-Builds. Die vorhandenen veröffentlichten Versionspins enthalten die neuen APIs noch nicht.
+`library-i18n:0.4.0` und `plugin-proxy-api:2.6.0` sind veröffentlicht. Alle 13 betroffenen Plugin-Builds wurden anschließend eigenständig mit diesen veröffentlichten Artefakten geprüft: ohne Composite-Build oder lokale API-Ersetzung. Dabei wurden fehlende Maven-Quellen ergänzt und die Abhängigkeitssperren des Resourcepack-Providers aktualisiert.
 
-1. Geänderte `library-i18n` und `plugin-proxy-api` prüfen und veröffentlichen.
-2. Abhängige Plugin-Pins auf die tatsächlich veröffentlichten Versionen aktualisieren und deren eigenständige CI-Builds prüfen.
-3. Das Java-Pack bauen und seinen tatsächlichen SHA-1 nach visueller Abnahme freigeben.
-4. Java 26.3 im echten Client prüfen: Köpfe, Logo, Zeilenumbruch, GUI-/Chatskalierung, Report-Klicks und Packwechsel.
+Die Feature- und Release-PRs werden nach erfolgreichen GitHub-Prüfungen zusammengeführt. Vorgeschriebene Reviews bleiben Voraussetzung. Der genaue Veröffentlichungsstand wird über die verlinkten PRs und deren Release-Workflows nachgewiesen; eine grüne lokale Prüfung allein bestätigt keine Veröffentlichung.
+
+1. Bibliothek und Proxy-API veröffentlichen, dann Consumer mit den tatsächlichen Versionen prüfen (erledigt).
+2. Grüne Consumer- und Release-PRs integrieren und die veröffentlichten Module im Minestom-Lobby-Host festschreiben.
+3. Java 26.3 im echten Client prüfen: Köpfe, Logo, Zeilenumbruch, GUI-/Chatskalierung, Report-Klicks und Packwechsel.
+4. Erst nach dieser Abnahme das Java-Pack veröffentlichen und seinen tatsächlichen SHA-1 in `CHAT_FONT_PACK_SHA1S` freigeben.
 5. Bedrock-Grafiken und optionale Shader separat umsetzen und abnehmen.
 
-Eine lokale erfolgreiche Testausführung bedeutet keine Veröffentlichung oder Live-Aktivierung.
+Das Packprodukt bleibt bis zur Clientabnahme offen: Schon sein Merge würde automatisch den Edge-Kanal aktualisieren. Ein isoliertes Vorschau-Pack wurde aus Commit `a8e253686148e6fb27232bde55a6ffeca2de80e9` gebaut. Sein Plattform-SHA-1 `8c1858645d1eda6ddecd9a1021e8a631715bfe74` ist ausschließlich für die lokale Sichtprüfung bestimmt und keine Produktionsfreigabe. Das originale Logo bleibt als 128×128-RGBA-Textur erhalten und wird über den Fontprovider auf acht Pixel Höhe dargestellt.
 
-## Review- und Release-Reihenfolge
+## Review- und Release-Nachweise
 
-Zuerst `library-i18n` veröffentlichen, danach den i18n-Pin der Proxy-API anheben und diese veröffentlichen. Anschließend die Consumer auf die tatsächlich veröffentlichten Versionen anheben. Das Packprodukt kann parallel geprüft werden; seine Aktivierung folgt erst auf die Clientabnahme. Die Entwürfe behalten die tatsächlichen bestehenden Versionspins und können bis zu diesen Releases in ihrer eigenständigen CI wegen fehlender neuer APIs fehlschlagen. Lokale Composite-Prüfung und eigenständige CI sind getrennte Nachweise.
-
-| Repository | Entwurfs-PR |
+| Repository | Feature-PR |
 | --- | --- |
 | library-i18n | [Review](https://github.com/groundsgg/library-i18n/pull/10) |
 | plugin-proxy | [Review](https://github.com/groundsgg/plugin-proxy/pull/77) |
@@ -167,4 +167,4 @@ Zuerst `library-i18n` veröffentlichen, danach den i18n-Pin der Proxy-API anhebe
 
 Der Chat-Branch enthält zusätzlich den aktuellen Mute-Enforcement-Stand von `origin/main`. Mute-Prüfungen, Server-Routing und die Reihenfolge von Privatnachricht-Zustellung und Echo bleiben erhalten; neu hinzugekommene Mute-Rückmeldungen sind ebenfalls lokalisiert. Nach dieser Integration wurden alle Chatmodule erneut gebaut und geprüft (351 Testfälle).
 
-Die freigegebene Kontext-/Level-Trennung ist in den bestehenden Entwurfs-PRs umgesetzt und erneut geprüft: 42 Bibliothekstests, alle 13 betroffenen Plugin-Builds erfolgreich; insgesamt 1550 erfasste Testfälle, 1544 erfolgreich und sechs bestehende Scene-Editor-Skips. Der unabhängige Review fand keine verlorenen Metadaten. Veröffentlichungs- und Clientabnahmegrenzen bleiben bestehen.
+Die freigegebene Kontext-/Level-Trennung ist in den verlinkten Feature-PRs umgesetzt und erneut geprüft: 42 Bibliothekstests, alle 13 betroffenen Plugin-Builds erfolgreich; insgesamt 1550 erfasste Testfälle, 1544 erfolgreich und sechs bestehende Scene-Editor-Skips. Der unabhängige Review fand keine verlorenen Metadaten. Veröffentlichungs- und Clientabnahmegrenzen bleiben bestehen.

@@ -194,12 +194,12 @@ Die lokale Quellcodeumsetzung ist abgeschlossen. Die ursprünglichen Detailcheck
 - [x] Vertrauenswürdige Edition, bestätigter Packzustand, Proxy-/Minestom-Bridge und zustellungsbezogenes Social-Rendering integriert.
 - [x] Build-/Formatierungsprüfungen und 1550 Testfälle: 1544 erfolgreich, 6 bestehende Scene-Editor-Skips, keine Fehler. Unabhängiger Review der Integrations- und Lifecycle-Grenzen abgeschlossen.
 - [x] Mini-CD und Integration in Docs sowie Confluence dokumentiert. Die Integrationsseite liegt unter `design/minecraft-chat-integration` statt des ursprünglich geplanten zweiten Minecraft-Pfads.
-- [ ] Bibliothek und gemeinsame Proxy-API veröffentlichen; echte Consumer-Versionspins aktualisieren und eigenständige CI-Builds prüfen.
+- [x] library-i18n 0.4.0 und plugin-proxy-api 2.6.0 veröffentlicht; echte Consumer-Versionspins aktualisiert und alle 13 Plugin-Builds eigenständig erfolgreich geprüft.
 - [x] Änderungen committen und PRs für die betroffenen Repositories erstellen; alle Quellcodeänderungen sind committet und als Entwurfs-PRs veröffentlicht.
 - [ ] Reale Java-26.3-Abnahme mit verschiedenen Chat-/GUI-Skalierungen und Bedrock-Text-Smokecheck durchführen.
 - [ ] Tatsächlich erzeugten Plattformpack-Hash nach Abnahme freigeben und Stage aktivieren. `CHAT_FONT_PACK_SHA1S` bleibt standardmäßig leer.
 
-Die Tests verwenden lokale Composite-Builds für die geänderte i18n-Bibliothek und Proxy-API. Erfolgreiche lokale Prüfung ist keine Veröffentlichung oder Live-Aktivierung. Die konkreten Verträge, Testzahlen und Veröffentlichungsreihenfolge stehen in [Minecraft Chat: Plugin-Integration](../../design/minecraft-chat-integration.md).
+Die ersten Tests verwendeten lokale Composite-Builds für die geänderte i18n-Bibliothek und Proxy-API. Anschließend wurden alle 13 Plugin-Builds mit den tatsächlich veröffentlichten Artefakten eigenständig geprüft. Erfolgreiche lokale Prüfung ist keine Veröffentlichung oder Live-Aktivierung. Die konkreten Verträge, Testzahlen und Veröffentlichungsreihenfolge stehen in [Minecraft Chat: Plugin-Integration](../../design/minecraft-chat-integration.md).
 
 ## Freigegebene Präzisierung: Kontext und Level
 
