@@ -207,3 +207,7 @@ Im Client das Pack akzeptieren und `/chatpreview all` ausführen. Einzelprüfung
 Der HTTP-Packdownload wurde aus Windows mit exakt passender SHA-1 geprüft. Minecraft meldet Protokoll 777 / Version 26.3. Die Testhilfe prüft zusätzlich 80 Kontext-/Level-/Sprachkombinationen und lehnt falsche Sitzungen oder unbekannte Packangebote bei der Fontfreigabe ab. Eine tatsächliche Sichtabnahme durch einen Minecraft-Client wird damit nicht behauptet.
 
 Diese lokale Sichtprüfung ersetzt keine Netzwerk- und Serviceintegration: Social, Coins, Match, Moderationsdurchsetzung, Report-Versand, Geyser und Proxy-/Backend-Packwechsel benötigen die passende Integrationsumgebung. Die Testhilfe ist ausschließlich im lokalen Testpaket enthalten und wird nicht in Produktivserver eingebaut. Die Produktions-Font-Allowlist bleibt unverändert.
+
+## Präfixregel mit Logo
+
+[Die zentrale Layout-Korrektur](https://github.com/groundsgg/library-i18n/pull/12) entfernt die ausgeschriebene Grounds-Kennung ausschließlich aus dem grafischen Systempräfix. Mit geladenem Pack: `[Logo] Freunde › Nachricht`; im Textfallback weiterhin `[Grounds] Freunde › Nachricht`. Mini-CD 0.6 und die lokale Java-Vorschau verwenden diese Regel. Die Testhilfe lädt dafür die aktualisierte zentrale Vorlage; die beigefügten Integrationsartefakte und bestehenden Produktions-Releases werden dadurch nicht als bereits aktualisierte Veröffentlichungen ausgegeben.

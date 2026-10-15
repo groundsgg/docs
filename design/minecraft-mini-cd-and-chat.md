@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.5 · Stand: 14. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.6 · Stand: 15. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Die visuelle Clientabnahme steht aus.
 
@@ -66,10 +66,10 @@ Die folgenden Regeln gelten für die geplante Darstellung von Lobby-, Match-, Gr
 | Private Nachricht ausgehend | [Kopf] [Privat] du → Name › Nachricht | Kopf bezeichnet den tatsächlichen Sender |
 | Partychat, sofern verfügbar | [Kopf] [Party] Name › Nachricht | Textlabel bleibt sichtbar |
 | Staffchat | [Kopf] [Staff] Name › Nachricht | Nur im berechtigten Kanal; Staff bleibt Spielerabsender |
-| Systemmeldung | [Logo] Grounds · Kategorie › Nachricht | Logo und feste Grounds-Kennung |
+| Systemmeldung | [Logo] Kategorie › Nachricht | Logo als Absenderkennung |
 | NPC-Dialog im Chat | [NPC-Porträt] [NPC] Name › Dialog | NPC-Kennung; nicht wie ein realer Spieler tarnen |
 
-Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, keine wörtlich anzuzeigenden Texte. Ohne passende Grafikunterstützung entfallen Kopf/Porträt; das Systemlogo wird durch [Grounds] ersetzt. Beispielsweise: „[Grounds] Allgemein › Neustart in 5 Minuten.“
+Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, keine wörtlich anzuzeigenden Texte. Mit geladenem Chat-Pack ersetzt das Logo die ausgeschriebene Grounds-Kennung; der Name steht ausschließlich im Textfallback. Ohne passende Grafikunterstützung entfallen Kopf/Porträt; das Systemlogo wird durch [Grounds] ersetzt. Beispielsweise: „[Grounds] Allgemein › Neustart in 5 Minuten.“
 
 Öffentlicher und Gruppenchat behalten dieselbe Texthelligkeit. Ein Kanal wird durch ein kurzes Label unterschieden, wenn sein Kontext sonst mehrdeutig ist. „Team“ im Match und „Staff“ für Mitarbeiter sind unterschiedliche Kanäle.
 
@@ -84,14 +84,14 @@ Grounds spricht freundlich, direkt und praktisch. Eine Meldung nennt Ergebnis od
 | Anlass | Muster |
 | --- | --- |
 | Spielerchat | [Kopf] Lukas › Hat jemand Lust auf ein Duell? |
-| Party-Einladung | [Logo] Grounds · Party › Mia lädt dich ein. [Annehmen] |
-| Queue | [Logo] Grounds · Match › Du wartest auf ein 1vs1. |
-| Bestätigung (`GENERAL` / `SUCCESS`) | [Logo] Grounds · Allgemein › Deine Einstellungen wurden gespeichert. |
-| Neustart (`GENERAL` / `WARNING`) | [Logo] Grounds · Allgemein › Neustart in 5 Minuten. |
-| Fehler (`GENERAL` / `ERROR`) | [Logo] Grounds · Allgemein › Diese Aktion ist gerade nicht möglich. Versuch es gleich noch einmal. |
-| Freundesfehler (`FRIENDS` / `ERROR`) | [Logo] Grounds · Freunde › Deine Freundesliste ist voll. |
-| Freiwillige Story | [Logo] Grounds · Story › In der Werkstatt gibt es Neuigkeiten. |
-| Join im relevanten Umfeld | [Logo] Grounds · Allgemein › Mia ist angekommen. |
+| Party-Einladung | [Logo] Party › Mia lädt dich ein. [Annehmen] |
+| Queue | [Logo] Match › Du wartest auf ein 1vs1. |
+| Bestätigung (`GENERAL` / `SUCCESS`) | [Logo] Allgemein › Deine Einstellungen wurden gespeichert. |
+| Neustart (`GENERAL` / `WARNING`) | [Logo] Allgemein › Neustart in 5 Minuten. |
+| Fehler (`GENERAL` / `ERROR`) | [Logo] Allgemein › Diese Aktion ist gerade nicht möglich. Versuch es gleich noch einmal. |
+| Freundesfehler (`FRIENDS` / `ERROR`) | [Logo] Freunde › Deine Freundesliste ist voll. |
+| Freiwillige Story | [Logo] Story › In der Werkstatt gibt es Neuigkeiten. |
+| Join im relevanten Umfeld | [Logo] Allgemein › Mia ist angekommen. |
 
 Aktionsklammern bezeichnen echte unterstützte Aktionen; sie dürfen nicht wie klickbare Schaltflächen aussehen, wenn der Client keine Aktion anbietet. Für Bedrock erhält jede notwendige Aktion einen dort nutzbaren Weg, etwa einen geprüften Befehl oder ein Formular. Solange dieser fehlt, keine vorgetäuschte Klickbarkeit. Unbekannte Fehlerursachen werden nicht als angeblich bekannter Zustand ausgegeben.
 
