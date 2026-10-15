@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.9 · Stand: 15. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.10 · Stand: 15. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Die visuelle Clientabnahme steht aus.
 
@@ -223,3 +223,9 @@ Die Umstellung wurde zunächst in isolierten Branches und Composite-Builds gepr�
 Der Proxy überträgt den bestätigten Fontstatus über `grounds:chat_style` an die konkrete aktuelle Backendverbindung. Der Vertrag enthält exakt 26 Bytes in Big Endian: Version `1` als Byte, Ziel-UUID als zwei Longs, positive monotone Revision als Long und Bereitschaft `0` oder `1` als Byte. Die Minestom-Spielerinstanz speichert den Status unter `grounds:chat-font-ready`. Neue Instanzen beginnen ohne Bereitschaft; Disconnect und Modulstopp löschen den Zustand. UUID muss zum Ereignisspieler passen; ältere oder doppelte Revisionen überschreiben keinen neueren Zustand. Clientpakete auf diesem Kanal werden am Proxy behandelt und nicht ungeprüft weitergeleitet.
 
 Remote-Social-Meldungen bleiben im Transport semantische Übersetzungskeys mit Argumenten. Der empfängerbezogene `PlayerMessageRenderer` entscheidet erst auf dem zustellenden Proxy über Sprache und Logo. Fehlende oder inkompatible Renderer und fremde Komponenten behalten den bestehenden Ausgabeweg. Registrierung und Entfernen des Providers sind atomar und an dessen tatsächliche Instanz gebunden.
+
+## 14. Berechtigungen für Spielernachrichten
+
+Farben und Textstile gelten ausschließlich im Nachrichtentext. `grounds.chat.format.color` erlaubt benannte und Hexfarben über MiniMessage sowie `&0`–`&f` und `&#RRGGBB`; `grounds.chat.format.decoration` erlaubt Fett, Kursiv und Unterstrichen (`<bold>`, `<italic>`, `<underlined>` beziehungsweise `&l`, `&o`, `&n`). `&r` setzt freigegebene Formatierung zurück. Klickaktionen, Hover, Fontwechsel und verschleierter Text sind nicht freigegeben. Ohne jeweilige Berechtigung bleibt die Eingabe wörtlicher Text.
+
+Eigene grafische Aliasse benötigen `grounds.chat.emoji.<name>`; `grounds.chat.emoji.*` kann alle freigeben. Konkrete Rechte werden beim Absender abgefragt, damit gezielte Sperren trotz Wildcard gelten. Maximal fünf genehmigte Grafiken pro Nachricht, auch über mehrere formatierte Abschnitte. Der Empfänger benötigt zusätzlich das bestätigt geladene Pack; andernfalls bleiben Aliasse lesbarer Text. Normale Unicode-Emojis bleiben Text. Diese Regeln gelten für öffentlichen, privaten und Staffchat sowie lokale Paper-/Minestom-Ausgabe. Rangbadge, Spielername und Kopf sind davon unabhängig.

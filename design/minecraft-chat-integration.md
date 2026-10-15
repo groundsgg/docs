@@ -233,3 +233,25 @@ Bei bestätigtem Pack rendert `RankBadge` dieselben vorhandenen `grounds:tab`-Fl
 Die Rangbezeichnung wird am sendenden Proxy aus derselben Rolle und denselben Aliasregeln wie in der Tabliste aufgelöst (etwa Builder → BUILD). Das zusätzliche optionale Feld `senderRankLabel` trägt sie an andere Proxys weiter; alte Nachrichten ohne dieses Feld bleiben lesbar. Namensfarbe und Kopf bleiben neutral. Die bestehenden Kotlin/JVM-Aufrufe von `ChatSender.render` und `ChatLine.of` bleiben erhalten. Neue Assetdateien oder Shader sind dafür nicht nötig.
 
 Geprüft mit vollständigem Build und Formatierung: 361 Tests ohne Fehler oder übersprungene Tests. Ein zusätzlicher Vergleich mit den tatsächlich kompilierten Tabliste-Renderern bestätigte 30 identische Badge-Komponenten und 39 identische Rangbezeichnungen. Der bestehende Host kann die bisherigen JVM-Einstiegspunkte weiterhin aufrufen. Die Java-Vorschau enthält die neue Absender- und Badge-Klasse aus [Chat-PR 53](https://github.com/groundsgg/plugin-chat/pull/53); die Clientabnahme und Veröffentlichung dieser Erweiterung bleiben separat offen.
+
+## Permission-Katalog und Inhaltsformatierung
+
+[Chat-PR 55](https://github.com/groundsgg/plugin-chat/pull/55) führt eine senderbezogene Freigabe im gemeinsamen `ChatContent`-Renderer ein. Der Proxy ermittelt die Rechte am Ursprung und trägt sie als optionales `contentPermissions`-Feld in öffentlichen, privaten und Staff-Nachrichten weiter. Ältere Nachrichten ohne dieses Feld erlauben keine Formatierung oder grafischen Aliasse. Moderationsdaten behalten den unveränderten Originaltext. Lokale Paper-Ausgabe prüft den Absender; Minestom fragt den optionalen Runtime-Dienst `Permissions` bei jeder Nachricht ab. Fehlende Dienste erteilen keine Rechte.
+
+| Knoten | Freigabe |
+| --- | --- |
+| `grounds.chat.format.color` | `<red>`, `<#FFAA00>`, `&6`, `&#FFAA00` |
+| `grounds.chat.format.decoration` | Fett, Kursiv, Unterstrichen |
+| `grounds.chat.emoji.*` | Alle eigenen Chat-Emojis über den Permission-Resolver |
+| `grounds.chat.emoji.heart` | `:heart:` |
+| `grounds.chat.emoji.smile` | `:smile:` |
+| `grounds.chat.emoji.laugh` | `:laugh:` |
+| `grounds.chat.emoji.thumbsup` | `:thumbsup:` |
+| `grounds.chat.emoji.gg` | `:gg:` |
+| `grounds.chat.emoji.fire` | `:fire:` |
+| `grounds.chat.emoji.creeper` | `:creeper:` |
+| `grounds.chat.emoji.wrench` | `:wrench:` |
+
+Diese elf neuen Einträge stehen mit Beschreibungen im gemeinsamen `common/src/main/resources/META-INF/grounds/permissions.json`, damit der Permission-Katalog und seine Autovervollständigung sie anbieten. Der Katalog enthält außerdem weiterhin `grounds.chat.staff`. Er ist in common sowie den gebündelten Velocity-/Paper-JARs vorhanden; das schlanke Minestom-Modul erhält ihn über seine common-Abhängigkeit. Vorhandene Rollen werden dadurch nicht automatisch berechtigt. `/emoji` listet nur erlaubte Aliasse auf.
+
+Prüfnachweis: vollständiger Build und Formatierung erfolgreich, 373 Tests ohne Fehler oder übersprungene Tests. Geprüft sind erlaubte und verweigerte Tags, einzelne Emojis, Limit über formatierte Abschnitte, alle Spielerkanäle, unveränderte Moderationsdaten und die Katalogeinträge. Die unabhängige Korrektheits- und Sicherheitsprüfung meldete keine wesentlichen Befunde. Die lokale Vorschau zeigt mit `/chatpreview format` feste Testprofile ohne Änderung realer Berechtigungen; sie ersetzt keinen Test der Rollenvergabe im Permission-Dienst.
