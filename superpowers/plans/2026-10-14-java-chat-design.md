@@ -13,7 +13,7 @@ description: "Implementiere das Grounds-Chatdesign für Java 26.3 mit originalem
 
 **Tech Stack:** Kotlin/JVM, Adventure, Grounds-Minestom-Fork 2026.10.02-26.3-grounds.1, Velocity, library-i18n, resourcepacks, JUnit, Gradle.
 
-**Spec:** [Mini-CD v0.8](../../design/minecraft-mini-cd-and-chat.md), [Confluence](https://grounds.atlassian.net/wiki/spaces/gkd/pages/300154881).
+**Spec:** [Mini-CD v0.9](../../design/minecraft-mini-cd-and-chat.md), [Confluence](https://grounds.atlassian.net/wiki/spaces/gkd/pages/300154881).
 
 ## Global Constraints
 

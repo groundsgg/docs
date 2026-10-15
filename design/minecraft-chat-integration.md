@@ -224,4 +224,12 @@ Nach der bestätigten Clientprüfung für Logo, Punkt und Köpfe verwendet [i18n
 
 ## Rangtag und neutrale Spielernamen
 
-`ChatSender` verwendet das vorhandene Rangtag und dessen Rangfarbe unverändert. Die Rangfarbe wirkt ausschließlich auf das Tag; der Spielername erhält explizit den normalen hellen Textton `#F2EBDD`, der native Kopf weiterhin Weiß. Die gemeinsame Komponente gilt für Kopf- und Textdarstellung. Es werden keine neuen Tags, Rangnamen oder zusätzlichen kosmetischen Präfixe erzeugt.
+`ChatSender` verwendet das vorhandene Rangtag und dessen Rangfarbe unverändert. Die Rangfarbe wirkt ausschließlich auf das Tag beziehungsweise dessen grafische Fläche; die Badge-Beschriftung ist weiß. Der Spielername erhält explizit den normalen hellen Textton `#F2EBDD`, der native Kopf weiterhin Weiß. Die gemeinsame Komponente gilt für Kopf- und Textdarstellung. Es werden keine neuen Tags, Rangnamen oder zusätzlichen kosmetischen Präfixe erzeugt.
+
+## Grafische Rang-Badges aus der Tabliste
+
+Bei bestätigtem Pack rendert `RankBadge` dieselben vorhandenen `grounds:tab`-Flächen, Abstände und weißen `grounds:tab_labels`-Buchstaben wie `plugin-proxy/TabBadge`. Native Köpfe und Badge-Fontbereitschaft bleiben unabhängig. Ohne Pack bleibt das vorhandene Rangtag als Text erhalten; nicht unterstützte oder zu lange Labels verwenden ebenfalls den sicheren Textfallback.
+
+Die Rangbezeichnung wird am sendenden Proxy aus derselben Rolle und denselben Aliasregeln wie in der Tabliste aufgelöst (etwa Builder → BUILD). Das zusätzliche optionale Feld `senderRankLabel` trägt sie an andere Proxys weiter; alte Nachrichten ohne dieses Feld bleiben lesbar. Namensfarbe und Kopf bleiben neutral. Die bestehenden Kotlin/JVM-Aufrufe von `ChatSender.render` und `ChatLine.of` bleiben erhalten. Neue Assetdateien oder Shader sind dafür nicht nötig.
+
+Geprüft mit vollständigem Build und Formatierung: 361 Tests ohne Fehler oder übersprungene Tests. Ein zusätzlicher Vergleich mit den tatsächlich kompilierten Tabliste-Renderern bestätigte 30 identische Badge-Komponenten und 39 identische Rangbezeichnungen. Der bestehende Host kann die bisherigen JVM-Einstiegspunkte weiterhin aufrufen. Die Java-Vorschau enthält die neue Absender- und Badge-Klasse aus [Chat-PR 53](https://github.com/groundsgg/plugin-chat/pull/53); die Clientabnahme und Veröffentlichung dieser Erweiterung bleiben separat offen.
