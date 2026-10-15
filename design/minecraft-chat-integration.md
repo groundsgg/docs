@@ -221,3 +221,7 @@ Der grafische Systempräfix behält seinen Trenner: `[Logo] · Freunde | Nachric
 ## Senkrechter Systemtrenner
 
 Nach der bestätigten Clientprüfung für Logo, Punkt und Köpfe verwendet [i18n-Fix 14](https://github.com/groundsgg/library-i18n/pull/14) den Trenner `|` für grafische Systemmeldungen und deren Textfallback: `[Logo] · Freunde | Nachricht` beziehungsweise `[Grounds] Freunde | Nachricht`. Spieler-, Privat- und Staffnachrichten behalten `›`. Die geänderten Erwartungen scheiterten zuerst am bisherigen Trenner; anschließend bestanden alle 42 Tests, Build und Formatierung. Die lokale Vorschau prüft beide Systemvarianten in 80 Kontext-/Level-/Sprachkombinationen. Die Paketveröffentlichung dieser neuen Änderung ist separat nachzuweisen.
+
+## Rangtag und neutrale Spielernamen
+
+`ChatSender` verwendet das vorhandene Rangtag und dessen Rangfarbe unverändert. Die Rangfarbe wirkt ausschließlich auf das Tag; der Spielername erhält explizit den normalen hellen Textton `#F2EBDD`, der native Kopf weiterhin Weiß. Die gemeinsame Komponente gilt für Kopf- und Textdarstellung. Es werden keine neuen Tags, Rangnamen oder zusätzlichen kosmetischen Präfixe erzeugt.

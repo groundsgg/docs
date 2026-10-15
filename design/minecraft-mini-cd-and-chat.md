@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.7 · Stand: 15. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.8 · Stand: 15. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Die visuelle Clientabnahme steht aus.
 
@@ -75,7 +75,7 @@ Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, 
 
 Native Skin-Köpfe erhalten eine explizit weiße Farbmodulation. Farben von Privatlabels, Namen, Rängen oder übergeordneten Komponenten dürfen die Hauttextur nicht einfärben.
 
-Ein Rangbadge ist nur bei tatsächlichem Bedarf zulässig; keine Kette aus Rang, Level, Titel und Cosmetics vor jeder Nachricht. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
+Vorhandene Rangtags verwenden dieselbe Bezeichnung und Rangfarbe wie die Tabliste. Nur das Tag trägt die Rangfarbe; der Spielername bleibt im normalen hellen Textton (#F2EBDD), der native Kopf neutral weiß. Ein fehlendes oder leeres Rangtag erzeugt keinen zusätzlichen Präfix. Beispiel: `[Kopf] [MOD] Lukas › Hallo zusammen!` (MOD ist eine beispielhafte Rangbezeichnung). Es wird genau das vorhandene Rangtag dargestellt; keine zusätzliche Kette aus Rang, Level, Titel und Cosmetics. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
 
 Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde und erhält das Level Fehler. Das Level bestimmt die Statusfarbe des Kontextlabels; es ersetzt das Kontextlabel nicht. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels oder Formatierung erzeugen.
 
