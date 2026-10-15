@@ -66,12 +66,14 @@ Die folgenden Regeln gelten für die geplante Darstellung von Lobby-, Match-, Gr
 | Private Nachricht ausgehend | [Kopf] [Privat] du → Name › Nachricht | Kopf bezeichnet den tatsächlichen Sender |
 | Partychat, sofern verfügbar | [Kopf] [Party] Name › Nachricht | Textlabel bleibt sichtbar |
 | Staffchat | [Kopf] [Staff] Name › Nachricht | Nur im berechtigten Kanal; Staff bleibt Spielerabsender |
-| Systemmeldung | [Logo] Kategorie › Nachricht | Logo als Absenderkennung |
+| Systemmeldung | [Logo] · Kategorie › Nachricht | Logo als Absenderkennung |
 | NPC-Dialog im Chat | [NPC-Porträt] [NPC] Name › Dialog | NPC-Kennung; nicht wie ein realer Spieler tarnen |
 
 Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, keine wörtlich anzuzeigenden Texte. Mit geladenem Chat-Pack ersetzt das Logo die ausgeschriebene Grounds-Kennung; der Name steht ausschließlich im Textfallback. Ohne passende Grafikunterstützung entfallen Kopf/Porträt; das Systemlogo wird durch [Grounds] ersetzt. Beispielsweise: „[Grounds] Allgemein › Neustart in 5 Minuten.“
 
 Öffentlicher und Gruppenchat behalten dieselbe Texthelligkeit. Ein Kanal wird durch ein kurzes Label unterschieden, wenn sein Kontext sonst mehrdeutig ist. „Team“ im Match und „Staff“ für Mitarbeiter sind unterschiedliche Kanäle.
+
+Native Skin-Köpfe erhalten eine explizit weiße Farbmodulation. Farben von Privatlabels, Namen, Rängen oder übergeordneten Komponenten dürfen die Hauttextur nicht einfärben.
 
 Ein Rangbadge ist nur bei tatsächlichem Bedarf zulässig; keine Kette aus Rang, Level, Titel und Cosmetics vor jeder Nachricht. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
 
@@ -84,14 +86,14 @@ Grounds spricht freundlich, direkt und praktisch. Eine Meldung nennt Ergebnis od
 | Anlass | Muster |
 | --- | --- |
 | Spielerchat | [Kopf] Lukas › Hat jemand Lust auf ein Duell? |
-| Party-Einladung | [Logo] Party › Mia lädt dich ein. [Annehmen] |
-| Queue | [Logo] Match › Du wartest auf ein 1vs1. |
-| Bestätigung (`GENERAL` / `SUCCESS`) | [Logo] Allgemein › Deine Einstellungen wurden gespeichert. |
-| Neustart (`GENERAL` / `WARNING`) | [Logo] Allgemein › Neustart in 5 Minuten. |
-| Fehler (`GENERAL` / `ERROR`) | [Logo] Allgemein › Diese Aktion ist gerade nicht möglich. Versuch es gleich noch einmal. |
-| Freundesfehler (`FRIENDS` / `ERROR`) | [Logo] Freunde › Deine Freundesliste ist voll. |
-| Freiwillige Story | [Logo] Story › In der Werkstatt gibt es Neuigkeiten. |
-| Join im relevanten Umfeld | [Logo] Allgemein › Mia ist angekommen. |
+| Party-Einladung | [Logo] · Party › Mia lädt dich ein. [Annehmen] |
+| Queue | [Logo] · Match › Du wartest auf ein 1vs1. |
+| Bestätigung (`GENERAL` / `SUCCESS`) | [Logo] · Allgemein › Deine Einstellungen wurden gespeichert. |
+| Neustart (`GENERAL` / `WARNING`) | [Logo] · Allgemein › Neustart in 5 Minuten. |
+| Fehler (`GENERAL` / `ERROR`) | [Logo] · Allgemein › Diese Aktion ist gerade nicht möglich. Versuch es gleich noch einmal. |
+| Freundesfehler (`FRIENDS` / `ERROR`) | [Logo] · Freunde › Deine Freundesliste ist voll. |
+| Freiwillige Story | [Logo] · Story › In der Werkstatt gibt es Neuigkeiten. |
+| Join im relevanten Umfeld | [Logo] · Allgemein › Mia ist angekommen. |
 
 Aktionsklammern bezeichnen echte unterstützte Aktionen; sie dürfen nicht wie klickbare Schaltflächen aussehen, wenn der Client keine Aktion anbietet. Für Bedrock erhält jede notwendige Aktion einen dort nutzbaren Weg, etwa einen geprüften Befehl oder ein Formular. Solange dieser fehlt, keine vorgetäuschte Klickbarkeit. Unbekannte Fehlerursachen werden nicht als angeblich bekannter Zustand ausgegeben.
 
