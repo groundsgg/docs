@@ -13,7 +13,7 @@ description: "Implementiere das Grounds-Chatdesign für Java 26.3 mit originalem
 
 **Tech Stack:** Kotlin/JVM, Adventure, Grounds-Minestom-Fork 2026.10.02-26.3-grounds.1, Velocity, library-i18n, resourcepacks, JUnit, Gradle.
 
-**Spec:** [Mini-CD v0.5](../../design/minecraft-mini-cd-and-chat.md), [Confluence](https://grounds.atlassian.net/wiki/spaces/gkd/pages/300154881).
+**Spec:** [Mini-CD v0.7](../../design/minecraft-mini-cd-and-chat.md), [Confluence](https://grounds.atlassian.net/wiki/spaces/gkd/pages/300154881).
 
 ## Global Constraints
 
@@ -22,7 +22,7 @@ description: "Implementiere das Grounds-Chatdesign für Java 26.3 mit originalem
 - Eigener Font grounds:chat; reservierte Glyphen werden nicht in die Standardspielerschrift eingebaut.
 - Gold #E7B84B, Text #F2EBDD, Sekundärtext #C1B9AA, Cyan #67D9EC. Erfolg/Warnung/Fehler behalten die Mini-CD-Token. Vorhandene Rank-/Teamzuordnung bleibt erhalten.
 - Logo- und Emoji-Komponenten sind weiß eingefärbt und nicht fett/kursiv; ihre Originalfarben bleiben erhalten.
-- System: Logo · Kategorie › Nachricht. Spieler: Kopf Name › Nachricht. Privat- und Staffkanäle bleiben ausdrücklich bezeichnet.
+- System: Logo · Kategorie | Nachricht. Spieler: Kopf Name › Nachricht. Privat- und Staffkanäle bleiben ausdrücklich bezeichnet.
 - Die acht Emoji-Aliase sind :heart:, :smile:, :laugh:, :thumbsup:, :gg:, :fire:, :creeper: und :wrench:. Höchstens fünf grafische Ersetzungen, übrige Aliase bleiben Text.
 - Freier Spielertext bleibt unparsed; keine MiniMessage-Auswertung von Nachrichten.
 - Der bestehende PackSet besteht aus grounds-content und grounds-platform; aktuelle main-Quelle verwendet Packformat 97.

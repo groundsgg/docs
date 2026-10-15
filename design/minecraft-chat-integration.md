@@ -210,10 +210,14 @@ Diese lokale Sichtprüfung ersetzt keine Netzwerk- und Serviceintegration: Socia
 
 ## Präfixregel mit Logo
 
-[Die zentrale Layout-Korrektur](https://github.com/groundsgg/library-i18n/pull/12) entfernt die ausgeschriebene Grounds-Kennung ausschließlich aus dem grafischen Systempräfix. Mit geladenem Pack: `[Logo] · Freunde › Nachricht`; im Textfallback weiterhin `[Grounds] Freunde › Nachricht`. Mini-CD 0.6 und die lokale Java-Vorschau verwenden diese Regel. Die Testhilfe lädt dafür die aktualisierte zentrale Vorlage; die beigefügten Integrationsartefakte und bestehenden Produktions-Releases werden dadurch nicht als bereits aktualisierte Veröffentlichungen ausgegeben.
+[Die zentrale Layout-Korrektur](https://github.com/groundsgg/library-i18n/pull/12) entfernt die ausgeschriebene Grounds-Kennung ausschließlich aus dem grafischen Systempräfix. Mit geladenem Pack: `[Logo] · Freunde | Nachricht`; im Textfallback weiterhin `[Grounds] Freunde | Nachricht`. Mini-CD 0.7 und die lokale Java-Vorschau verwenden diese Regel. Die Testhilfe lädt dafür die aktualisierte zentrale Vorlage; die beigefügten Integrationsartefakte und bestehenden Produktions-Releases werden dadurch nicht als bereits aktualisierte Veröffentlichungen ausgegeben.
 
 ## Unverfälschte Skin-Köpfe
 
 [Chat-Fix 48](https://github.com/groundsgg/plugin-chat/pull/48) setzt die gemeinsame native Kopf-Komponente explizit auf Weiß. Damit färbt die blaue Textfarbe des Privatlabels die Skin nicht mit ein. Die Regression wurde in den tatsächlichen ein- und ausgehenden Privatlayouts und im Teamlayout für EN/DE/FR/ES geprüft; alle 352 Chat-Tests sowie Build und Formatierung sind erfolgreich. Die lokale Testhilfe enthält dieselbe geprüfte `ChatSender`-Klasse. Ihr Selbsttest prüft die effektive Kopffarbe einschließlich der übergeordneten Layoutfarben.
 
-Der grafische Systempräfix behält seinen Trenner: `[Logo] · Freunde › Nachricht`. Nach diesen Fixes wurde die lokale Testinstanz auf Wunsch gestoppt. Für die nächste Clientprüfung ist ein erneuter Start erforderlich.
+Der grafische Systempräfix behält seinen Trenner: `[Logo] · Freunde | Nachricht`. Logo, Punkt und unverfärbte Köpfe wurden am 15. Oktober 2026 vom Betreiber im Java-Client bestätigt. Anschließend wurde „|“ als Systemtrenner beschlossen; die lokale Vorschau verwendet ihn in Grafik- und Textmodus.
+
+## Senkrechter Systemtrenner
+
+Nach der bestätigten Clientprüfung für Logo, Punkt und Köpfe verwendet [i18n-Fix 14](https://github.com/groundsgg/library-i18n/pull/14) den Trenner `|` für grafische Systemmeldungen und deren Textfallback: `[Logo] · Freunde | Nachricht` beziehungsweise `[Grounds] Freunde | Nachricht`. Spieler-, Privat- und Staffnachrichten behalten `›`. Die geänderten Erwartungen scheiterten zuerst am bisherigen Trenner; anschließend bestanden alle 42 Tests, Build und Formatierung. Die lokale Vorschau prüft beide Systemvarianten in 80 Kontext-/Level-/Sprachkombinationen. Die Paketveröffentlichung dieser neuen Änderung ist separat nachzuweisen.
