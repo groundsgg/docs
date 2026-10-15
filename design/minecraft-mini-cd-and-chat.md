@@ -77,7 +77,7 @@ Native Skin-Köpfe erhalten eine explizit weiße Farbmodulation. Farben von Priv
 
 Vorhandene Rangtags verwenden dieselbe Bezeichnung und Rangfarbe wie die Tabliste. Mit geladenem Pack erscheint dasselbe grafische Badge wie in der Tabliste: farbige Fläche, weiße kompakte Beschriftung in `grounds:tab_labels`, bestehende Flächen aus `grounds:tab`. Ohne bestätigtes Pack bleibt das vorhandene Rangtag lesbarer Text in Rangfarbe. Der Spielername bleibt im normalen hellen Textton (#F2EBDD), der native Kopf neutral weiß. Ein fehlendes oder leeres Rangtag erzeugt keinen zusätzlichen Präfix. Beispiel: `[Kopf] [MOD] Lukas › Hallo zusammen!` (MOD ist eine beispielhafte Rangbezeichnung). Es wird genau das vorhandene Rangtag dargestellt; keine zusätzliche Kette aus Rang, Level, Titel und Cosmetics. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
 
-Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde und erhält das Level Fehler. Das Level bestimmt die Statusfarbe des Kontextlabels; es ersetzt das Kontextlabel nicht. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels oder Formatierung erzeugen.
+Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde und erhält das Level Fehler. Das Level bestimmt die Statusfarbe des Kontextlabels; es ersetzt das Kontextlabel nicht. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels erzeugen. Berechtigte Textformatierung bleibt auf den Nachrichteninhalt begrenzt.
 
 ## 5. Sprache und Beispiele
 
@@ -109,7 +109,7 @@ Startset: :heart:, :smile:, :laugh:, :thumbsup:, :gg:, :fire:, :creeper: und :wr
 - /emoji ist der vorgeschlagene Einstieg zur Übersicht; Existenz, Suchfunktion und Vervollständigung sind noch umzusetzen.
 - Richtwert: höchstens fünf grafisch ersetzte Emojis pro Nachricht. Weitere Kurzformen bleiben Text. Bestehende Längen- und Spamregeln gelten weiterhin.
 - Die serverseitige Emoji-Auflösung darf die Längenprüfung nicht aushebeln. Relevante Rohtexte, normalisierte Bedeutung und tatsächlich zugestellte Darstellung bleiben für die vorhandene Moderations-/Reporting-Pipeline nachvollziehbar.
-- Freier Spielertext wird nicht als MiniMessage oder ausführbarer Richtext geparst. Nur kontrollierte Emoji-Tokens und explizit freigegebene Komponenten werden eingesetzt.
+- Freier Spielertext wird ohne Rechte wörtlich angezeigt. Mit expliziter Senderberechtigung wird ausschließlich die Farb-/Textstil-Allowlist aus Abschnitt 14 ausgewertet; ausführbare Richtext-Tags und Fontwechsel bleiben Text. Emoji-Tokens benötigen ihre jeweilige Freigabe.
 
 ## 7. Java, Bedrock und reduzierte Darstellung
 
@@ -208,7 +208,7 @@ Der Renderer besitzt Farben und grafische Komponenten. Die Nachrichtenschlüssel
 - `render`: unpräfixierte Komponenten für Menüs, Titel, Actionbars und Verbindungsdialoge.
 - `sendUnprefixed`: übersetzbare Unterhaltungsvorlagen; keine Systemmeldungen.
 
-Spielereingaben und externe Texte werden als uninterpretierte Strings eingesetzt. Nur explizite Komponentenplatzhalter erhalten Formatierung oder Aktionen. Bestehende dynamische Serverdiagnosen, Transportfelder und Konsolenausgaben werden nicht durch Übersetzungen verändert.
+In System- und Übersetzungsvorlagen werden Spielereingaben und externe Texte als uninterpretierte Strings eingesetzt. Die separat geprüfte Formatierung des eigentlichen Chat-Nachrichteninhalts folgt Abschnitt 14. Nur explizite Komponentenplatzhalter erhalten Formatierung oder Aktionen. Bestehende dynamische Serverdiagnosen, Transportfelder und Konsolenausgaben werden nicht durch Übersetzungen verändert.
 
 ### Integrations- und Freigabegrenzen
 
