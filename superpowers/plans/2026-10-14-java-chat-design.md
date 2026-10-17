@@ -210,7 +210,7 @@ Der Benutzer hat die Trennung ausdrücklich zur Umsetzung freigegeben. `SystemCa
 
 Verbindliches Systemlayout: `[Logo] · Kategorie | Nachricht`, ohne bestätigtes Chatpack `[Grounds] Kategorie | Nachricht`. Benannte Spiel- und Plugin-Kontexte verwenden dieselbe zentrale Vorlage; Kategorie und Status bleiben getrennt.
 
-Die aktualisierte Organisation umfasst 107 Repositories; 47 relevante Hauptstände wurden geprüft, einschließlich fünf Spielmodi und zusätzlicher Bibliotheken/Beispiele. Die zentrale Korrektur ist als i18n 0.4.3 veröffentlicht. Die Bibliothek und 18 Verbraucher bestehen zusammen 1694 Tests; sechs bestehende Scene-Editor-Tests bleiben übersprungen. Die [Integrationsseite](/design/minecraft-chat-integration) enthält die einzelnen PRs und Testzahlen.
+Die aktualisierte Organisation umfasst 107 Repositories; 47 relevante Hauptstände wurden geprüft, einschließlich fünf Spielmodi und zusätzlicher Bibliotheken/Beispiele. Die zentrale Korrektur ist als i18n 0.4.3 veröffentlicht. Die Bibliothek und 18 Verbraucher bestehen zusammen 1688 Tests; zwölf bestehende Tests bleiben wegen fehlender Live-Voraussetzungen oder bestehender Scene-Editor-Skips übersprungen. Die [Integrationsseite](/design/minecraft-chat-integration) enthält die einzelnen PRs und Testzahlen.
 
 Der Chat-Permissions-PR ist mit den neueren Änderungen an Palette und instanzbezogener Zustellung abgeglichen; 389 Tests und die erneute unabhängige Sicherheitsprüfung sind erfolgreich. Social behält semantischen Transport, Empfängersprache und verifizierte Grafikbereitschaft; die Party-Leader-Markierung ist in vier Sprachen abgesichert.
 

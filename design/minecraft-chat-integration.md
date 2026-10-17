@@ -230,8 +230,8 @@ Die folgenden Änderungen verwenden das tatsächlich veröffentlichte `library-i
 | plugin-grounds-runtime | [PR 8](https://github.com/groundsgg/plugin-grounds-runtime/pull/8) | 6 | 0 | 0 |
 | plugin-resourcepacks | [PR 33](https://github.com/groundsgg/plugin-resourcepacks/pull/33) | 114 | 0 | 0 |
 | game-getdown | [PR 9](https://github.com/groundsgg/game-getdown/pull/9) | 38 | 0 | 0 |
-| game-keystone | [PR 9](https://github.com/groundsgg/game-keystone/pull/9) | 59 | 0 | 0 |
-| game-bedwars | [PR 52](https://github.com/groundsgg/game-bedwars/pull/52) | 61 | 0 | 0 |
+| game-keystone | [PR 9](https://github.com/groundsgg/game-keystone/pull/9) | 59 | 0 | 5 |
+| game-bedwars | [PR 52](https://github.com/groundsgg/game-bedwars/pull/52) | 61 | 0 | 1 |
 | game-survivalgames | [PR 13](https://github.com/groundsgg/game-survivalgames/pull/13) | 35 | 0 | 0 |
 | duel | [PR 38](https://github.com/groundsgg/duel/pull/38) | 34 | 0 | 0 |
 | plugin-social | [PR 23](https://github.com/groundsgg/plugin-social/pull/23) | 29 | 0 | 0 |
@@ -240,6 +240,6 @@ Die folgenden Änderungen verwenden das tatsächlich veröffentlichte `library-i
 | plugin-player | [PR 49](https://github.com/groundsgg/plugin-player/pull/49) | 60 | 0 | 0 |
 | plugin-notifications | [PR 18](https://github.com/groundsgg/plugin-notifications/pull/18) | 46 | 0 | 0 |
 
-Die Bibliothek und diese 18 Verbraucher erfassen zusammen 1700 Testfälle: 1694 erfolgreich, sechs bestehende Scene-Editor-Skips und keine Fehler. Die unabhängige Prüfung der Bibliothek und Adapter meldet nach Korrektur der Party-Leader-Markierung keine wesentlichen offenen Befunde. Diese Markierung ist zusätzlich in allen vier Social-Sprachen für Leader und normale Mitglieder geprüft. Die sechs bestehenden Scene-Editor-Skips wurden nicht als erfolgreiche Tests gezählt.
+Die Bibliothek und diese 18 Verbraucher erfassen zusammen 1700 Testfälle: 1688 erfolgreich, zwölf Skips und keine Fehler. Die unabhängige Prüfung der Bibliothek und Adapter meldet nach Korrektur der Party-Leader-Markierung keine wesentlichen offenen Befunde. Diese Markierung ist zusätzlich in allen vier Social-Sprachen für Leader und normale Mitglieder geprüft. Die zwölf Skips bestehen aus sechs bestehenden Scene-Editor-Skips, fünf Keystone-Livetests ohne lokale Maps und einem nicht aktivierten BedWars-CDN-Livetest (`MAPS_LIVE_TEST`). Sie werden nicht als erfolgreiche Tests gezählt. Alle neu hinzugefügten Chat-Tests wurden ausgeführt.
 
 Die bereits offenen Migrationen für Agones, Player und Notifications verwenden ebenfalls i18n 0.4.3. Player erhält dabei die neueren Jackson-/Bootstrap-Änderungen und die vom Capability-Renderer benötigte Proxy-API 2.6.0. Pflichtreviews werden nicht umgangen; der frühere private Paket-Zugriffsfehler von Notifications ist nach der Aktualisierung in CI erneut zu prüfen. Verbraucher-Releases, ausführbare Host-/Spiel-Images sowie Pack-/Bedrock-Freigabe bleiben getrennte Schritte.
