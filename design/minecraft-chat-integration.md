@@ -237,3 +237,12 @@ Die folgenden Änderungen verwenden das tatsächlich veröffentlichte `library-i
 Die Bibliothek und diese 18 Verbraucher erfassen zusammen 1700 Testfälle: 1688 erfolgreich, zwölf Skips und keine Fehler. Die unabhängige Prüfung der Bibliothek und Adapter meldet nach Korrektur der Party-Leader-Markierung keine wesentlichen offenen Befunde. Diese Markierung ist zusätzlich in allen vier Social-Sprachen für Leader und normale Mitglieder geprüft. Die zwölf Skips bestehen aus sechs bestehenden Scene-Editor-Skips, fünf Keystone-Livetests ohne lokale Maps und einem nicht aktivierten BedWars-CDN-Livetest (`MAPS_LIVE_TEST`). Sie werden nicht als erfolgreiche Tests gezählt. Alle neu hinzugefügten Chat-Tests wurden ausgeführt.
 
 Die bereits offenen Migrationen für Agones, Player und Notifications verwenden ebenfalls i18n 0.4.3. Player erhält dabei die neueren Jackson-/Bootstrap-Änderungen und die vom Capability-Renderer benötigte Proxy-API 2.6.0. Pflichtreviews werden nicht umgangen; der frühere private Paket-Zugriffsfehler von Notifications ist nach der Aktualisierung in CI erneut zu prüfen. Verbraucher-Releases, ausführbare Host-/Spiel-Images sowie Pack-/Bedrock-Freigabe bleiben getrennte Schritte.
+
+
+## Tablisten-Footer und erste Rangdarstellung
+
+Der Footer zeigt eine übersetzte Statuszeile, beispielsweise `Lobby 2 • 42 Spieler online • 17 ms`. Der lesbare Servername verwendet eine Nummer unter den aktuell registrierten Servern derselben Art. Die Spielerzahl stammt aus dem frischen netzwerkweiten Broadcast; ohne frischen Wert erscheint `—`. Technische Backend- und Proxy-IDs sind über `/proxydebug` mit `grounds.proxy.debug` erreichbar, die im Plugin-Permission-Katalog deklariert ist.
+
+Das Minestom-Permissions-Modul formatiert bereits `ADD_PLAYER` mit den vor dem Login geladenen Rollenwerten. Es ergänzt die Displayname-Aktion, bewahrt Profil, Skin-Eigenschaften, Sichtbarkeit und Spielzustand und rendert Java-/Bedrock-Badges passend zum Empfänger. Der Proxy bewahrt dieses Badge während einer begrenzten ersten Abfrage fremder Anzeigeränge. Ein fehlender lokaler Rang oder dauerhaft fehlende Remote-Daten dürfen keinen veralteten Admin-Tag erhalten.
+
+Footer- und Proxy-Chat-Änderungen benötigen nur das jeweilige Proxy-Plugin und dessen Aktivierung. Die lokalen Minestom-Module sind aktuell fest in den Backend-JARs enthalten; Änderungen daran benötigen neue Backend-Images. Bedrock-Ranglabel und -farben sind im Pack gebacken: Nach einer Änderung werden Pack und Glyphenkatalog aus den zentralen Rollendaten gemeinsam aktualisiert.
