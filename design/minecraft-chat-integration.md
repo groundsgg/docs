@@ -19,60 +19,19 @@ Alle Plugin-Keys und direkte `SystemMessages.format`-Aufrufe werden mit diesen z
 
 ## Repository-Abgleich
 
-GitHub-Abgleich vom 14. Oktober 2026: 104 sichtbare Repositories, davon 60 unterschiedliche lokale Checkouts. Alle `plugin-*`-Repositories sind lokal vorhanden. Ergänzt wurden fehlende Plugin-Checkouts für Coins, Match, Analytics und Platform Router. Nicht jeder lokale Hauptcheckout war aktuell; die Umstellung arbeitet deshalb in isolierten Worktrees von frisch abgeglichenem `origin/main`.
+GitHub-Abgleich vom 17. Oktober 2026: 107 sichtbare Repositories. Die Hauptstände von 44 für Minecraft-Ausgaben relevanten Repositories wurden frisch geladen und geprüft, einschließlich neuer Spielmodi, Bibliotheken und Beispiele. Die dafür fehlenden Checkouts sind jetzt lokal vorhanden. Bestehende Änderungen in den Hauptcheckouts bleiben erhalten; Anpassungen erfolgen in isolierten Worktrees auf den geprüften aktuellen Commits.
 
-44 weitere Repositories sind lokal nicht vorhanden. Eine vollständige Kopie sämtlicher Services, Beispiele, Games und Infrastruktur ist für diese Plugin-Migration nicht erforderlich.
+Zusätzlich umfasst der Audit GetDown, Keystone, BedWars, SurvivalGames und Duel sowie die Minigame-API, Recorder, Anti-Cheat und Demo-Repositories. Die beiden leeren Abstandzeilen von SurvivalGames sind bewusst keine Systemmeldungen.
 
-<Accordion title="Fehlende lokale Repository-Checkouts">
+## Gemeinsame Kategorie-Darstellung
 
-```text
-1vs1-demo
-claude-rp-test
-cloudflare-prometheus-exporter
-disgit-hook
-duel
-external-dns-bunny-webhook
-game-bedwars
-grnds-link
-grounds-anticheat
-grounds-clickhouse-writer
-grounds-infra-lib
-grounds-instatus-sync
-grounds-landing
-grounds-pulumi-archive
-grounds-recorder
-grpc-client
-grpc-server
-headlamp-upcloud-clusters
-keycloak-web
-library-data-access
-library-jvm-modules
-library-minigame-api
-mc-stress
-menu-demo
-minestom
-multi-plugin-sample
-nats-consumer
-nats-producer
-nats-recorder
-platform-vcluster-template
-prism
-pvp-demo
-sample-leaderboard-plugin
-scoop-bucket
-service-coins
-service-leaderboard
-service-match
-service-proxy-registry
-service-social
-valkey-consumer
-valkey-publisher
-valkey-viewer
-valkey-writer
-website
-```
+Verbindlich bleibt `[Logo] · Kategorie | Nachricht`; ohne bestätigtes Chatpack erscheint `[Grounds] Kategorie | Nachricht`. Das gilt auch für benannte Kontexte wie `GetDown`, `Chat`, `Lobby` und `Settings`. Eine Kategorie allein mit `›` ist kein alternatives Systemdesign. Spieler-, Privat- und Staffnachrichten behalten ihren eigenen Gesprächsaufbau.
 
-</Accordion>
+[Der gemeinsame Kategorie-Renderer](https://github.com/groundsgg/library-i18n/pull/18) ist als `library-i18n:0.4.3` [erfolgreich veröffentlicht](https://github.com/groundsgg/library-i18n/actions/runs/39027248865). `Prefix.category` verwendet damit dieselbe zentrale Systemvorlage. Kontext, Schweregrad und vorhandene Inhaltsstile bleiben getrennt; bekannte Kategorien werden lokalisiert, eigene Spielnamen bleiben erhalten. Die Prüfung umfasst 49 erfolgreiche Bibliothekstests und einen unabhängigen Code-Review ohne wesentliche Befunde.
+
+Empfängerabhängige Ausgabe bindet `Translations.forBundleWithSystemRenderer` ein. Minestom liest ausschließlich den bestätigten Spieler-Tag `grounds:chat-font-ready`; der Proxy fragt die aktuelle `PlayerChatAppearanceQuery` ab. Ein Locale allein genügt nicht zur Logo-Freigabe. Deshalb bleiben Social-Nachrichten beim Transport semantische Komponenten und werden erst bei lokaler oder entfernter Zustellung für den tatsächlichen Leser gerendert. `render` und `sendUnprefixed` erhalten keinen Systempräfix.
+
+Die abhängigen Plugin- und Spielupdates werden eigenständig gegen das veröffentlichte Paket gebaut. Die Veröffentlichung der Bibliothek allein belegt noch keine abgeschlossene Ausrollung der Verbraucher oder aktivierte Grafiken auf einem Liveserver.
 
 ## Auditumfang
 
@@ -255,3 +214,29 @@ Geprüft mit vollständigem Build und Formatierung: 361 Tests ohne Fehler oder �
 Diese elf neuen Einträge stehen mit Beschreibungen im gemeinsamen `common/src/main/resources/META-INF/grounds/permissions.json`, damit der Permission-Katalog und seine Autovervollständigung sie anbieten. Der Katalog enthält außerdem weiterhin `grounds.chat.staff`. Er ist in common sowie den gebündelten Velocity-/Paper-JARs vorhanden; das schlanke Minestom-Modul erhält ihn über seine common-Abhängigkeit. Vorhandene Rollen werden dadurch nicht automatisch berechtigt. `/emoji` listet nur erlaubte Aliasse auf.
 
 Prüfnachweis: vollständiger Build und Formatierung erfolgreich, 373 Tests ohne Fehler oder übersprungene Tests. Geprüft sind erlaubte und verweigerte Tags, einzelne Emojis, Limit über formatierte Abschnitte, alle Spielerkanäle, unveränderte Moderationsdaten und die Katalogeinträge. Die unabhängige Korrektheits- und Sicherheitsprüfung meldete keine wesentlichen Befunde. Die lokale Vorschau zeigt mit `/chatpreview format` feste Testprofile ohne Änderung realer Berechtigungen; sie ersetzt keinen Test der Rollenvergabe im Permission-Dienst.
+
+## Geprüfte Verbraucher am 17. Oktober 2026
+
+Die folgenden Änderungen verwenden das tatsächlich veröffentlichte `library-i18n:0.4.3`. Jeder Build lief eigenständig einschließlich Formatierungsprüfung. Die Tabelle belegt Quellcode und lokale Tests; sie ist keine Bestätigung einer Live-Ausrollung.
+
+| Repository | Änderung | Tests | Fehler | Bestehende Skips |
+| --- | --- | ---: | ---: | ---: |
+| plugin-lobby | [PR 97](https://github.com/groundsgg/plugin-lobby/pull/97) | 92 | 0 | 0 |
+| plugin-proxy | [PR 81](https://github.com/groundsgg/plugin-proxy/pull/81) | 138 | 0 | 0 |
+| plugin-permissions | [PR 40](https://github.com/groundsgg/plugin-permissions/pull/40) | 197 | 0 | 0 |
+| plugin-match | [PR 31](https://github.com/groundsgg/plugin-match/pull/31) | 58 | 0 | 0 |
+| plugin-coins | [PR 7](https://github.com/groundsgg/plugin-coins/pull/7) | 13 | 0 | 0 |
+| plugin-scene-editor | [PR 32](https://github.com/groundsgg/plugin-scene-editor/pull/32) | 177 | 0 | 6 |
+| plugin-grounds-runtime | [PR 8](https://github.com/groundsgg/plugin-grounds-runtime/pull/8) | 6 | 0 | 0 |
+| plugin-resourcepacks | [PR 33](https://github.com/groundsgg/plugin-resourcepacks/pull/33) | 114 | 0 | 0 |
+| game-getdown | [PR 9](https://github.com/groundsgg/game-getdown/pull/9) | 38 | 0 | 0 |
+| game-keystone | [PR 9](https://github.com/groundsgg/game-keystone/pull/9) | 59 | 0 | 0 |
+| game-bedwars | [PR 52](https://github.com/groundsgg/game-bedwars/pull/52) | 61 | 0 | 0 |
+| game-survivalgames | [PR 13](https://github.com/groundsgg/game-survivalgames/pull/13) | 35 | 0 | 0 |
+| duel | [PR 38](https://github.com/groundsgg/duel/pull/38) | 34 | 0 | 0 |
+| plugin-social | [PR 23](https://github.com/groundsgg/plugin-social/pull/23) | 29 | 0 | 0 |
+| plugin-chat | [PR 55](https://github.com/groundsgg/plugin-chat/pull/55) | 389 | 0 | 0 |
+
+Die Bibliothek und diese 15 Verbraucher erfassen zusammen 1489 Testfälle: 1483 erfolgreich, sechs bestehende Scene-Editor-Skips und keine Fehler. Die unabhängige Prüfung der Bibliothek und Adapter meldet nach Korrektur der Party-Leader-Markierung keine wesentlichen offenen Befunde. Diese Markierung ist zusätzlich in allen vier Social-Sprachen für Leader und normale Mitglieder geprüft. Die sechs bestehenden Scene-Editor-Skips wurden nicht als erfolgreiche Tests gezählt.
+
+Bereits zuvor offene Migrationen für Agones, Player und Notifications bleiben gesondert nachzuverfolgen. Pflichtreviews in GitHub werden nicht umgangen; ebenso bleiben das private Paket-Zugriffsgate von Notifications und die getrennte Pack-/Bedrock-Freigabe bestehen.

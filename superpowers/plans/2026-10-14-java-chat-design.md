@@ -204,3 +204,14 @@ Die ersten Tests verwendeten lokale Composite-Builds für die geänderte i18n-Bi
 ## Freigegebene Präzisierung: Kontext und Level
 
 Der Benutzer hat die Trennung ausdrücklich zur Umsetzung freigegeben. `SystemCategory` enthält nur fachliche Kontexte; `SystemLevel` enthält die Statuswerte. Gemeinsame Renderer reichen beide Felder unabhängig weiter, Plugin-Keys behalten ihren fachlichen Kontext auch bei Fehlern. Standards sind `GENERAL` und `INFO`; Labels und optionale Platzierung beider Felder bleiben in i18n. Die Änderungen gehen in die bestehenden Entwurfs-PRs. Neue Tests prüfen alle Kontext-/Level-Kombinationen, Default-Keys, Lokalisierung, Richtext-Verträge sowie fachliche Consumer-Zuordnungen.
+
+
+## Fortsetzung und Repository-Abgleich am 17. Oktober 2026
+
+Verbindliches Systemlayout: `[Logo] · Kategorie | Nachricht`, ohne bestätigtes Chatpack `[Grounds] Kategorie | Nachricht`. Benannte Spiel- und Plugin-Kontexte verwenden dieselbe zentrale Vorlage; Kategorie und Status bleiben getrennt.
+
+Die aktualisierte Organisation umfasst 107 Repositories; 44 relevante Hauptstände wurden geprüft, einschließlich fünf Spielmodi und zusätzlicher Bibliotheken/Beispiele. Die zentrale Korrektur ist als i18n 0.4.3 veröffentlicht. Die Bibliothek und 15 Verbraucher bestehen zusammen 1483 Tests; sechs bestehende Scene-Editor-Tests bleiben übersprungen. Die [Integrationsseite](/design/minecraft-chat-integration) enthält die einzelnen PRs und Testzahlen.
+
+Der Chat-Permissions-PR ist mit den neueren Änderungen an Palette und instanzbezogener Zustellung abgeglichen; 389 Tests und die erneute unabhängige Sicherheitsprüfung sind erfolgreich. Social behält semantischen Transport, Empfängersprache und verifizierte Grafikbereitschaft; die Party-Leader-Markierung ist in vier Sprachen abgesichert.
+
+GitHub-Pflichtreviews, das bestehende Notifications-Paketzugriffsgate sowie Verbraucher-Veröffentlichungen und die Live-/Bedrock-Abnahme bleiben getrennte Schritte. Die Produktionspack-Allowlist wird durch diesen Audit nicht verändert.

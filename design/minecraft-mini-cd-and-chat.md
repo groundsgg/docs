@@ -5,9 +5,9 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.10 · Stand: 15. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.11 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
-Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Die visuelle Clientabnahme steht aus.
+Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt, unverfärbte Köpfe und Rang-Badges wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
 
 ## 1. Grundlage und Gestaltungsprinzip
 
@@ -229,3 +229,10 @@ Remote-Social-Meldungen bleiben im Transport semantische Übersetzungskeys mit A
 Farben und Textstile gelten ausschließlich im Nachrichtentext. `grounds.chat.format.color` erlaubt benannte und Hexfarben über MiniMessage sowie `&0`–`&f` und `&#RRGGBB`; `grounds.chat.format.decoration` erlaubt Fett, Kursiv und Unterstrichen (`<bold>`, `<italic>`, `<underlined>` beziehungsweise `&l`, `&o`, `&n`). `&r` setzt freigegebene Formatierung zurück. Klickaktionen, Hover, Fontwechsel und verschleierter Text sind nicht freigegeben. Ohne jeweilige Berechtigung bleibt die Eingabe wörtlicher Text.
 
 Eigene grafische Aliasse benötigen `grounds.chat.emoji.<name>`; `grounds.chat.emoji.*` kann alle freigeben. Konkrete Rechte werden beim Absender abgefragt, damit gezielte Sperren trotz Wildcard gelten. Maximal fünf genehmigte Grafiken pro Nachricht, auch über mehrere formatierte Abschnitte. Der Empfänger benötigt zusätzlich das bestätigt geladene Pack; andernfalls bleiben Aliasse lesbarer Text. Normale Unicode-Emojis bleiben Text. Diese Regeln gelten für öffentlichen, privaten und Staffchat sowie lokale Paper-/Minestom-Ausgabe. Rangbadge, Spielername und Kopf sind davon unabhängig.
+
+
+## 15. Gleiche Systemdarstellung in neuen Repositories
+
+Systemmeldungen verwenden auch in neuen Spielmodi und Plugins `[Logo] · Kategorie | Nachricht`. Ohne bestätigtes Chatpack gilt `[Grounds] Kategorie | Nachricht`. Eigene Kontextnamen wie `GetDown` oder `Settings` ändern weder die zentrale Vorlage noch die Berechtigungen für Formatierung. Kontext und Schweregrad bleiben getrennte Angaben.
+
+Layouts gehören in die zentrale i18n-Vorlage, der fachliche Wortlaut in das jeweilige Plugin-Bundle. Der Empfänger bestimmt Sprache und bestätigte Grafikfähigkeit bei jeder Zustellung. Ein Systemkontext allein darf kein Logo ohne geladenes Pack freischalten. `render` für Menüs, Titel und andere Oberflächen bleibt unpräfigiert.
