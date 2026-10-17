@@ -130,27 +130,28 @@ Die freigegebene Kontext-/Level-Trennung ist in den verlinkten Feature-PRs umges
 
 ## Offene Integrationsgates
 
-- GitHub verlangt eine unabhängige Review für [Agones 87](https://github.com/groundsgg/plugin-agones/pull/87), [Player 49](https://github.com/groundsgg/plugin-player/pull/49) und [Docs 51](https://github.com/groundsgg/docs/pull/51).
-- [Social 23](https://github.com/groundsgg/plugin-social/pull/23) besteht regulären Build und Docker-Prüfung. Seine zusätzliche Vorschau scheitert vor dem Signieren an fehlendem `envsubst`. Die Korrektur in [.github 34](https://github.com/groundsgg/.github/pull/34) besteht Workflow-Vertrag und Buildx-Smokecheck und wartet auf die vorgeschriebene Review.
-- [Notifications 18](https://github.com/groundsgg/plugin-notifications/pull/18) besteht den eigenständigen lokalen Build einschließlich der drei Artefaktverträge. Die GitHub-CI kann den privaten Minestom-Fork noch nicht lesen. Die Maven-Quelle und die Weitergabe von `PACKAGES_TOKEN` sind ergänzt; der CI-Lesetoken benötigt Zugriff auf das private Minestom-Paket und muss diesem Repository zur Verfügung stehen. Build-Lesetoken und Veröffentlichungs-Token bleiben getrennt.
-- [Containers 287](https://github.com/groundsgg/containers/pull/287) ist nach ausdrücklicher Freigabe möglicher produktiver Image-Auswirkungen gemergt. [Image-Veröffentlichung](https://github.com/groundsgg/containers/actions/runs/38652505129) und CI sind erfolgreich. Feste Tags: `ghcr.io/groundsgg/velocity:sha-e291dc4` und `ghcr.io/groundsgg/paper:sha-e291dc4`. Die Agones-Integration wartet weiterhin auf deren Pflichtreview.
-- [Packprodukt 45](https://github.com/groundsgg/resourcepacks/pull/45) wartet auf die Sichtprüfung im Java-26.3-Client. Es wurde weder der Edge-/Stable-Kanal umgestellt noch die Font-Allowlist aktiviert.
+Die Quell-PRs [Agones 87](https://github.com/groundsgg/plugin-agones/pull/87), [Player 49](https://github.com/groundsgg/plugin-player/pull/49), [Docs 51](https://github.com/groundsgg/docs/pull/51) und [Workflow 34](https://github.com/groundsgg/.github/pull/34) sind nach der erforderlichen Review gemergt.
 
-Die [Lobby-Integration 146](https://github.com/groundsgg/minestom-lobby/pull/146) verwendet die veröffentlichten Versionen Chat 2.3.0, Lobby 2.10.0 und Permissions 1.1.0. Eigenständiger Build, Formatierung und alle 104 Host-Tests sind erfolgreich; das ausführbare Gesamt-JAR enthält alle fünf gewählten Provider. Die Abhängigkeiten lösen Minestom 2026.10.07-26.3-grounds, Runtime API 0.8.0, i18n 0.4.0 sowie Adventure und MiniMessage 5.2.0 auf. Der PR bleibt im Entwurf, bis Notifications das CI-Zugriffsgate bestanden hat, veröffentlicht und mit seiner tatsächlichen neuen Version eingebunden ist.
+- [Social 23](https://github.com/groundsgg/plugin-social/pull/23) besteht regulären Build und Docker-Prüfung. Der gemergte Workflow-Fix behebt das fehlende `envsubst` in der zusätzlichen Vorschau. Ein vollständiger Workflow-Neulauf wurde gestartet.
+- [Notifications 18](https://github.com/groundsgg/plugin-notifications/pull/18) kann den privaten Minestom-Fork in der aktuellen GitHub-CI lesen. Ein weiterer CI-Fehler entstand beim parallelen Durchsuchen generierter KSP-Verzeichnisse durch Spotless. Explizite Formatierungsinputs für Quellen und Projekt-Buildskripte beheben den lokal reproduzierten Fehler; `clean build spotlessCheck --parallel` besteht mit 46 erfolgreichen Tests. Der aktualisierte Quellstand muss vor Integration CI und Veröffentlichung bestehen.
+- [Containers 287](https://github.com/groundsgg/containers/pull/287) ist gemergt. [Image-Veröffentlichung](https://github.com/groundsgg/containers/actions/runs/38652505129) und CI sind erfolgreich. Feste Tags: `ghcr.io/groundsgg/velocity:sha-e291dc4` und `ghcr.io/groundsgg/paper:sha-e291dc4`.
+- [Packprodukt 45](https://github.com/groundsgg/resourcepacks/pull/45) wartet auf die vollständige Sichtprüfung im Java-26.3-Client. Weder Edge-/Stable-Kanal noch die produktive Font-Allowlist wurden geändert.
+
+Die [Lobby-Integration 146](https://github.com/groundsgg/minestom-lobby/pull/146) wird gegen den aktuellen Hauptzweig und tatsächlich veröffentlichte Verbraucher aufgefrischt. Der geprüfte Basisstand verwendet Chat 2.5.0, Lobby 2.12.0 und Permissions 1.1.0; eigenständiger Build, Formatierung und alle 104 Host-Tests bestehen. Permissions 1.1.1 ist inzwischen veröffentlicht und für den nächsten Integrationsbuild vorgesehen. Der Entwurf bleibt bestehen, bis die ausstehenden Chat-/Lobby-/Notifications-/Agones-Veröffentlichungen mit ihren tatsächlichen Versionen eingebunden und geprüft sind.
 
 ## Veröffentlichte Versionen
 
 | Repository | Version | Veröffentlichung |
 | --- | --- | --- |
-| library-i18n | 0.4.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/library-i18n/actions/runs/38645852984) |
-| plugin-proxy | 2.6.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-proxy/actions/runs/38647306625) |
-| plugin-scene-editor | 0.6.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-scene-editor/actions/runs/38647063044) |
-| plugin-grounds-runtime | 0.2.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-grounds-runtime/actions/runs/38647486640) |
+| library-i18n | 0.4.3 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/library-i18n/actions/runs/39027248865) |
+| plugin-proxy | 2.6.1 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-proxy/actions/runs/39028709662) |
+| plugin-scene-editor | 0.6.1 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-scene-editor/actions/runs/39028721709) |
+| plugin-grounds-runtime | 0.2.1 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-grounds-runtime/actions/runs/39028736812) |
 | plugin-coins | 0.3.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-coins/actions/runs/38649875652) |
 | plugin-lobby | 2.10.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-lobby/actions/runs/38650290901) |
-| plugin-permissions | 1.1.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-permissions/actions/runs/38649507762) |
+| plugin-permissions | 1.1.1 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-permissions/actions/runs/39028712571) |
 | plugin-match | 0.11.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-match/actions/runs/38650302344) |
-| plugin-resourcepacks | 1.1.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-resourcepacks/actions/runs/38649667471) |
+| plugin-resourcepacks | 1.1.1 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-resourcepacks/actions/runs/39028714649) |
 | plugin-chat | 2.3.0 | [Erfolgreicher Release-Lauf](https://github.com/groundsgg/plugin-chat/actions/runs/38650751397) |
 
 ## Lokale Java-26.3-Sichtprüfung
@@ -183,7 +184,7 @@ Nach der bestätigten Clientprüfung für Logo, Punkt und Köpfe verwendet [i18n
 
 ## Rangtag und neutrale Spielernamen
 
-`ChatSender` verwendet das vorhandene Rangtag und dessen Rangfarbe unverändert. Die Rangfarbe wirkt ausschließlich auf das Tag beziehungsweise dessen grafische Fläche; die Badge-Beschriftung ist weiß. Der Spielername erhält explizit den normalen hellen Textton `#F2EBDD`, der native Kopf weiterhin Weiß. Die gemeinsame Komponente gilt für Kopf- und Textdarstellung. Es werden keine neuen Tags, Rangnamen oder zusätzlichen kosmetischen Präfixe erzeugt.
+`ChatSender` verwendet das vorhandene Rangtag und dessen Rangfarbe unverändert. Die Rangfarbe wirkt ausschließlich auf das Tag beziehungsweise dessen grafische Fläche; die Badge-Beschriftung ist weiß. Der Spielername folgt der zentralen `Palette.TEXT` (`#F3F0EA`), der native Kopf weiterhin Weiß. Die gemeinsame Komponente gilt für Kopf- und Textdarstellung. Es werden keine neuen Tags, Rangnamen oder zusätzlichen kosmetischen Präfixe erzeugt.
 
 ## Grafische Rang-Badges aus der Tabliste
 
@@ -242,4 +243,10 @@ Die folgenden Änderungen verwenden das tatsächlich veröffentlichte `library-i
 
 Die Bibliothek und diese 18 Verbraucher erfassen zusammen 1700 Testfälle: 1688 erfolgreich, zwölf Skips und keine Fehler. Die unabhängige Prüfung der Bibliothek und Adapter meldet nach Korrektur der Party-Leader-Markierung keine wesentlichen offenen Befunde. Diese Markierung ist zusätzlich in allen vier Social-Sprachen für Leader und normale Mitglieder geprüft. Die zwölf Skips bestehen aus sechs bestehenden Scene-Editor-Skips, fünf Keystone-Livetests ohne lokale Maps und einem nicht aktivierten BedWars-CDN-Livetest (`MAPS_LIVE_TEST`). Sie werden nicht als erfolgreiche Tests gezählt. Alle neu hinzugefügten Chat-Tests wurden ausgeführt.
 
-Die bereits offenen Migrationen für Agones, Player und Notifications verwenden ebenfalls i18n 0.4.3. Player erhält dabei die neueren Jackson-/Bootstrap-Änderungen und die vom Capability-Renderer benötigte Proxy-API 2.6.0. Pflichtreviews werden nicht umgangen; der frühere private Paket-Zugriffsfehler von Notifications ist nach der Aktualisierung in CI erneut zu prüfen. Verbraucher-Releases, ausführbare Host-/Spiel-Images sowie Pack-/Bedrock-Freigabe bleiben getrennte Schritte.
+Die bereits offenen Migrationen für Agones, Player und Notifications verwenden ebenfalls i18n 0.4.3. Player erhält dabei die neueren Jackson-/Bootstrap-Änderungen und die vom Capability-Renderer benötigte Proxy-API 2.6.0. Agones und Player sind nach Review gemergt. Der frühere private Paket-Zugriffsfehler von Notifications ist im aktuellen CI-Lauf behoben; der zusätzliche Spotless-/KSP-Fix wird oben beschrieben. Verbraucher-Releases, ausführbare Host-/Spiel-Images sowie Pack-/Bedrock-Freigabe bleiben getrennte Schritte.
+
+## Lokaler Vorschau-Stand vom 17. Oktober
+
+Das aufgefrischte Testpaket verwendet den gebauten aktuellen Host-Basisstand, die vollständigen Klassen und Vorlagen des veröffentlichten i18n 0.4.3 und die Produktions-Formatklassen aus Chat-PR 55. Der Selbsttest prüft zusätzlich sieben benannte Kontexte, die aktuellen `<line>`-Privat-/Teamvorlagen und die gemeinsame `Palette.TEXT`. Native Köpfe bleiben weiß. Protokoll 777 und der unveränderte Pack-SHA-1 sind lokal geprüft. `/chatpreview format` verwendet feste Testprofile und vergibt keine echten Berechtigungen.
+
+Die 13 Dateien unter `plugins-for-integration/` bleiben ausdrücklich ältere Referenzartefakte; sie werden nicht als aktuelle Releases der 18 geprüften Verbraucher ausgegeben. Eine vollständige neue Clientabnahme und Proxy-/Permissions-Serviceintegration sind durch diese lokale Vorschau nicht abgedeckt.

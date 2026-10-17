@@ -27,7 +27,7 @@ Die Hexwerte sind Zielwerte für Java und Grafikassets. Für Bedrock-Chat werden
 | --- | --- | --- | --- |
 | stone.deep | #181D20 | Optionale dunkle UI-Flächen | Nativer Client-Hintergrund |
 | stone.surface | #272E32 | Optionale abgesetzte Flächen | Nativer Client-Hintergrund |
-| text.primary | #F2EBDD | Nachrichten, Namen und wichtige Werte | Weiß |
+| text.primary | #F3F0EA | Nachrichten, Namen und wichtige Werte | Weiß |
 | text.secondary | #C1B9AA | Ergänzende Angaben | Grau |
 | gold.primary | #E7B84B | Systemabsender und Markenakzent | Gold |
 | copper.primary | #DDA16F | Ergänzender Werkstatt- und Materialakzent | Gold |
@@ -75,7 +75,7 @@ Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, 
 
 Native Skin-Köpfe erhalten eine explizit weiße Farbmodulation. Farben von Privatlabels, Namen, Rängen oder übergeordneten Komponenten dürfen die Hauttextur nicht einfärben.
 
-Vorhandene Rangtags verwenden dieselbe Bezeichnung und Rangfarbe wie die Tabliste. Mit geladenem Pack erscheint dasselbe grafische Badge wie in der Tabliste: farbige Fläche, weiße kompakte Beschriftung in `grounds:tab_labels`, bestehende Flächen aus `grounds:tab`. Ohne bestätigtes Pack bleibt das vorhandene Rangtag lesbarer Text in Rangfarbe. Der Spielername bleibt im normalen hellen Textton (#F2EBDD), der native Kopf neutral weiß. Ein fehlendes oder leeres Rangtag erzeugt keinen zusätzlichen Präfix. Beispiel: `[Kopf] [MOD] Lukas › Hallo zusammen!` (MOD ist eine beispielhafte Rangbezeichnung). Es wird genau das vorhandene Rangtag dargestellt; keine zusätzliche Kette aus Rang, Level, Titel und Cosmetics. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
+Vorhandene Rangtags verwenden dieselbe Bezeichnung und Rangfarbe wie die Tabliste. Mit geladenem Pack erscheint dasselbe grafische Badge wie in der Tabliste: farbige Fläche, weiße kompakte Beschriftung in `grounds:tab_labels`, bestehende Flächen aus `grounds:tab`. Ohne bestätigtes Pack bleibt das vorhandene Rangtag lesbarer Text in Rangfarbe. Der Spielername folgt der gemeinsamen `Palette.TEXT` (#F3F0EA), der native Kopf neutral weiß. Ein fehlendes oder leeres Rangtag erzeugt keinen zusätzlichen Präfix. Beispiel: `[Kopf] [MOD] Lukas › Hallo zusammen!` (MOD ist eine beispielhafte Rangbezeichnung). Es wird genau das vorhandene Rangtag dargestellt; keine zusätzliche Kette aus Rang, Level, Titel und Cosmetics. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
 
 Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde und erhält das Level Fehler. Das Level bestimmt die Statusfarbe des Kontextlabels; es ersetzt das Kontextlabel nicht. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels erzeugen. Berechtigte Textformatierung bleibt auf den Nachrichteninhalt begrenzt.
 
