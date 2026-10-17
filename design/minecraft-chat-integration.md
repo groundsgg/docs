@@ -241,7 +241,9 @@ Die bereits offenen Migrationen für Agones, Player und Notifications verwenden 
 
 ## Tablisten-Footer und erste Rangdarstellung
 
-Der Footer zeigt eine übersetzte Statuszeile, beispielsweise `Lobby 2 • 42 Spieler online • 17 ms`. Der lesbare Servername verwendet eine Nummer unter den aktuell registrierten Servern derselben Art. Die Spielerzahl stammt aus dem frischen netzwerkweiten Broadcast; ohne frischen Wert erscheint `—`. Technische Backend- und Proxy-IDs sind über `/proxydebug` mit `grounds.proxy.debug` erreichbar, die im Plugin-Permission-Katalog deklariert ist.
+Der Footer zeigt genau zwei sichtbare Zeilen: den übersetzten Servertyp ohne Nummer, beispielsweise `Lobby`, und darunter `grounds.gg`. Spielerzahl und Ping entfallen. Technische Backend- und Proxy-IDs sind über `/proxydebug` mit `grounds.proxy.debug` erreichbar; die Berechtigung bleibt im Plugin-Permission-Katalog deklariert.
+
+Die Ranggewichtung verwendet die vorhandene zentrale Priorität: `weight = -sortOrder`. Das Portal erlaubt numerische Bearbeitung und Drag-and-drop mit Tastaturalternative. Java-Einträge erhalten eine explizite Reihenfolge nach höchstem Ranggewicht, anschließend sichtbarem Namen A–Z ohne Groß-/Kleinschreibung. Auch Rollen fremder Proxy-Spieler stammen aus der netzwerkweiten Anzeigeabfrage. Geyser übersetzt die Java-Reihenfolge derzeit nicht für die native Bedrock-Liste; die gleiche Bedrock-Sortierung ist noch nicht gesichert.
 
 Das Minestom-Permissions-Modul formatiert bereits `ADD_PLAYER` mit den vor dem Login geladenen Rollenwerten. Es ergänzt die Displayname-Aktion, bewahrt Profil, Skin-Eigenschaften, Sichtbarkeit und Spielzustand und rendert Java-/Bedrock-Badges passend zum Empfänger. Der Proxy bewahrt dieses Badge während einer begrenzten ersten Abfrage fremder Anzeigeränge. Ein fehlender lokaler Rang oder dauerhaft fehlende Remote-Daten dürfen keinen veralteten Admin-Tag erhalten.
 
