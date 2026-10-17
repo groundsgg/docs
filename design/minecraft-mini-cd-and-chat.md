@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.13 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.14 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt und unverfärbte Köpfe wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
 
@@ -93,9 +93,21 @@ Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, 
 
 Native Skin-Köpfe erhalten eine explizit weiße Farbmodulation. Farben von Privatlabels, Namen, Rängen oder übergeordneten Komponenten dürfen die Hauttextur nicht einfärben.
 
-Spielernachrichten zeigen keinen Rollentag: weder Textpräfix noch grafisches Rangbadge, unabhängig vom geladenen Pack. Rangtags gehören in die Tabliste. Der Spielername verwendet die konfigurierte Rangfarbe; fehlt sie oder ist sie ungültig, gilt Warmweiß `#F3F0EA`. Der native Skin-Kopf bleibt neutral weiß. Beispiel: `[Kopf] Lukas › Hallo zusammen!`, wobei nur „Lukas“ die Rangfarbe trägt. Die Nachricht behält ihre eigenen freigegebenen Formatierungen. Das gilt für öffentlichen, privaten und Staffchat.
+Spielernachrichten zeigen keinen Rollentag: weder Textpräfix noch grafisches Rangbadge, unabhängig vom geladenen Pack. Rangtags gehören in die Tabliste und über den Spielerkopf, nicht in den Chat. Der Spielername verwendet die konfigurierte Rangfarbe; fehlt sie oder ist sie ungültig, gilt Warmweiß `#F3F0EA`. Der native Skin-Kopf bleibt neutral weiß. Beispiel: `[Kopf] Lukas › Hallo zusammen!`, wobei nur „Lukas“ die Rangfarbe trägt. Die Nachricht behält ihre eigenen freigegebenen Formatierungen. Das gilt für öffentlichen, privaten und Staffchat.
 
 Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde mit unverändert türkisfarbenem Präfix; der Nachrichtentext erhält die Fehlerfarbe Koralle. Das Level bestimmt ausschließlich die Grundfarbe des Nachrichtentextes. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels erzeugen. Berechtigte Textformatierung bleibt auf den Nachrichteninhalt begrenzt.
+
+### Rangfarben und Nametags über dem Kopf
+
+Nametags verwenden `Rang · Name`; bei Bedrock-Spielern steht das weiße Bedrock-Logo aus dem Pflichtpack vor dem Rang. Die höchste Rolle stammt aus denselben zentralen Rollendaten wie Chat und Tabliste. Der native Name über dem Kopf bleibt weiß, der Rang trägt seine konfigurierte Farbe und der Trenner Sand. Explizite Spielteams mit eigener Farbe oder Namenssichtbarkeit haben Vorrang.
+
+| Rolle | Farbe | Hexwert |
+| --- | --- | --- |
+| Administrator | Terrakotta | `#C9826B` |
+| Developer | Salbei | `#A3B18A` |
+| User | Sand | `#C1B9AA` |
+
+Die Rollenfarbe wird im Permissions-Service gespeichert und im Portal bearbeitet. Plugins konsumieren diesen Wert und pflegen keine eigene Rangpalette. Ein Umgebungssync übernimmt die Rollenfarben mit den übrigen Rollendaten. Das Resourcepack ist verpflichtend; Nametags verwenden keine alternative Darstellung für einen dauerhaften Betrieb ohne Pack.
 
 ## 5. Sprache und Beispiele
 

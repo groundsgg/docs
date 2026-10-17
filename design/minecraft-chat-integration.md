@@ -185,7 +185,7 @@ Nach der bestätigten Clientprüfung für Logo, Punkt und Köpfe verwendet [i18n
 
 `ChatSender` zeigt keinen Rangpräfix und kein Rangbadge. Der Name erhält die konfigurierte Rangfarbe, mit Warmweiß `#F3F0EA` als Fallback. Der native Skin-Kopf bleibt explizit Weiß. Öffentlicher, privater und Staffchat verwenden dieselbe Absenderdarstellung. Die Nachricht bleibt ein separates Component mit ihren freigegebenen Inhaltsformatierungen.
 
-Die bisherigen Kotlin/JVM-Einstiegspunkte und optionalen Nachrichtenfelder bleiben kompatibel. Mitgesendete Rangpräfixe oder Badge-Bezeichnungen erzeugen keine sichtbaren Tags mehr. Die Tabliste behält ihre Rangtags. Ihr Rang-Lookup berücksichtigt auch sichtbare Spieler, deren Verbindung an einem anderen Proxy liegt; die Anzeigedaten werden separat und asynchron gespeichert und erweitern keine lokalen Berechtigungen.
+Die bisherigen Kotlin/JVM-Einstiegspunkte und optionalen Nachrichtenfelder bleiben kompatibel. Mitgesendete Rangpräfixe oder Badge-Bezeichnungen erzeugen keine sichtbaren Tags mehr. Die Tabliste behält ihre Rangtags. Native Nametags über dem Spielerkopf verwenden `Rang · Name`, bei Bedrock-Spielern zusätzlich das weiße Bedrock-Logo aus dem Pflichtpack. Die Rangpalette wird zentral in den Rollen gepflegt: Administrator Terrakotta `#C9826B`, Developer Salbei `#A3B18A`, User Sand `#C1B9AA`. Ihr Rang-Lookup berücksichtigt auch sichtbare Spieler, deren Verbindung an einem anderen Proxy liegt; die Anzeigedaten werden separat und asynchron gespeichert und erweitern keine lokalen Berechtigungen.
 
 ## Permission-Katalog und Inhaltsformatierung
 
