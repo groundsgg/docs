@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.16 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.17 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt und unverfärbte Köpfe wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
 
@@ -111,6 +111,7 @@ Nametags verwenden dieselben grafischen Rangbadges wie die Tabliste: gleiche Ran
 | --- | --- | --- |
 | Administrator | Terrakotta | `#C9826B` |
 | Developer | Salbei | `#A3B18A` |
+| Moderator (`MOD`) | Moosgrün | `#8F9B72` |
 | User | Sand | `#C1B9AA` |
 
 Die Rollenfarbe wird im Permissions-Service gespeichert und im Portal bearbeitet. Plugins konsumieren diesen Wert und pflegen keine eigene Rangpalette. Ein Umgebungssync übernimmt die Rollenfarben mit den übrigen Rollendaten. Das Resourcepack ist verpflichtend; Nametags verwenden keine alternative Darstellung für einen dauerhaften Betrieb ohne Pack. Bedrock-Badges werden aus den zentral gespeicherten Rollenwerten als vollständige Grafiken erzeugt. Änderungen an Rangkürzel oder Farbe erfordern eine gemeinsam aktualisierte Packversion und einen passenden Glyphenkatalog.
