@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.11 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.12 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt, unverfärbte Köpfe und Rang-Badges wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
 
@@ -27,7 +27,7 @@ Die Hexwerte sind Zielwerte für Java und Grafikassets. Für Bedrock-Chat werden
 | --- | --- | --- | --- |
 | stone.deep | #181D20 | Optionale dunkle UI-Flächen | Nativer Client-Hintergrund |
 | stone.surface | #272E32 | Optionale abgesetzte Flächen | Nativer Client-Hintergrund |
-| text.primary | #F2EBDD | Nachrichten, Namen und wichtige Werte | Weiß |
+| text.primary | #F3F0EA | Nachrichten, Namen und wichtige Werte | Weiß |
 | text.secondary | #C1B9AA | Ergänzende Angaben | Grau |
 | gold.primary | #E7B84B | Systemabsender und Markenakzent | Gold |
 | copper.primary | #DDA16F | Ergänzender Werkstatt- und Materialakzent | Gold |
@@ -36,7 +36,25 @@ Die Hexwerte sind Zielwerte für Java und Grafikassets. Für Bedrock-Chat werden
 | status.warning | #F0C36A | Zeitkritische Hinweise und Warnung | Gelb plus „Warnung“ |
 | status.error | #F28B82 | Fehler und abgelehnte Aktionen | Rot plus „Fehler“ |
 
-Nachrichtentext bleibt standardmäßig text.primary. Statusfarben markieren Kennung und relevante Werte, nicht automatisch den gesamten Absatz. Gedämpfte Farbe ist kein Mittel, um wichtige Informationen zu verstecken. Teamfarben im Match bleiben für Teamzuordnung reserviert und werden nicht von Markenfarben überschrieben.
+Jeder Modul- beziehungsweise Kontextpräfix besitzt eine feste Farbe, unabhängig vom Nachrichtenlevel. Die Grundfarbe des Nachrichtentextes folgt dem Level: INFO warmweiß `#F3F0EA`, SUCCESS sanftgrün `#A4CE87`, WARNING bernstein `#F0C36A`, ERROR koralle `#F28B82`. Logo und Skin-Köpfe bleiben neutral weiß; Punkt und Trenner bleiben in text.secondary. Bewusste Hervorhebungen für Namen, Werte und Links sowie Teamfarben bleiben als explizite untergeordnete Komponenten erhalten. Gedämpfte Farbe ist kein Mittel, um wichtige Informationen zu verstecken.
+
+| Kontext / Modul | Feste Präfixfarbe | Hexwert |
+| --- | --- | --- |
+| GENERAL / Allgemein | Sand | #C1B9AA |
+| FRIENDS / Freunde | Türkis | #79C9BE |
+| PARTY | Lavendel | #B8A0DA |
+| MATCH | Blau | #8EB8E8 |
+| STORY | Grounds-Gold | #E7B84B |
+| GetDown | Kupfer | #DDA16F |
+| BedWars | Rosé | #DD9EA8 |
+| Duel | Hellviolett | #C4A1E3 |
+| Keystone | Cyan | #67D9EC |
+| SurvivalGames | Oliv | #BBC99B |
+| Lobby | Sandgold | #D8C7A0 |
+| Chat | Gedämpftes Cyan | #85C5CB |
+| Settings | Blaugrau | #B8C2D1 |
+
+Die Farbzuordnung erfolgt zentral über stabile, unübersetzte Kontextkennungen. Übersetzungen ändern die Bezeichnung, nicht die Farbe. Unbekannte Kontexte verwenden Sand; neue Kontexte werden in der zentralen Palette ergänzt. INFO erhält keinen zusätzlichen blauen Farbcode. Das Layout bleibt `[Logo] · Kategorie | Nachricht` beziehungsweise `[Grounds] Kategorie | Nachricht`.
 
 Kontrast wird am echten Client über hellen, dunklen und unruhigen Spielszenen beurteilt. Hexwerte allein garantieren keine Lesbarkeit bei frei eingestellter Chattransparenz.
 
@@ -77,7 +95,7 @@ Native Skin-Köpfe erhalten eine explizit weiße Farbmodulation. Farben von Priv
 
 Vorhandene Rangtags verwenden dieselbe Bezeichnung und Rangfarbe wie die Tabliste. Mit geladenem Pack erscheint dasselbe grafische Badge wie in der Tabliste: farbige Fläche, weiße kompakte Beschriftung in `grounds:tab_labels`, bestehende Flächen aus `grounds:tab`. Ohne bestätigtes Pack bleibt das vorhandene Rangtag lesbarer Text in Rangfarbe. Der Spielername bleibt im normalen hellen Textton (#F2EBDD), der native Kopf neutral weiß. Ein fehlendes oder leeres Rangtag erzeugt keinen zusätzlichen Präfix. Beispiel: `[Kopf] [MOD] Lukas › Hallo zusammen!` (MOD ist eine beispielhafte Rangbezeichnung). Es wird genau das vorhandene Rangtag dargestellt; keine zusätzliche Kette aus Rang, Level, Titel und Cosmetics. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
 
-Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde und erhält das Level Fehler. Das Level bestimmt die Statusfarbe des Kontextlabels; es ersetzt das Kontextlabel nicht. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels erzeugen. Berechtigte Textformatierung bleibt auf den Nachrichteninhalt begrenzt.
+Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde mit unverändert türkisfarbenem Präfix; der Nachrichtentext erhält die Fehlerfarbe Koralle. Das Level bestimmt ausschließlich die Grundfarbe des Nachrichtentextes. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels erzeugen. Berechtigte Textformatierung bleibt auf den Nachrichteninhalt begrenzt.
 
 ## 5. Sprache und Beispiele
 
@@ -201,7 +219,7 @@ Jedes Plugin besitzt seine fachlichen Nachrichtenschlüssel und `messages*.prope
 
 Die gemeinsame Bibliothek besitzt die Layoutvorlagen einschließlich Platzhalterreihenfolge, Trennzeichen, Markenbezeichnung und Kategorien. Dazu gehören `layout.text-prefix`, `layout.graphical-prefix` und `layout.player` im Bundle `gg.grounds.i18n.system`. Sprachvarianten dürfen die Reihenfolge verändern. Privat- und Staffkanäle besitzen ebenfalls übersetzbare Vorlagen mit Komponentenplatzhaltern für Absender, Empfänger und Nachricht. Keine sprachlichen Präfixe werden im Plugin-Code zusammengesetzt.
 
-Der Renderer besitzt Farben und grafische Komponenten. Die Nachrichtenschlüssel tragen Kategorie und Level als unabhängige semantische Felder; beides wird nicht aus dem englischen Text oder dessen Farbe erraten. `SystemCategory` enthält nur Kontexte, `SystemLevel` nur Statuswerte. Das Standardlayout zeigt `<category>`; übersetzbare Vorlagen können zusätzlich `<level>` anzeigen. Der Renderer bestimmt Statusfarben, während i18n Kontext- und Levelbezeichnungen sowie deren Platzierung besitzt. Clientfähigkeiten bestimmen ausschließlich die Darstellung, niemals Sprache, Berechtigung oder Routing.
+Der Renderer besitzt Farben und grafische Komponenten. Die Nachrichtenschlüssel tragen Kategorie und Level als unabhängige semantische Felder; beides wird nicht aus dem englischen Text oder dessen Farbe erraten. `SystemCategory` enthält nur Kontexte, `SystemLevel` nur Statuswerte. Das Standardlayout zeigt `<category>`; übersetzbare Vorlagen können zusätzlich `<level>` anzeigen. `SystemMessageColors` bestimmt feste Kontextfarben und die Grundfarbe des Nachrichtentextes nach Level; i18n besitzt Bezeichnungen und Platzierung. Eine alte Farbe am Wurzelknoten des Nachrichtentextes wird durch die Level-Farbe ersetzt. Explizite Farben untergeordneter Komponenten, Schriften, Klick- und Hoveraktionen bleiben erhalten. `render` für Menüs und Titel sowie unpräfixierte Spieler-, Privat- und Staffnachrichten behalten ihre bisherigen Farben. Clientfähigkeiten bestimmen ausschließlich die Darstellung, niemals Sprache, Berechtigung oder Routing.
 
 - `send`: lokalisierte Systemnachricht mit gemeinsamem Kategorienpräfix.
 - `sendRendered`: bereits zusammengesetzte Systemkomponenten mit demselben Präfix; Klick- und Hoveraktionen bleiben erhalten.
