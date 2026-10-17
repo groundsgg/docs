@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.14 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.15 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt und unverfärbte Köpfe wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
 
@@ -99,7 +99,7 @@ Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den
 
 ### Rangfarben und Nametags über dem Kopf
 
-Nametags verwenden `Rang · Name`; bei Bedrock-Spielern steht das weiße Bedrock-Logo aus dem Pflichtpack vor dem Rang. Die höchste Rolle stammt aus denselben zentralen Rollendaten wie Chat und Tabliste. Der native Name über dem Kopf bleibt weiß, der Rang trägt seine konfigurierte Farbe und der Trenner Sand. Explizite Spielteams mit eigener Farbe oder Namenssichtbarkeit haben Vorrang.
+Nametags verwenden dieselben grafischen Rangbadges wie die Tabliste: gleiche Rangkürzel, farbige Badge-Fläche und kleine weiße Schrift. Die Reihenfolge lautet Rangbadge, optional weißes Bedrock-Logo, Name. Ein ausgeschriebener Rang und der Punkt zwischen Rang und Name entfallen. Die höchste Rolle und ihre Farbe stammen aus denselben zentralen Rollendaten wie Chat und Tabliste. Der native Name über dem Kopf bleibt weiß. Java und Bedrock erhalten passende Pack-Grafiken für dieselbe Gestaltung. Explizite Spielteams mit eigener Farbe oder Namenssichtbarkeit haben Vorrang.
 
 | Rolle | Farbe | Hexwert |
 | --- | --- | --- |
