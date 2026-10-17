@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.17 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.18 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt und unverfärbte Köpfe wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
 
@@ -99,7 +99,11 @@ Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den
 
 ### Tabliste und Diagnose
 
-Der Footer besteht aus einer Statuszeile: **Lobby 2 • 42 Spieler online • 17 ms**. Punkte trennen den lesbaren Servernamen, die netzwerkweite Spielerzahl und den farbigen Ping. Domain, Jahreszahl und technische Instanzkennungen entfallen im Footer. Die Servernummer bezeichnet die Position unter den aktuell registrierten Instanzen derselben Art. Eine unbekannte Netzwerkzahl erscheint als Gedankenstrich; eine proxy-lokale Zahl ersetzt sie nicht.
+Der Footer enthält genau zwei sichtbare Zeilen. Oben steht ausschließlich der übersetzte Servertyp, etwa **Lobby**, darunter **grounds.gg**. Instanznummer, Spielerzahl, Ping, Trennpunkte und Jahreszahl entfallen.
+
+Die Tabliste sortiert zuerst nach Ranggewicht absteigend und bei gleichem Gewicht nach dem sichtbaren Spielernamen von A–Z, ohne zwischen Groß- und Kleinschreibung zu unterscheiden. Bei mehreren Rollen zählt die höchste Rolle. Das Portal zeigt das Weight und erlaubt die Rangreihenfolge per Drag-and-drop oder Tastatur. Ein höheres Weight steht weiter oben. Die zentrale bestehende Priorität bleibt die einzige Quelle: `weight = -sortOrder`; vorhandene Rollen behalten damit ihre bisherige Rangfolge. Beim Speichern einer verschobenen Reihenfolge werden die Gewichte in Zehnerschritten neu vergeben.
+
+Java verwendet die explizite Spielerlistenreihenfolge. Geyser überträgt diese Reihenfolge derzeit nicht an die native Bedrock-Liste; eine identische Sortierung auf Bedrock ist damit noch nicht gewährleistet.
 
 Technische Backend- und Proxy-IDs zeigt ausschließlich `/proxydebug` mit der Berechtigung `grounds.proxy.debug`. Die Berechtigung ist im Plugin-Katalog für die Autovervollständigung deklariert. Der erste sichtbare Spielereintrag enthält bereits sein Rangbadge und den Namen in Rangfarbe; normale Aktualisierungen dürfen nicht erst einen nackten Namen nachträglich dekorieren.
 
