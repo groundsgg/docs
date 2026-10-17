@@ -5,9 +5,9 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.12 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.13 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
-Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt, unverfärbte Köpfe und Rang-Badges wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
+Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt und unverfärbte Köpfe wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
 
 ## 1. Grundlage und Gestaltungsprinzip
 
@@ -93,7 +93,7 @@ Die eckigen Platzhalter [Kopf], [Logo] und [NPC-Porträt] beschreiben Grafiken, 
 
 Native Skin-Köpfe erhalten eine explizit weiße Farbmodulation. Farben von Privatlabels, Namen, Rängen oder übergeordneten Komponenten dürfen die Hauttextur nicht einfärben.
 
-Vorhandene Rangtags verwenden dieselbe Bezeichnung und Rangfarbe wie die Tabliste. Mit geladenem Pack erscheint dasselbe grafische Badge wie in der Tabliste: farbige Fläche, weiße kompakte Beschriftung in `grounds:tab_labels`, bestehende Flächen aus `grounds:tab`. Ohne bestätigtes Pack bleibt das vorhandene Rangtag lesbarer Text in Rangfarbe. Der Spielername bleibt im normalen hellen Textton (#F2EBDD), der native Kopf neutral weiß. Ein fehlendes oder leeres Rangtag erzeugt keinen zusätzlichen Präfix. Beispiel: `[Kopf] [MOD] Lukas › Hallo zusammen!` (MOD ist eine beispielhafte Rangbezeichnung). Es wird genau das vorhandene Rangtag dargestellt; keine zusätzliche Kette aus Rang, Level, Titel und Cosmetics. Detailinformationen gehören in Profil oder unterstützte Hoveransicht. Kritische Informationen dürfen nie ausschließlich im Hover stehen.
+Spielernachrichten zeigen keinen Rollentag: weder Textpräfix noch grafisches Rangbadge, unabhängig vom geladenen Pack. Rangtags gehören in die Tabliste. Der Spielername verwendet die konfigurierte Rangfarbe; fehlt sie oder ist sie ungültig, gilt Warmweiß `#F3F0EA`. Der native Skin-Kopf bleibt neutral weiß. Beispiel: `[Kopf] Lukas › Hallo zusammen!`, wobei nur „Lukas“ die Rangfarbe trägt. Die Nachricht behält ihre eigenen freigegebenen Formatierungen. Das gilt für öffentlichen, privaten und Staffchat.
 
 Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde mit unverändert türkisfarbenem Präfix; der Nachrichtentext erhält die Fehlerfarbe Koralle. Das Level bestimmt ausschließlich die Grundfarbe des Nachrichtentextes. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels erzeugen. Berechtigte Textformatierung bleibt auf den Nachrichteninhalt begrenzt.
 
@@ -246,7 +246,7 @@ Remote-Social-Meldungen bleiben im Transport semantische Übersetzungskeys mit A
 
 Farben und Textstile gelten ausschließlich im Nachrichtentext. `grounds.chat.format.color` erlaubt benannte und Hexfarben über MiniMessage sowie `&0`–`&f` und `&#RRGGBB`; `grounds.chat.format.decoration` erlaubt Fett, Kursiv und Unterstrichen (`<bold>`, `<italic>`, `<underlined>` beziehungsweise `&l`, `&o`, `&n`). `&r` setzt freigegebene Formatierung zurück. Klickaktionen, Hover, Fontwechsel und verschleierter Text sind nicht freigegeben. Ohne jeweilige Berechtigung bleibt die Eingabe wörtlicher Text.
 
-Eigene grafische Aliasse benötigen `grounds.chat.emoji.<name>`; `grounds.chat.emoji.*` kann alle freigeben. Konkrete Rechte werden beim Absender abgefragt, damit gezielte Sperren trotz Wildcard gelten. Maximal fünf genehmigte Grafiken pro Nachricht, auch über mehrere formatierte Abschnitte. Der Empfänger benötigt zusätzlich das bestätigt geladene Pack; andernfalls bleiben Aliasse lesbarer Text. Normale Unicode-Emojis bleiben Text. Diese Regeln gelten für öffentlichen, privaten und Staffchat sowie lokale Paper-/Minestom-Ausgabe. Rangbadge, Spielername und Kopf sind davon unabhängig.
+Eigene grafische Aliasse benötigen `grounds.chat.emoji.<name>`; `grounds.chat.emoji.*` kann alle freigeben. Konkrete Rechte werden beim Absender abgefragt, damit gezielte Sperren trotz Wildcard gelten. Maximal fünf genehmigte Grafiken pro Nachricht, auch über mehrere formatierte Abschnitte. Der Empfänger benötigt zusätzlich das bestätigt geladene Pack; andernfalls bleiben Aliasse lesbarer Text. Normale Unicode-Emojis bleiben Text. Diese Regeln gelten für öffentlichen, privaten und Staffchat sowie lokale Paper-/Minestom-Ausgabe. Spielername und Kopf sind davon unabhängig.
 
 
 ## 15. Gleiche Systemdarstellung in neuen Repositories
