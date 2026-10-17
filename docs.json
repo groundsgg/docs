@@ -234,6 +234,13 @@
               "reference/development/naming-conventions",
               "reference/development/logging-conventions"
             ]
+          },
+          {
+            "group": "Minecraft Design",
+            "pages": [
+              "design/minecraft-mini-cd-and-chat",
+              "design/minecraft-chat-integration"
+            ]
           }
         ]
       }
