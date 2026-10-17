@@ -19,9 +19,9 @@ Alle Plugin-Keys und direkte `SystemMessages.format`-Aufrufe werden mit diesen z
 
 ## Repository-Abgleich
 
-GitHub-Abgleich vom 17. Oktober 2026: 107 sichtbare Repositories. Die Hauptstände von 44 für Minecraft-Ausgaben relevanten Repositories wurden frisch geladen und geprüft, einschließlich neuer Spielmodi, Bibliotheken und Beispiele. Die dafür fehlenden Checkouts sind jetzt lokal vorhanden. Bestehende Änderungen in den Hauptcheckouts bleiben erhalten; Anpassungen erfolgen in isolierten Worktrees auf den geprüften aktuellen Commits.
+GitHub-Abgleich vom 17. Oktober 2026: 107 sichtbare Repositories. Die Hauptstände von 47 für Minecraft-Ausgaben relevanten Repositories wurden frisch geladen und geprüft, einschließlich neuer Spielmodi, Bibliotheken und Beispiele. Die dafür fehlenden Checkouts sind jetzt lokal vorhanden. Bestehende Änderungen in den Hauptcheckouts bleiben erhalten; Anpassungen erfolgen in isolierten Worktrees auf den geprüften aktuellen Commits.
 
-Zusätzlich umfasst der Audit GetDown, Keystone, BedWars, SurvivalGames und Duel sowie die Minigame-API, Recorder, Anti-Cheat und Demo-Repositories. Die beiden leeren Abstandzeilen von SurvivalGames sind bewusst keine Systemmeldungen.
+Zusätzlich umfasst der Audit GetDown, Keystone, BedWars, SurvivalGames und Duel sowie die Minigame-API, Recorder, Anti-Cheat und Demo-Repositories. Die beiden leeren Abstandzeilen von SurvivalGames sind bewusst keine Systemmeldungen. Ergänzend wurden der Fabric-Client Grounds Connect sowie `library-resource-pack` und `library-jvm-modules` geprüft; dort gibt es keine eigene Chat-Sendeausgabe.
 
 ## Gemeinsame Kategorie-Darstellung
 
@@ -236,7 +236,10 @@ Die folgenden Änderungen verwenden das tatsächlich veröffentlichte `library-i
 | duel | [PR 38](https://github.com/groundsgg/duel/pull/38) | 34 | 0 | 0 |
 | plugin-social | [PR 23](https://github.com/groundsgg/plugin-social/pull/23) | 29 | 0 | 0 |
 | plugin-chat | [PR 55](https://github.com/groundsgg/plugin-chat/pull/55) | 389 | 0 | 0 |
+| plugin-agones | [PR 87](https://github.com/groundsgg/plugin-agones/pull/87) | 105 | 0 | 0 |
+| plugin-player | [PR 49](https://github.com/groundsgg/plugin-player/pull/49) | 60 | 0 | 0 |
+| plugin-notifications | [PR 18](https://github.com/groundsgg/plugin-notifications/pull/18) | 46 | 0 | 0 |
 
-Die Bibliothek und diese 15 Verbraucher erfassen zusammen 1489 Testfälle: 1483 erfolgreich, sechs bestehende Scene-Editor-Skips und keine Fehler. Die unabhängige Prüfung der Bibliothek und Adapter meldet nach Korrektur der Party-Leader-Markierung keine wesentlichen offenen Befunde. Diese Markierung ist zusätzlich in allen vier Social-Sprachen für Leader und normale Mitglieder geprüft. Die sechs bestehenden Scene-Editor-Skips wurden nicht als erfolgreiche Tests gezählt.
+Die Bibliothek und diese 18 Verbraucher erfassen zusammen 1700 Testfälle: 1694 erfolgreich, sechs bestehende Scene-Editor-Skips und keine Fehler. Die unabhängige Prüfung der Bibliothek und Adapter meldet nach Korrektur der Party-Leader-Markierung keine wesentlichen offenen Befunde. Diese Markierung ist zusätzlich in allen vier Social-Sprachen für Leader und normale Mitglieder geprüft. Die sechs bestehenden Scene-Editor-Skips wurden nicht als erfolgreiche Tests gezählt.
 
-Bereits zuvor offene Migrationen für Agones, Player und Notifications bleiben gesondert nachzuverfolgen. Pflichtreviews in GitHub werden nicht umgangen; ebenso bleiben das private Paket-Zugriffsgate von Notifications und die getrennte Pack-/Bedrock-Freigabe bestehen.
+Die bereits offenen Migrationen für Agones, Player und Notifications verwenden ebenfalls i18n 0.4.3. Player erhält dabei die neueren Jackson-/Bootstrap-Änderungen und die vom Capability-Renderer benötigte Proxy-API 2.6.0. Pflichtreviews werden nicht umgangen; der frühere private Paket-Zugriffsfehler von Notifications ist nach der Aktualisierung in CI erneut zu prüfen. Verbraucher-Releases, ausführbare Host-/Spiel-Images sowie Pack-/Bedrock-Freigabe bleiben getrennte Schritte.
