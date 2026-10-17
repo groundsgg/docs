@@ -181,17 +181,11 @@ Der grafische Systempräfix behält seinen Trenner: `[Logo] · Freunde | Nachric
 
 Nach der bestätigten Clientprüfung für Logo, Punkt und Köpfe verwendet [i18n-Fix 14](https://github.com/groundsgg/library-i18n/pull/14) den Trenner `|` für grafische Systemmeldungen und deren Textfallback: `[Logo] · Freunde | Nachricht` beziehungsweise `[Grounds] Freunde | Nachricht`. Spieler-, Privat- und Staffnachrichten behalten `›`. Die geänderten Erwartungen scheiterten zuerst am bisherigen Trenner; anschließend bestanden alle 42 Tests, Build und Formatierung. Die lokale Vorschau prüft beide Systemvarianten in 80 Kontext-/Level-/Sprachkombinationen. Die Paketveröffentlichung dieser neuen Änderung ist separat nachzuweisen.
 
-## Rangtag und neutrale Spielernamen
+## Rangfarbe am Namen, Rollentags in der Tabliste
 
-`ChatSender` verwendet das vorhandene Rangtag und dessen Rangfarbe unverändert. Die Rangfarbe wirkt ausschließlich auf das Tag beziehungsweise dessen grafische Fläche; die Badge-Beschriftung ist weiß. Der Spielername erhält explizit den normalen hellen Textton `#F2EBDD`, der native Kopf weiterhin Weiß. Die gemeinsame Komponente gilt für Kopf- und Textdarstellung. Es werden keine neuen Tags, Rangnamen oder zusätzlichen kosmetischen Präfixe erzeugt.
+`ChatSender` zeigt keinen Rangpräfix und kein Rangbadge. Der Name erhält die konfigurierte Rangfarbe, mit Warmweiß `#F3F0EA` als Fallback. Der native Skin-Kopf bleibt explizit Weiß. Öffentlicher, privater und Staffchat verwenden dieselbe Absenderdarstellung. Die Nachricht bleibt ein separates Component mit ihren freigegebenen Inhaltsformatierungen.
 
-## Grafische Rang-Badges aus der Tabliste
-
-Bei bestätigtem Pack rendert `RankBadge` dieselben vorhandenen `grounds:tab`-Flächen, Abstände und weißen `grounds:tab_labels`-Buchstaben wie `plugin-proxy/TabBadge`. Native Köpfe und Badge-Fontbereitschaft bleiben unabhängig. Ohne Pack bleibt das vorhandene Rangtag als Text erhalten; nicht unterstützte oder zu lange Labels verwenden ebenfalls den sicheren Textfallback.
-
-Die Rangbezeichnung wird am sendenden Proxy aus derselben Rolle und denselben Aliasregeln wie in der Tabliste aufgelöst (etwa Builder → BUILD). Das zusätzliche optionale Feld `senderRankLabel` trägt sie an andere Proxys weiter; alte Nachrichten ohne dieses Feld bleiben lesbar. Namensfarbe und Kopf bleiben neutral. Die bestehenden Kotlin/JVM-Aufrufe von `ChatSender.render` und `ChatLine.of` bleiben erhalten. Neue Assetdateien oder Shader sind dafür nicht nötig.
-
-Geprüft mit vollständigem Build und Formatierung: 361 Tests ohne Fehler oder übersprungene Tests. Ein zusätzlicher Vergleich mit den tatsächlich kompilierten Tabliste-Renderern bestätigte 30 identische Badge-Komponenten und 39 identische Rangbezeichnungen. Der bestehende Host kann die bisherigen JVM-Einstiegspunkte weiterhin aufrufen. Die Java-Vorschau enthält die neue Absender- und Badge-Klasse aus [Chat-PR 53](https://github.com/groundsgg/plugin-chat/pull/53); die Clientabnahme und Veröffentlichung dieser Erweiterung bleiben separat offen.
+Die bisherigen Kotlin/JVM-Einstiegspunkte und optionalen Nachrichtenfelder bleiben kompatibel. Mitgesendete Rangpräfixe oder Badge-Bezeichnungen erzeugen keine sichtbaren Tags mehr. Die Tabliste behält ihre Rangtags. Ihr Rang-Lookup berücksichtigt auch sichtbare Spieler, deren Verbindung an einem anderen Proxy liegt; die Anzeigedaten werden separat und asynchron gespeichert und erweitern keine lokalen Berechtigungen.
 
 ## Permission-Katalog und Inhaltsformatierung
 
