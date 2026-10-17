@@ -5,7 +5,7 @@ description: "Gestaltungsregeln für Minecraft-Chat, Systemmeldungen, Original-L
 
 # Grounds — Minecraft Mini-CD & Chatdesign
 
-Version 0.15 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
+Version 0.16 · Stand: 17. Oktober 2026 · Zielplattform: Java 26.3 / Minestom und Bedrock über Geyser.
 
 Status: Aus der Story abgeleitete Designspezifikation. Die gewählte Richtung „eigenständiger Grounds-Stil“ ist abgestimmt; konkrete Farbwerte, Signet-Ausführung und Effekte sind der daraus entwickelte erste Entwurf. Dieses Dokument beschreibt die Gestaltungsregeln. Die lokale Java-Umsetzung und Plugin-Migration sind im [Integrationsnachweis](/design/minecraft-chat-integration) dokumentiert; Die gemeinsamen APIs sind veröffentlicht; die Plugin-Releases laufen. Logo, Punkt und unverfärbte Köpfe wurden im lokalen Java-Client bestätigt; die vollständige Serverintegration und Bedrock-Abnahme bleiben separat zu prüfen.
 
@@ -97,6 +97,12 @@ Spielernachrichten zeigen keinen Rollentag: weder Textpräfix noch grafisches Ra
 
 Systemkategorie und Level sind getrennte Metadaten. Die Kategorie beschreibt den fachlichen Kontext: Allgemein, Freunde, Party, Match oder Story. Das Level beschreibt Status beziehungsweise Dringlichkeit: Info, Erfolg, Warnung oder Fehler. Eine fehlgeschlagene Freundesaktion bleibt deshalb in der Kategorie Freunde mit unverändert türkisfarbenem Präfix; der Nachrichtentext erhält die Fehlerfarbe Koralle. Das Level bestimmt ausschließlich die Grundfarbe des Nachrichtentextes. Standard sind `GENERAL` und `INFO`. Spielerbezogene Mitteilungen werden an die betroffenen Empfänger adressiert, nicht unnötig global verteilt. Spieler dürfen mit eigenen Eingaben weder das reservierte Systemsignet noch administrative Labels erzeugen. Berechtigte Textformatierung bleibt auf den Nachrichteninhalt begrenzt.
 
+### Tabliste und Diagnose
+
+Der Footer besteht aus einer Statuszeile: **Lobby 2 • 42 Spieler online • 17 ms**. Punkte trennen den lesbaren Servernamen, die netzwerkweite Spielerzahl und den farbigen Ping. Domain, Jahreszahl und technische Instanzkennungen entfallen im Footer. Die Servernummer bezeichnet die Position unter den aktuell registrierten Instanzen derselben Art. Eine unbekannte Netzwerkzahl erscheint als Gedankenstrich; eine proxy-lokale Zahl ersetzt sie nicht.
+
+Technische Backend- und Proxy-IDs zeigt ausschließlich `/proxydebug` mit der Berechtigung `grounds.proxy.debug`. Die Berechtigung ist im Plugin-Katalog für die Autovervollständigung deklariert. Der erste sichtbare Spielereintrag enthält bereits sein Rangbadge und den Namen in Rangfarbe; normale Aktualisierungen dürfen nicht erst einen nackten Namen nachträglich dekorieren.
+
 ### Rangfarben und Nametags über dem Kopf
 
 Nametags verwenden dieselben grafischen Rangbadges wie die Tabliste: gleiche Rangkürzel, farbige Badge-Fläche und kleine weiße Schrift. Die Reihenfolge lautet Rangbadge, optional weißes Bedrock-Logo, Name. Ein ausgeschriebener Rang und der Punkt zwischen Rang und Name entfallen. Die höchste Rolle und ihre Farbe stammen aus denselben zentralen Rollendaten wie Chat und Tabliste. Der native Name über dem Kopf bleibt weiß. Java und Bedrock erhalten passende Pack-Grafiken für dieselbe Gestaltung. Explizite Spielteams mit eigener Farbe oder Namenssichtbarkeit haben Vorrang.
@@ -107,7 +113,7 @@ Nametags verwenden dieselben grafischen Rangbadges wie die Tabliste: gleiche Ran
 | Developer | Salbei | `#A3B18A` |
 | User | Sand | `#C1B9AA` |
 
-Die Rollenfarbe wird im Permissions-Service gespeichert und im Portal bearbeitet. Plugins konsumieren diesen Wert und pflegen keine eigene Rangpalette. Ein Umgebungssync übernimmt die Rollenfarben mit den übrigen Rollendaten. Das Resourcepack ist verpflichtend; Nametags verwenden keine alternative Darstellung für einen dauerhaften Betrieb ohne Pack.
+Die Rollenfarbe wird im Permissions-Service gespeichert und im Portal bearbeitet. Plugins konsumieren diesen Wert und pflegen keine eigene Rangpalette. Ein Umgebungssync übernimmt die Rollenfarben mit den übrigen Rollendaten. Das Resourcepack ist verpflichtend; Nametags verwenden keine alternative Darstellung für einen dauerhaften Betrieb ohne Pack. Bedrock-Badges werden aus den zentral gespeicherten Rollenwerten als vollständige Grafiken erzeugt. Änderungen an Rangkürzel oder Farbe erfordern eine gemeinsam aktualisierte Packversion und einen passenden Glyphenkatalog.
 
 ## 5. Sprache und Beispiele
 
