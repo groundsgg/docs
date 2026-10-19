@@ -66,7 +66,7 @@ For most projects you don't need to touch this — the plugin auto-detects every
 
 ```kotlin build.gradle.kts
 groundsPush {
-    apiUrl.set("https://platform.grnds.io")     // optional override; default is from credentials.json
+    apiUrl.set("https://api.grounds.gg")     // optional override; default is from credentials.json
     manifestFile.set(file("grounds.yaml"))      // default: <projectDir>/grounds.yaml
     jarFile.set(tasks.named<Jar>("shadowJar").flatMap { it.archiveFile })  // auto-detected
     target.set("dev")                            // overrides grounds.yaml target

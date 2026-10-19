@@ -24,11 +24,11 @@ Run `grounds login`. The CLI didn't find a `credentials.json` (or `GROUNDS_TOKEN
 
 Your refresh token has aged out (≈30 days of inactivity). Run `grounds login` to start fresh.
 
-### `api  Get "https://platform.grnds.io/healthz": …`
+### `api  Get "https://api.grounds.gg/healthz": …`
 
 The CLI can't reach forge. Check:
 
-- Network connectivity (can you `curl https://platform.grnds.io/healthz`?).
+- Network connectivity (can you `curl https://api.grounds.gg/healthz`?).
 - Are you on a VPN that blocks the domain? Try with VPN off.
 - Did you set `--api-url` or `GROUNDS_API_URL` to a typo? Unset it.
 - [status.grounds.gg](https://status.grounds.gg) for ongoing platform issues.
