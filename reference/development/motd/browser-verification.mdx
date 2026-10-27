@@ -38,6 +38,37 @@ Windows GitHub Actions, and does not change retries, assertions or test status.
 Compare observations with the retained failing trace; a high `TimeWait` count
 alone does not establish port exhaustion or explain `ERR_NO_BUFFER_SPACE` (#89).
 
+Collector command failures have fixed categories; no raw command, exception,
+stdout or stderr is copied into the JSONL artifact.
+
+| Category                | Observation                                                   |
+| ----------------------- | ------------------------------------------------------------- |
+| `snapshot-timeout`      | The command was killed by its bounded query deadline.         |
+| `snapshot-output-limit` | stdout or stderr exceeded the existing 16 KiB bound.          |
+| `snapshot-start`        | The process could not be started.                             |
+| `snapshot-exit`         | The process exited unsuccessfully or was otherwise signalled. |
+| `snapshot-parse`        | Successful output was invalid JSON or not a JSON object.      |
+| `snapshot-query`        | Other command failure, or an older unclassified observation.  |
+
+Output-limit classification takes precedence over the killed-process flag.
+Component-level `tcp-query`, `memory-query`, `process-query`, `ipv4-range` and
+`ipv6-range` errors remain separate. The sanitizer deduplicates and retains only
+allowlisted categories. A failure still has unavailable numeric fields rather
+than invented zero measurements.
+
+Real child-process tests exercise success, missing executable, nonzero exit,
+both output streams, malformed JSON and the unchanged eight-second deadline.
+They also verify that categories survive JSONL sanitization without raw details.
+The existing Windows CI smoke test still requires actual TCP, memory, process
+and port-range observations before the rendering matrix starts.
+
+The original pre-rendering collector failure in
+[#119](https://github.com/groundsgg/library-motd/issues/119) remains unclassified:
+it occurred before these categories existed. Its roughly eight-second duration
+and a successful unchanged fresh-runner recovery do not establish a permanent
+cause or fix. Classification provides evidence for a future recurrence; it adds
+no generic retries, sleeps or wider timeouts.
+
 Windows test Chromium temporarily disables `TcpPortRandomizationWin`, following
 [Playwright's upstream fix](https://github.com/microsoft/playwright/pull/43605)
 for the [Windows loopback socket bug](https://issues.chromium.org/issues/572515601).
