@@ -1,0 +1,116 @@
+---
+title: "Verify the MOTD implementation"
+description: "Run package/browser checks and understand the independent native-client evidence and remaining gaps."
+---
+
+Run source checks from a clone of
+[library-motd](https://github.com/groundsgg/library-motd), using Node 24.
+
+```sh
+npm ci
+npx playwright install --with-deps chromium firefox webkit
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run test:node
+npm run test:browser
+npm run test:package
+npm run build:examples
+```
+
+Required checks must pass for the actual PR head. Keep current test totals and
+failure artifacts in the run rather than treating a historical count as a
+permanent coverage guarantee.
+
+## Evidence levels
+
+| Evidence                          | What it establishes                                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Pure unit/contract tests          | Document, parsing, export, evaluation, and bounded-input behavior.                                       |
+| Browser tests                     | DOM/React editing, selection, rendering, lifecycle, and browser-engine behavior for those cases.         |
+| Packed consumer checks            | Node/DOM imports without React, React SSR, local CSS assets, and a production-bundled installed package. |
+| Independent native captures       | Actual client output for the exact version, resources, viewport, scale, text, and measured interval.     |
+| Source/bytecode or decoder probes | Behavior of an audited path or API; they are not complete client screenshots.                            |
+| Physical IME/assistive tests      | Real candidate-window, keyboard, and screen-reader workflows on the tested device.                       |
+
+Synthetic composition events do not certify a physical IME. A Windows browser
+comparison against a Linux native capture does not certify Windows Java.
+Playwright WebKit does not replace a shipping Safari test on macOS/iOS.
+
+## Native reference corpus
+
+The source repository keeps versioned manifests and comparison fixtures under
+[`tests/fixtures/client`](https://github.com/groundsgg/library-motd/tree/main/tests/fixtures/client).
+They record exact status data, client/resource hashes, GUI settings, crop
+coordinates, and capture checksums. Client binaries, extracted game resources,
+and private full-screen captures are not npm assets.
+
+The independent sessions cover Java 1.20.4, 1.21.1, 1.21.11, 26.1, 26.1.1,
+26.1.2, 26.2, and 26.3. Supported text cases include foreground/shadow geometry,
+decorations and wrapping at the recorded settings. The full scope and font
+exceptions are in [client profiles](/reference/development/motd/profiles).
+All bundled presets remain `verified: false`.
+
+### Native client reference procedure
+
+<Steps>
+  <Step title="Prepare an isolated client">
+    Use an authorized local installation of the exact official version named by
+    the manifest. Verify hashes and use a separate game directory with no user
+    world or launcher credentials. The existing Linux procedure uses a dedicated
+    Xvfb display, 854×480, GUI scale 2, `lang:en_us`, and `narrator:0`.
+  </Step>
+  <Step title="Serve one controlled response">
+    Use the source repository's localhost-only
+    [`status-server.py`](https://github.com/groundsgg/library-motd/blob/main/tools/reference/status-server.py)
+    with the manifest's complete status response. This fixture accepts
+    status/ping packets, not a game login. Keep the exact JSON and response log
+    for each case.
+  </Step>
+  <Step title="Confirm the displayed response">
+    Wait for the case-specific generated icon color before capturing. Refresh
+    when the case calls for it and move the pointer outside the row. This
+    prevents an earlier cached status response or loading frame from becoming a
+    reference.
+  </Step>
+  <Step title="Record and compare">
+    Capture the manifest's region and record timing, scale, resource versions,
+    and checksums. Compare declared masks/geometry, not approximate background
+    artwork. Keep random obfuscation frames separate from deterministic pixel
+    assertions.
+  </Step>
+</Steps>
+
+For the font references, the generated readiness icon uses RGB
+`(20 + caseIndex * 15, 40, 220)`. The recorded font crop is
+`[194,94,440,42]` for 1.20.4/1.21.1 and `[194,96,440,42]` for modern clients.
+Use each manifest's actual values rather than reusing those dimensions for
+unmeasured profiles.
+
+## Native motion and icon studies
+
+The 26.3 timing session distinguishes cached MOTD status from host-side frame
+selection. See [Vanilla behavior](/reference/development/motd/vanilla-behavior)
+for the measured idle intervals and refresh control.
+
+The favicon audit and isolated STB probe establish a static/default PNG path for
+the measured client. See [static icons](/reference/development/motd/icons) and
+the original fixtures for alpha/default-image provenance. Obfuscation cadence,
+candidate pools, and complete animated rasterization still need their own native
+comparison; see [issue #106](https://github.com/groundsgg/library-motd/issues/106).
+
+## Remaining manual verification
+
+An actual Windows Java-client capture remains open in
+[#70](https://github.com/groundsgg/library-motd/issues/70). Physical IME and
+screen-reader workflows remain open in
+[#17](https://github.com/groundsgg/library-motd/issues/17). Do not turn those
+items into passing claims because browser composition or raster tests pass.
+
+Diagnostic artifacts can help investigate intermittent browser/graphics failures,
+but a later passing run does not prove the cause of an earlier failure. Retain
+bounded observations and keep actual rendering assertions in place.
+
+See [browser regression coverage](/reference/development/motd/browser-verification) for the detailed case matrix and CI diagnostic boundaries.
