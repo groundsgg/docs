@@ -1,0 +1,190 @@
+---
+title: "Decode local Unihex fonts"
+description: "Decode host-extracted Unihex records into matching glyph metrics and raster cells with bounded processing."
+---
+
+Use `decodeUnihexGlyphs` from `@groundsgg/motd/fonts` to decode explicitly
+supplied `.hex` bytes. The function returns paired glyph metrics and RGBA cells
+without a DOM, React, Portal, filesystem, or network connection.
+
+<Note>
+  This is an unreleased addition after 0.3.0. It produces standalone glyph data,
+  not a renderable `FontProfile`. Viewer/layout integration, archive selection,
+  resource stacks and full native rendered calibration remain under [font import
+  issue #8](https://github.com/groundsgg/library-motd/issues/8).
+</Note>
+
+## Decode selected records
+
+The host extracts the selected archive and passes its `.hex` entries as
+`Uint8Array` values in the desired entry order. The library does not unzip files,
+inspect entry names, download assets, or retain the supplied buffers. A normalized
+Unihex leaf from [provider inspection](/reference/development/motd/resource-pack-fonts)
+can be passed as the definition.
+
+```javascript decode-unihex.mjs
+import { decodeUnihexGlyphs } from "@groundsgg/motd/fonts";
+
+// Original 8-bit-wide, 16-row glyph: three adjacent ink pixels per row.
+const data = new TextEncoder().encode("0041:" + "38".repeat(16) + "\n");
+const result = decodeUnihexGlyphs({}, [data]);
+
+if (!result.value) {
+  console.error(result.diagnostics);
+} else {
+  const font = result.value;
+  console.log(font.glyphs[0].advance); // 2 GUI pixels
+  console.log(font.glyphs[0].boldOffset); // 0.5 GUI pixels
+  console.log(font.pixelsFor(65).length); // 3 × 16 × 4 = 192 RGBA bytes
+}
+```
+
+The frozen result has `schemaVersion: 1`, a `glyphs` array sorted by numeric code
+point, and `pixelsFor(codePoint)`. Each lookup returns a fresh trimmed RGBA cell,
+or `undefined` for an absent code point. Mutating an input or returned buffer does
+not change later reads or metrics. The private representation stores bit rows;
+RGBA cells are allocated only when requested.
+
+## Accepted syntax
+
+Each record has a 4–6-digit Unicode code point, a colon, and exactly 16 bitmap
+rows. The rows are written consecutively as hexadecimal digits on the same line.
+The bitmap width is inferred from the digit count.
+
+| Source width | Digits per record bitmap | Digits per bitmap row |
+| ------------ | ------------------------ | --------------------- |
+| 8 bits       | 32                       | 2                     |
+| 16 bits      | 64                       | 4                     |
+| 24 bits      | 96                       | 6                     |
+| 32 bits      | 128                      | 8                     |
+
+Native hexadecimal syntax accepts only `0–9` and uppercase `A–F`. Records end
+with LF or the end of the byte stream. Lowercase hex, CRLF, comments, blank lines,
+BOMs and malformed records return an error. Empty files and an empty selected
+file list are valid; success does not prove resource completeness.
+
+The importer additionally requires Unicode scalar values. Surrogates and values
+above U+10FFFF are rejected rather than represented as imported glyphs. U+0000
+is retained by this provider; this differs from the reserved U+0000 grid cell in
+[bitmap providers](/reference/development/motd/bitmap-fonts). Importing a glyph
+does not change how the viewer interprets text control characters.
+
+A later record replaces an earlier record for the same code point, including
+across files. One aggregate `font-unihex-duplicates` warning reports the number
+of replacements. No partial glyph set is returned if a later record is invalid.
+
+## Native glyph metrics
+
+Rows are aligned to the left of a 32-bit mask. The default bounds span the first
+and last columns containing ink across all 16 rows. Pixels are white with alpha
+255 when set; transparent pixels contain four zero bytes.
+
+An entirely blank native record has the special bounds `left = 0` and
+`right = bitWidth`, including the extra right column. Its decoded widths are
+therefore 9, 17, 25 or 33 pixels, with advances 5, 9, 13 or 17 GUI pixels. Do not
+collapse blank glyphs to zero width or reuse a bitmap provider's empty-cell
+advance.
+
+Each `UnihexGlyph` contains:
+
+| Field                        | Meaning                                                       |
+| ---------------------------- | ------------------------------------------------------------- |
+| `text`, `codePoint`          | One Unicode scalar and its numeric code point.                |
+| `bitWidth`                   | Original record width: 8, 16, 24 or 32.                       |
+| `left`, `right`              | Inclusive selected bounds in the left-aligned 32-column grid. |
+| `pixelWidth`, `pixelHeight`  | Selected width and a fixed height of 16.                      |
+| `advance`                    | Integer division of selected width by 2, plus 1.              |
+| `boldOffset`, `shadowOffset` | Both 0.5 GUI pixels.                                          |
+| `scale`, `oversample`        | Fixed values 0.5 and 2.                                       |
+| `bearingLeft`, `bearingTop`  | Fixed values 0 and 7.                                         |
+
+Odd pixel widths keep their half-pixel drawing extent while the advance uses
+integer division. Keep these per-glyph metrics paired with their raster cells;
+the bitmap provider's global one-pixel offsets do not describe Unihex glyphs.
+
+## Size overrides
+
+`definition.sizeOverrides` accepts the normalized numeric ranges returned by
+provider inspection. Both endpoints are inclusive, and `from < to` is required.
+The **first** matching override wins. For example, a first range fixing `A–Z`
+to columns 0–7 takes precedence over a later range fixing them to columns 0–15.
+
+Decoded ranges require scalar code-point endpoints and usable bounds
+`0 <= left <= right <= 31`. Bounds can include transparent columns beyond an
+8-, 16- or 24-bit source width. Raw metadata inspection can preserve a wider
+set of native integer definitions; this decoder intentionally rejects negative,
+reversed or wrapping column bounds. The automatic 33-column blank-glyph rule
+is separate from explicit override validation.
+
+Override processing sorts the code points actually present and assigns each
+at most once. It does not expand every code point in a large range or scan every
+range for every glyph. Missing code points remain absent.
+
+## Limits and host responsibilities
+
+The optional third argument configures positive integer budgets up to fixed
+ceilings.
+
+| Limit          | Default    | Ceiling    | Counts                                               |
+| -------------- | ---------- | ---------- | ---------------------------------------------------- |
+| `maxBytes`     | 16,777,216 | 67,108,864 | Total supplied `.hex` bytes, checked before parsing. |
+| `maxFiles`     | 128        | 1,024      | Supplied byte arrays.                                |
+| `maxRecords`   | 262,144    | 1,114,112  | All records processed, including duplicates.         |
+| `maxOverrides` | 4,096      | 65,536     | Supplied size-override ranges.                       |
+
+The decoder fixes selected byte-view extents before applying budgets or parsing;
+later backing-buffer growth cannot enlarge those selected inputs. It captures
+each file view once and uses actual typed-array storage metadata. Shared contents
+still need to remain stable if you require a consistent source version.
+
+Parsing uses a bounded 128-digit scratch buffer instead of splitting or decoding
+an entire file into strings. Each stored glyph has 16 bit rows. A returned RGBA
+cell has at most `33 * 16 * 4 = 2,112` bytes; repeated `pixelsFor` calls allocate
+separate copies. Cache them in your renderer as needed.
+
+Your archive adapter must separately bound compressed and uncompressed bytes,
+entry counts, extraction allocation and local paths. Native provider archives
+select entries ending in `.hex`; apply that selection and preserve the chosen
+entry order before calling this API. The library cannot undo allocations already
+made by the host and does not infer a complete Vanilla resource set from selected
+files. See [indexed Vanilla sources](/reference/development/motd/resource-pack-fonts#vanilla-resources-can-span-a-jar-and-indexed-assets).
+
+Decoding is synchronous. Run large imports in a host worker when you need to
+keep the interface responsive or cancel work. No decoder-owned external resource
+needs disposal.
+
+## Diagnostics and verification
+
+| Code                     | Meaning                                                  |
+| ------------------------ | -------------------------------------------------------- |
+| `font-unihex-options`    | Invalid configured budget.                               |
+| `font-unihex-input`      | Invalid file list or byte storage.                       |
+| `font-unihex-format`     | Invalid or unsupported source record.                    |
+| `font-unihex-definition` | Invalid range definition or unusable column geometry.    |
+| `font-unihex-limit`      | A budget was exceeded; `parameters.limit` identifies it. |
+| `font-unihex-duplicates` | Warning: later records replaced earlier declarations.    |
+
+Errors return `value: null`. Paths identify zero-based files and one-based record
+lines, for example `files[0].line[1]`. Messages use the normal
+[localization API](/reference/development/motd/localization).
+
+Parsing, trimming, override precedence and metrics were checked against the
+official Java 26.3 Unihex provider classes. Tests use original synthetic records,
+all four native widths, supplementary characters, blank cells, overlapping
+ranges, duplicates, mutation isolation and malformed/oversized input. This
+coverage does not certify a fully rendered resource-pack font or other encoded
+font formats. Viewer integration and native rendered calibration remain separate;
+see [profile verification limits](/reference/development/motd/profiles).
+
+An isolated headless JVM also executed the official 26.3 provider's
+`Definition.loadData`, glyph `info` / `bake`, and CPU `unpackBitsToBytes` methods.
+The input was an in-memory ZIP containing original synthetic records. The
+observational stitcher performed no GPU upload. Default and overlapping-override
+cases establish the native odd/blank widths, half-pixel offsets, first-match
+precedence and RGBA cell hashes; a negative probe confirms lowercase hex is
+rejected. The numeric
+[reference manifest](https://github.com/groundsgg/library-motd/blob/main/tests/fixtures/client/native-unihex-provider/26.3/manifest.json)
+contains client/class hashes, the original input recipe, measured metrics and
+raster hashes. Tests rebuild the input and compare decoder metrics and pixels
+with these observations. No game font data or class bytes are included, and this
+is not a rendered Minecraft screenshot comparison.
