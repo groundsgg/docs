@@ -1,0 +1,65 @@
+---
+title: "Integrate with Grounds"
+description: "Connect the public library to application persistence and multi-proxy runtime data without coupling its core to Grounds."
+---
+
+Consume `@groundsgg/motd` through its public package. Grounds is one host of the
+same standalone library, not a required service or a separate editor model.
+
+## Separate the three boundaries
+
+| Boundary                  | Responsibility                                                                                                                    |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Portal/application        | Present controls, enforce permissions, manage drafts, save with conflict protection, and supply viewer context.                   |
+| Configuration/API adapter | Validate saved documents, compile a runtime template, validate image data, and retain application-specific envelope semantics.    |
+| Proxy/runtime             | Evaluate the compiled template with an authorized network snapshot and retain a usable previous configuration when refresh fails. |
+
+Use compatible published package versions and committed lockfiles. Do not vendor
+an unversioned local library build into a consumer. Keep older runtime fallback
+formats only as an explicit adapter compatibility boundary.
+
+## Persist intent, not a preview
+
+Store `ServerListDocument` through the consuming API. Client version, row/menu
+presentation, region, example count, ping, and toolbar placement are UI context.
+Changing them must not save live values into the document or increment its
+server configuration version.
+
+The Portal's example-player setting is a presentation value, not a claim of
+live network presence. Only replace labeled examples after wiring an authorized
+data source for the selected environment.
+
+## Use network-wide data
+
+For a global count, supply authoritative presence across all proxies. For a
+regional view, define region membership and unknown-region handling explicitly.
+Keep environment boundaries, deduplication, freshness, and failure semantics in
+the provider; the library does not infer them or perform network polling.
+
+Test at least two proxies and a remote player. Include unavailable/stale data,
+permission denial, region changes, and isolated Stage/Production settings. Do
+not silently use local proxy counts when the global source is unavailable.
+
+## Maintenance inheritance
+
+Your adapter must distinguish an inherited field from an explicit reset. For
+example, choosing automatic version mode, removing an icon, or unhiding players
+can be deliberate overrides even though they resemble defaults.
+
+Keep this application intent in an adapter envelope or JSON-only extensions,
+not a new mandatory Grounds field in the npm core. If you enrich editor changes
+with `mapChange`, keep metadata in the same history transaction so Undo followed
+by Save restores the intended inheritance.
+
+## Validate the actual consumer
+
+Test the installed package and the production bundle, not only source aliases.
+Exercise viewer/editor context synchronization, read-only inspection, maintenance
+inheritance, save conflicts, and narrow layouts through the real application
+route with isolated fixtures. Keep test authorization separate from production
+data and preserve existing activation flags during unrelated rollouts.
+
+For runtime verification, record whether a test uses real proxy processes,
+production handlers with local adapters, or live service delivery. Those are
+different evidence levels; a local harness does not certify a live broker or
+production deployment.

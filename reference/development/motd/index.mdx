@@ -1,0 +1,75 @@
+---
+title: "Minecraft MOTD library"
+description: "Use a standalone Vanilla Java server-list viewer, inline editor, and text-processing library."
+---
+
+`@groundsgg/motd` lets you display and edit a Minecraft Java server entry. You
+can use the pure TypeScript core in Node.js, the DOM adapter in any browser
+framework, or the optional React adapter. You do not need the Grounds Portal,
+an account, React, or a connection to a Minecraft server to use the core.
+
+The viewer targets the selected Vanilla client profile. It displays supplied
+status snapshots, static colors and decorations, native obfuscated text, and
+optional client-menu panorama motion. It does not simulate continuously changing
+MOTD frames, scrolling, blinking, or animated gradient phases.
+
+<Note>
+  Native fidelity is the target, not a blanket verification claim. Client
+  profiles retain explicit reference coverage and approximation diagnostics.
+  Original Minecraft textures and client binaries are not included in the npm
+  package.
+</Note>
+
+## Choose your entry point
+
+| Entry point                  | Use it for                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------- |
+| `@groundsgg/motd`            | Parsing, documents, layout, status evaluation, serialization, and diagnostics without a DOM. |
+| `@groundsgg/motd/dom`        | A display-only viewer, inline editor, client comparison, and local image import.             |
+| `@groundsgg/motd/react`      | React components wrapping the same DOM implementation. React is an optional peer.            |
+| `@groundsgg/motd/styles.css` | The local renderer/editor stylesheet and bundled font references.                            |
+
+## Start here
+
+<CardGroup cols={2}>
+  <Card
+    title="Getting started"
+    icon="code"
+    href="/reference/development/motd/getting-started"
+  >
+    Install the package and run a core, DOM, or React example.
+  </Card>
+  <Card
+    title="Documents and context"
+    icon="diagram-project"
+    href="/reference/development/motd/concepts"
+  >
+    Separate saved authoring intent from client settings, runtime values, and
+    editor state.
+  </Card>
+  <Card
+    title="Embed the tools"
+    icon="sliders"
+    href="/reference/development/motd/embedding"
+  >
+    Choose a viewer or editor, row or menu presentation, and fixed or selection
+    toolbar.
+  </Card>
+  <Card
+    title="Vanilla behavior"
+    icon="display"
+    href="/reference/development/motd/vanilla-behavior"
+  >
+    Understand native motion, status snapshots, and the limits of the measured
+    evidence.
+  </Card>
+</CardGroup>
+
+Use the [API reference](/reference/development/motd/api) for commands and public
+types. Read [known limits](/reference/development/motd/limitations) before
+treating an arbitrary font, resource pack, or component as pixel-verified.
+
+The code is MIT-licensed. Bundled fonts use SIL OFL 1.1; consult the package's
+[third-party notices](https://github.com/groundsgg/library-motd/blob/main/THIRD_PARTY_NOTICES.md).
+
+NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.

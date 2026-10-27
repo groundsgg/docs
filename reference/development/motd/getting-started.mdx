@@ -1,0 +1,205 @@
+---
+title: "Get started with MOTD"
+description: "Install the package and run complete core, DOM viewer/editor, and React examples."
+---
+
+## Prerequisites
+
+- Use a supported Node.js version: at least 22.14. Source development uses Node 24.
+- For browser examples, use an ESM application with a bundler that accepts CSS imports.
+- Install React 18 or newer only if you choose the React adapter.
+
+Keep your bundler's asset type declarations enabled in TypeScript projects.
+For example, a Vite application uses:
+
+```ts vite-env.d.ts
+/// <reference types="vite/client" />
+```
+
+```sh
+npm install @groundsgg/motd
+```
+
+npmjs.com is the primary registry. If your existing `@groundsgg` scope uses
+GitHub Packages, check the [registry configuration](/reference/development/motd/releasing#installing-the-github-mirror).
+
+<Tabs>
+<Tab title="Core in Node.js">
+
+Save this as `motd.mjs` and run `node motd.mjs`. You do not need React or a DOM.
+
+```js motd.mjs
+import {
+  createDocument,
+  evaluateStatus,
+  parseText,
+  writeDocument,
+} from "@groundsgg/motd";
+
+const parsed = parseText(
+  "<gold><bold>Hello</bold><newline><gray>{{players}} online",
+  "minimessage",
+);
+if (!parsed.value) throw new Error("Invalid MOTD source");
+
+const motd = createDocument(parsed.value);
+const evaluated = evaluateStatus(motd, {
+  base: {
+    version: { protocol: 767, name: "1.21.1" },
+    players: { online: 42, max: 500, sample: [] },
+    description: "",
+  },
+  clientProtocol: 767,
+  values: {},
+});
+if (!evaluated.value) throw new Error("Invalid status context");
+
+console.log(evaluated.value.players?.online); // 42
+const savedDocument = writeDocument(motd);
+// Store savedDocument. Send evaluated.value only through your own status transport.
+```
+
+The core resolves the supplied counts and placeholders. It does not discover a
+server or fetch live player data.
+
+</Tab>
+<Tab title="DOM viewer and editor">
+
+Add two hosts to your application's HTML:
+
+```html
+<div id="editor"></div>
+<div id="preview"></div>
+```
+
+Use this TypeScript module as your browser entry point:
+
+```ts main.ts
+import {
+  createDocument,
+  java1211Profile,
+  parseText,
+  type PreviewContext,
+} from "@groundsgg/motd";
+import { createEditor, createPreview } from "@groundsgg/motd/dom";
+import "@groundsgg/motd/styles.css";
+
+const parsed = parseText(
+  "<gold>Hello<newline><gray>{{players}} online",
+  "minimessage",
+);
+if (!parsed.value) throw new Error("Invalid MOTD source");
+const motd = createDocument(parsed.value);
+const context: PreviewContext = {
+  base: {
+    version: { protocol: 767, name: "1.21.1" },
+    players: { online: 42, max: 500, sample: [] },
+    description: "",
+  },
+  clientProtocol: 767,
+  values: {},
+  profile: java1211Profile,
+  viewportWidth: 640,
+  guiScale: 2,
+  serverName: "My server",
+  pingMs: 35,
+  animations: true,
+  presentation: "row",
+};
+
+const editorHost = document.getElementById("editor");
+const previewHost = document.getElementById("preview");
+if (!editorHost || !previewHost) throw new Error("Missing MOTD hosts");
+
+const preview = createPreview(previewHost, { document: motd, context });
+const editor = createEditor(editorHost, {
+  document: motd,
+  context,
+  toolbar: "selection",
+  onChange(next) {
+    preview.update({ document: next, context });
+    // Persist next with writeDocument in your application's save flow.
+  },
+});
+
+window.addEventListener(
+  "pagehide",
+  () => {
+    editor.destroy();
+    preview.destroy();
+  },
+  { once: true },
+);
+```
+
+The viewer has no editing controls. The editor updates it through a new document;
+the example count and selected client remain separate presentation context.
+
+</Tab>
+<Tab title="React">
+
+Install React in your application if it is not already available, then render
+this component inside your existing React root:
+
+```tsx MotdTools.tsx
+import { useState } from "react";
+import {
+  createDocument,
+  java1211Profile,
+  parseText,
+  type PreviewContext,
+} from "@groundsgg/motd";
+import { ServerListEditor, ServerListPreview } from "@groundsgg/motd/react";
+import "@groundsgg/motd/styles.css";
+
+const context: PreviewContext = {
+  base: {
+    version: { protocol: 767, name: "1.21.1" },
+    players: { online: 42, max: 500, sample: [] },
+    description: "",
+  },
+  clientProtocol: 767,
+  values: {},
+  profile: java1211Profile,
+  viewportWidth: 640,
+  guiScale: 2,
+  serverName: "My server",
+  pingMs: 35,
+  animations: true,
+  presentation: "row",
+};
+
+export function MotdTools() {
+  const [motd, setMotd] = useState(() => {
+    const parsed = parseText(
+      "<gold>Hello<newline><gray>{{players}} online",
+      "minimessage",
+    );
+    if (!parsed.value) throw new Error("Invalid MOTD source");
+    return createDocument(parsed.value);
+  });
+  return (
+    <>
+      <ServerListEditor
+        document={motd}
+        context={context}
+        onChange={setMotd}
+        toolbar="selection"
+      />
+      <ServerListPreview document={motd} context={context} />
+    </>
+  );
+}
+```
+
+Return changed documents through React state. The adapter updates the mounted
+editor rather than recreating it on each acknowledged change. During server-side
+rendering, the components produce an empty host and initialize in the browser.
+
+</Tab>
+</Tabs>
+
+Use `presentation: "server-list"` for the complete menu excerpt and
+`toolbar: "fixed"` for formatting controls above the entry. Continue with
+[embedding](/reference/development/motd/embedding) and
+[documents and context](/reference/development/motd/concepts).

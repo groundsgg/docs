@@ -12,10 +12,7 @@
     "tabs": [
       {
         "tab": "Welcome",
-        "pages": [
-          "index",
-          "licensing"
-        ]
+        "pages": ["index", "licensing"]
       },
       {
         "tab": "Build",
@@ -139,9 +136,7 @@
           },
           {
             "group": "Resource pack operations",
-            "pages": [
-              "deploy/resourcepacks/operations"
-            ]
+            "pages": ["deploy/resourcepacks/operations"]
           }
         ]
       },
@@ -225,6 +220,45 @@
                   "reference/development/minestom-runtime/composition",
                   "reference/development/minestom-runtime/local-modules"
                 ]
+              },
+              {
+                "group": "Minecraft MOTD",
+                "pages": [
+                  "reference/development/motd/index",
+                  "reference/development/motd/getting-started",
+                  "reference/development/motd/concepts",
+                  {
+                    "group": "Embedding",
+                    "pages": [
+                      "reference/development/motd/embedding",
+                      "reference/development/motd/comparison",
+                      "reference/development/motd/localization",
+                      "reference/development/motd/grounds-integration"
+                    ]
+                  },
+                  {
+                    "group": "Text and assets",
+                    "pages": [
+                      "reference/development/motd/formats",
+                      "reference/development/motd/inline-effects",
+                      "reference/development/motd/import-assistance",
+                      "reference/development/motd/icons",
+                      "reference/development/motd/panoramas"
+                    ]
+                  },
+                  {
+                    "group": "Native behavior",
+                    "pages": [
+                      "reference/development/motd/vanilla-behavior",
+                      "reference/development/motd/profiles",
+                      "reference/development/motd/limitations",
+                      "reference/development/motd/verification",
+                      "reference/development/motd/browser-verification"
+                    ]
+                  },
+                  "reference/development/motd/api",
+                  "reference/development/motd/releasing"
+                ]
               }
             ]
           },
@@ -275,20 +309,34 @@
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
       "github": "https://github.com/groundsgg",
       "discord": "https://discord.gg/zNQkU8vm3Z"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/superpowers/plans/2026-07-29-permissions-documentation",
+      "destination": "/reference/plugins/in-game-permissions/index"
+    },
+    {
+      "source": "/superpowers/specs/2026-07-29-permissions-documentation-design",
+      "destination": "/reference/plugins/in-game-permissions/index"
+    },
+    {
+      "source": "/superpowers/plans/2026-10-14-java-chat-design",
+      "destination": "/design/minecraft-mini-cd-and-chat"
+    }
+  ]
 }
