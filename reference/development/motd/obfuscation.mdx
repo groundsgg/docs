@@ -34,6 +34,17 @@ advance; bold still contributes its separate layout advance. Spaces can occur
 in a replacement class. An original U+0020 space stays unchanged, while another
 space-like code point does not receive that special exemption.
 
+For a custom metric-only profile, `font.boldOffset` controls the additional
+bold layout advance. Candidate classes read the original regular metric
+directly, with the same exact-text, NFC and `fallbackAdvance` resolution used
+by layout. For example, a regular advance of `4.25` and bold offset of `0.5`
+still selects ceiling class `5`; the bold layout advance is `4.75`. Zero or
+larger configured offsets follow the same rule. Direct lookup also preserves
+ceiling classes at floating-point boundaries. This correction
+is unreleased after 0.3.0 and does not add imported
+[runtime font sources](/reference/development/motd/runtime-font-source) to the
+viewer or certify arbitrary font rasterization.
+
 Changing a replacement does not change the stored text, glyph positions, line
 breaks, selection, source offsets, or undo history. The viewer retains its source
 accessibility label. The inline editor keeps its source text and editing state.
