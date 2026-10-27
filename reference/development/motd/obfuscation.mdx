@@ -145,6 +145,28 @@ credentials, raw captures, and temporary execution notes outside Git.
 The default client has more glyph providers than the independent bundled OFL
 font. Its entire random pool, glyph overhangs, unsupported-code-point behavior,
 and arbitrary resource-pack rasterization are not reproduced by that font.
+A separate read-only inspection of the active default font maps quantifies
+that difference:
+
+| Candidate map   | Total code-point entries | Entries in ceiling-width class 6 |
+| --------------- | ------------------------ | -------------------------------- |
+| Java 1.21.1     | 114,581                  | 4,563                            |
+| Java 26.3       | 114,432                  | 4,659                            |
+| Bundled profile | 194                      | 130                              |
+
+These are candidate code-point entries, not distinct glyph outlines. Both
+native width-4 classes contain U+0020 as a possible replacement. The
+[pool audit metadata](https://github.com/groundsgg/docs/blob/main/reference/development/motd/evidence/native-font-pools-2026-10-27.json)
+records counts and sorted-membership hashes. The debugger-enabled inspection
+is separate from the timing captures and reads only
+`FontManager.fontSets["minecraft:default"].glyphsByWidth`; the older mapped
+field names are recorded in the metadata.
+
+The cadence/class correction does not close that provider-coverage gap.
+[Native calibration #106](https://github.com/groundsgg/library-motd/issues/106)
+retains the remaining pool/fallback scope; broader local resource-pack font
+support is tracked in [#8](https://github.com/groundsgg/library-motd/issues/8).
+
 If a profile has no replacement class for an advance, the viewer retains its
 existing fallback rather than choosing an unrelated width. This is not a
 simulation of the native missing-glyph raster.
