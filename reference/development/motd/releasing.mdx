@@ -19,6 +19,39 @@ Both registries receive the same bytes. The publisher rejects tag/version mismat
 
 The `npm` and `github-packages` GitHub environments isolate publication permissions. npm's trusted publisher must name `groundsgg/library-motd`, workflow `release.yml` and environment `npm`. Actions run on GitHub-hosted Ubuntu runners. Node 24 supplies an npm version supporting trusted publishing.
 
+## Current and superseded validations
+
+The workflow binds release work to the exact commit verified by CI. Before
+running Release Please, it queries the current `main` SHA and checks both
+revision values. If another PR merged during validation, the older successful
+run emits a superseded notice and skips Release Please and both publication
+jobs. The newer queued run validates the updated head. A superseded result is
+an expected outcome when merging several feature PRs in sequence.
+
+API failures, empty or malformed revisions and output-write failures still fail
+the guard. A current verified run may update the release PR without publishing
+anything. Normal publication additionally requires a newly created release,
+the current-verification flag and the existing post-action assertion that the
+release SHA matches the verified artifact's SHA. Registry, version and integrity
+checks remain in place.
+
+`main` can still move between the precheck and the Release Please API call.
+The post-action SHA assertion blocks mismatched package publication, but it
+cannot undo GitHub release or PR side effects already made by Release Please.
+
+Explicit recovery with a stable existing release tag follows its separate
+validation path. It verifies the tagged source and requires an existing
+non-draft GitHub release; it does not require that tag to equal today's `main`.
+
+The historical [superseded-run failure](https://github.com/groundsgg/library-motd/actions/runs/40593996490)
+used the older fail-on-mismatch workflow and remains recorded. All its validation
+jobs passed before the stale-revision guard failed. The correction in
+[#127](https://github.com/groundsgg/library-motd/issues/127) applies to later
+workflows; rerunning that old workflow against a newer `main` does not adopt the
+fix. Tests execute the actual Bash guard and evaluate downstream conditions with
+GitHub's expression library using controlled API responses. They perform no
+release or registry writes.
+
 ## First npm publication
 
 npm requires an existing package before configuring a trusted publisher. An npm organization owner must publish the first validated CI archive once using their normal npm login and complete npm's interactive authentication, then configure:
