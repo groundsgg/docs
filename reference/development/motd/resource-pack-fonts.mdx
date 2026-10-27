@@ -1,0 +1,192 @@
+---
+title: "Inspect local resource-pack fonts"
+description: "Resolve local font-provider references, inspect required resources, and bound host-owned font imports."
+---
+
+Use `resolveFontProviders` from `@groundsgg/motd/fonts` to inspect the active
+provider graph of a locally selected resource set. It works without React, a DOM,
+Portal, filesystem access, or network access.
+
+<Note>
+  This entry point is an unreleased addition after 0.3.0. It produces metadata,
+  not a renderable `FontProfile`. It does not change the viewer's font or expand
+  the bundled [obfuscation pool](/reference/development/motd/obfuscation).
+</Note>
+
+## Resolve a font
+
+Your host supplies a reader for already selected local resources. The resolver
+only requests UTF-8 JSON font definitions. Bitmap textures and Unihex archives
+appear in `resources`, but are not read, decoded, or checked for existence.
+
+```javascript inspect-font.mjs
+import { resolveFontProviders } from "@groundsgg/motd/fonts";
+
+const encoder = new TextEncoder();
+const definitions = new Map([
+  [
+    "assets/demo/font/menu.json",
+    {
+      providers: [
+        { type: "reference", id: "demo:spacing" },
+        { type: "bitmap", file: "demo:menu.png", ascent: 7, chars: ["AB"] },
+      ],
+    },
+  ],
+  [
+    "assets/demo/font/spacing.json",
+    {
+      providers: [{ type: "space", advances: { " ": 4 } }],
+    },
+  ],
+]);
+const files = new Map(
+  [...definitions].map(([path, value]) => [
+    path,
+    encoder.encode(JSON.stringify(value)),
+  ]),
+);
+
+const result = await resolveFontProviders(
+  "demo:menu",
+  (path, { maxBytes }) => {
+    const data = files.get(path);
+    if (data && data.byteLength > maxBytes)
+      throw new Error("Local read budget");
+    return data;
+  },
+  { flags: { uniform: false, jp: false } },
+);
+
+if (!result.value) {
+  console.error(result.diagnostics);
+} else {
+  console.log(result.value.providers.map((provider) => provider.type));
+  console.log(result.value.resources);
+}
+// ["space", "bitmap"]
+// ["assets/demo/textures/menu.png"]
+```
+
+The returned graph is deeply frozen and has `schemaVersion: 1`. Each leaf retains
+its `fontId` and zero-based `providerIndex`. References expand in declaration
+order, including repeated references. `fontFiles` and `resources` contain unique
+paths in first-use order. This order does not itself certify decoded glyph
+precedence against a native font set.
+
+## Provider metadata
+
+| Provider    | Returned metadata                                                                                                                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `space`     | `advances`, keyed by one Unicode scalar, rounded to Java float32 precision. Zero and negative advances are retained.                                                                   |
+| `bitmap`    | Canonical `file`, `resourcePath`, `height`, `ascent`, and rectangular Unicode-code-point `chars` rows. Omitted height defaults to 8; U+0000 cells remain in the grid.                  |
+| `unihex`    | Canonical `hexFile`, `resourcePath`, and `sizeOverrides` with numeric code-point `from` / `to` bounds and signed integer `left` / `right`. Omitted overrides default to an empty list. |
+| `reference` | Its active referenced definitions expand in place; references are not returned as leaves.                                                                                              |
+
+Bitmap height and ascent retain signed integer metadata, including zero or
+negative heights when `ascent <= height`. A later decoder must determine whether
+an atlas is usable. Unihex ranges require `from < to`; the resolver does not
+decode the archive or certify its ranges against actual glyph widths. Explicit
+`null` values do not request defaults.
+
+Only the bare provider names above are supported. An active `ttf`, unknown, or
+namespaced provider type returns `font-provider-unsupported` and no graph.
+
+### Resource paths
+
+Bare resource identifiers use the `minecraft` namespace, even inside a custom
+namespace. `demo:menu` resolves to `assets/demo/font/menu.json`.
+
+| Resource field    | Example                 | Local path                           |
+| ----------------- | ----------------------- | ------------------------------------ |
+| Bitmap `file`     | `demo:font/menu.png`    | `assets/demo/textures/font/menu.png` |
+| Unihex `hex_file` | `demo:font/unicode.zip` | `assets/demo/font/unicode.zip`       |
+
+Identifiers use lowercase resource characters and are limited to 512 characters.
+The local-reader contract additionally rejects absolute paths, backslashes,
+percent escapes, empty path segments, trailing dots, traversal segments, and
+Windows reserved device-name segments. Unpaired UTF-16 surrogates are rejected
+in character entries. These are intentional import restrictions rather than a
+claim that every syntactically accepted native resource pack is supported.
+
+### Filter context
+
+Set `flags.uniform` and `flags.jp` explicitly for the client settings you want to
+inspect. Both default to `false`. A provider's `filter` must contain boolean
+requirements for these known flags. Unknown flags or nonboolean requirements
+fail validation.
+
+Disabled providers still count toward traversal limits, but their payloads and
+referenced files are skipped. An inactive unsupported provider is ignored. This
+is an active-graph preflight, not a full native loader's validation of every
+disabled definition.
+
+## Bound reads and expansion
+
+The optional `limits` object accepts the following integer budgets. You may lower
+them or raise them up to the fixed ceilings. Reference depth starts at zero for
+the root font.
+
+| Limit                | Default   | Ceiling    | Counts                                                                                  |
+| -------------------- | --------- | ---------- | --------------------------------------------------------------------------------------- |
+| `maxFontFiles`       | 128       | 1,024      | Distinct JSON definitions read.                                                         |
+| `maxDefinitionBytes` | 1,048,576 | 4,194,304  | Bytes per JSON definition.                                                              |
+| `maxTotalBytes`      | 4,194,304 | 33,554,432 | Total bytes of distinct definitions.                                                    |
+| `maxDepth`           | 16        | 64         | Reference depth; zero allows only the root.                                             |
+| `maxProviderVisits`  | 4,096     | 65,536     | Declarations visited, including references, repeated expansion, and disabled providers. |
+| `maxProviders`       | 1,024     | 16,384     | Expanded active leaf providers.                                                         |
+| `maxGlyphs`          | 65,536    | 1,114,112  | Expanded bitmap cells, including U+0000, plus space advance entries.                    |
+| `maxOverrides`       | 4,096     | 65,536     | Expanded Unihex override entries, including repeated references.                        |
+
+Your reader receives the remaining allowed `maxBytes` before each read. Enforce
+that budget before allocating, extracting, or reading large files. The resolver
+checks returned byte lengths, but cannot undo allocations made inside your
+callback. Return `undefined` for a missing definition. Thrown reader errors are
+replaced with a fixed diagnostic; private filesystem paths and exception messages
+are not copied into diagnostics.
+
+The library supplies no ZIP extraction or file picker. If your host adds an
+archive or directory adapter, it owns compressed and uncompressed size limits,
+entry counts, symlink/root containment, binary image dimensions, selection
+permissions, and resource lifetime. The callback is the I/O boundary; it can do
+whatever your host implements.
+
+### Cancellation and errors
+
+Pass an `AbortSignal` as `options.signal`. The same signal reaches your reader.
+Aborting settles the resolver even if a pending reader does not cooperate;
+actually stopping the underlying read remains the reader's responsibility.
+
+Any active error returns `value: null` with one error diagnostic. No partial graph
+is returned. Diagnostics have stable codes, paths, message keys, and English
+fallback text; use the normal [localization API](/reference/development/motd/localization)
+to render German or host labels.
+
+| Code                        | Meaning                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| `font-options`              | Invalid options, reader, flags, or configured limits.                        |
+| `font-resource-id`          | Invalid or unsafe local identifier.                                          |
+| `font-resource-missing`     | Missing JSON definition.                                                     |
+| `font-read`                 | Reader failure or a result other than a byte array.                          |
+| `font-definition`           | Invalid UTF-8, JSON, or active provider metadata.                            |
+| `font-reference-cycle`      | A reference points back to an active ancestor.                               |
+| `font-provider-unsupported` | An active provider cannot be inspected.                                      |
+| `font-limit`                | An input or expansion budget was exceeded; `parameters.limit` identifies it. |
+| `font-cancelled`            | The supplied signal was aborted.                                             |
+
+## Coverage and rendering boundary
+
+Provider fields, defaults, float widths, grid validation, filter names, and path
+mapping were checked against the official Java 26.3 client classes on
+2026-10-27. Tests use original synthetic definitions and a virtual local reader,
+including supplementary Unicode, cycles, repeated expansion, cancellation, and
+packed Node consumption without React or DOM. These checks do not establish a
+rendered resource-pack font match.
+
+The bundled viewer still uses its existing font profile and OFL raster data.
+Decoding bitmap/Unihex data, pairing each glyph's metrics with raster data,
+per-glyph bold/shadow offsets, resource-stack merging, TTF support, and native
+rendering calibration remain under [font import issue #8](https://github.com/groundsgg/library-motd/issues/8).
+You supply any original resources locally; the package includes no Mojang font
+files, textures, or automatic downloads. See the existing
+[profile limits](/reference/development/motd/profiles).

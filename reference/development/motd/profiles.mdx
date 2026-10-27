@@ -3,6 +3,10 @@ title: "Client profiles and font behavior"
 description: "Choose a Java client profile and understand measured layout, font rendering, and verification limits."
 ---
 
+For the optional local provider-graph inspector, see
+[resource-pack fonts](/reference/development/motd/resource-pack-fonts).
+It reports metadata and required paths; it does not yet change rendered glyphs.
+
 `clientProfiles` contains Java 1.20.4, 1.21.1, 1.21.11, 26.1, 26.1.1, 26.1.2, 26.2 and 26.3. Named exports are `java1204Profile`, `java1211Profile`, `java12111Profile`, `java261Profile`, `java2611Profile`, `java2612Profile`, `java262Profile`, and `java263Profile`. Version/protocol values come from the official jars' version.json. This is a fixed release set, not a promise of automatic future-version compatibility. Custom profiles are supported.
 
 Unmodified official clients 1.20.4, 1.21.1, 1.21.11, 26.1, 26.2 and 26.3 were launched in separate offline test sessions at 854×480, default font, GUI scale 2. They connected to a local status-only server. No account credentials were read. Versioned screenshots and hash manifests live in tests/fixtures/client. The OnlineServerEntry class files in 26.1, 26.1.1 and 26.1.2 are byte-identical; those original captures did not separately launch the patch releases; the 2026-10-23 verification below does.
