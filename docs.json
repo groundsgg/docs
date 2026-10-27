@@ -250,6 +250,7 @@
                     "group": "Native behavior",
                     "pages": [
                       "reference/development/motd/vanilla-behavior",
+                      "reference/development/motd/obfuscation",
                       "reference/development/motd/profiles",
                       "reference/development/motd/limitations",
                       "reference/development/motd/verification",

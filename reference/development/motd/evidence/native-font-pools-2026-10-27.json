@@ -1,0 +1,199 @@
+{
+  "date": "2026-10-27",
+  "method": "Read-only JDI field inspection of active default FontManager maps in separate owned, isolated reference JVMs with localhost-only debugging. No timing claim comes from these debugger-enabled sessions.",
+  "querySourceSha256": "0f7458de33c59978479c34c7de85f1b73be5e112827b7951a7a00b1213978b38",
+  "limits": [
+    "Counts describe candidate code-point entries, not distinct glyph outlines.",
+    "Sorted-code-point hashes retain pool membership identity, not random ordering.",
+    "No font files, glyph bitmaps, raw code-point arrays, or client binaries are included."
+  ],
+  "clients": [
+    {
+      "client": "1.21.1",
+      "evidenceKind": "read-only JDI active FontManager map, separate from timing captures",
+      "fonts": [
+        {
+          "font": "minecraft:default",
+          "groups": [
+            {
+              "advanceCeil": 0,
+              "count": 1,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "1ecb0aac2e85ee349c3481532e2afdc921b08e9fae8d9d1e166df2f80e1d864d"
+            },
+            {
+              "advanceCeil": 1,
+              "count": 217,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "fec3920d07076de9a0ba4dcbeaa74d65e25ea5865f6deea6be4fe300c9f64734"
+            },
+            {
+              "advanceCeil": 2,
+              "count": 848,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "24cef5509fad668f37c958a221d42b94ef3f14342a54cca13f362cc3f671d1c2"
+            },
+            {
+              "advanceCeil": 3,
+              "count": 3037,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "f06316d48702402d9374820e08c3718c14e5320b9586796fa3925997ba2e375f"
+            },
+            {
+              "advanceCeil": 4,
+              "count": 7322,
+              "containsSpace": true,
+              "sortedCodePointsSha256": "54b58c13774d6b760ee0a4f44127400887824a2921035d60c98c24576331c021"
+            },
+            {
+              "advanceCeil": 5,
+              "count": 4502,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "9de6665bdf1179d500785a0481cc4a265a92f4af282a6e84ac304d4d1af2e828"
+            },
+            {
+              "advanceCeil": 6,
+              "count": 4563,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "08cfb2628f27f53b5a5d2da704ab287cef61c43338cdf36731e9f8f52cbcf9e6"
+            },
+            {
+              "advanceCeil": 7,
+              "count": 2930,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "3ec3463b1d7ebae9f8dd7c2f1e6dd57aea9e271163fa58fe8b0c80b3841d0ee5"
+            },
+            {
+              "advanceCeil": 8,
+              "count": 17646,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "193dcdd238a27670b198c1d69e3e023d2a676b1cbc5c255dd5e756755b34e3a5"
+            },
+            {
+              "advanceCeil": 9,
+              "count": 73333,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "ecb9b5f1cf9336292798402d6d01fabd8c68956055ebf1c99f43a737b468c7a4"
+            },
+            {
+              "advanceCeil": 10,
+              "count": 182,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "910596974caf68ad05e86e779da8158f9ee986863d8dc618e68c22bf05ff5e22"
+            }
+          ]
+        }
+      ],
+      "clientSha1": "30c73b1c5da787909b2f73340419fdf13b9def88",
+      "resourcePack": "vanilla default",
+      "language": "en_us",
+      "fontOptionForceUnicode": null,
+      "poolPath": "FontManager.fontSets[minecraft:default].glyphsByWidth",
+      "legacyMappedFields": {
+        "FontManager.fontSets": "flb.h",
+        "FontSet.glyphsByWidth": "fld.k"
+      },
+      "fontOptionNote": "No forceUnicodeFont override in the fresh isolated options file; the runtime option was not separately queried."
+    },
+    {
+      "client": "26.3",
+      "evidenceKind": "read-only JDI active FontManager map, separate from timing captures",
+      "fonts": [
+        {
+          "font": "minecraft:default",
+          "groups": [
+            {
+              "advanceCeil": 0,
+              "count": 1,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "1ecb0aac2e85ee349c3481532e2afdc921b08e9fae8d9d1e166df2f80e1d864d"
+            },
+            {
+              "advanceCeil": 1,
+              "count": 227,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "0bc59f05db4005f1bc2f947223fc5c7d03fe20cd9202a79700f743768a291256"
+            },
+            {
+              "advanceCeil": 2,
+              "count": 939,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "a967af40e826a3a70f4174ce2ed415fba943e669ac798d987317946f026f0780"
+            },
+            {
+              "advanceCeil": 3,
+              "count": 3227,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "c70047eabd6bb4378adabdb05151e988023f85976c991cc54d35db2443d22f2b"
+            },
+            {
+              "advanceCeil": 4,
+              "count": 7833,
+              "containsSpace": true,
+              "sortedCodePointsSha256": "42d9e0838fbb67c54dabcaa976bc10d0644e01af5e75447ed751d724616f1098"
+            },
+            {
+              "advanceCeil": 5,
+              "count": 4990,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "717a0a1c55925a726139973dd618eff1218b982e8f7e5ef749a35b41f0e88f77"
+            },
+            {
+              "advanceCeil": 6,
+              "count": 4659,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "b27a727c1509e37dea1ec35452f3da9df4948e0457954a5f95de5bf0d5ca5a4c"
+            },
+            {
+              "advanceCeil": 7,
+              "count": 3166,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "d72f8be3d671a43988b73681b7ccec1fca92f12918fdea996a345a6a8309fbeb"
+            },
+            {
+              "advanceCeil": 8,
+              "count": 21301,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "ee59167683b0db55120705cfc0e8b908bc3aab7c25d58d17dbacd3a17642dc0f"
+            },
+            {
+              "advanceCeil": 9,
+              "count": 67907,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "5fc6565cf6b545572ccc465a11ac328a673d0e39dadd5676452d3836e26d10f7"
+            },
+            {
+              "advanceCeil": 10,
+              "count": 182,
+              "containsSpace": false,
+              "sortedCodePointsSha256": "910596974caf68ad05e86e779da8158f9ee986863d8dc618e68c22bf05ff5e22"
+            }
+          ]
+        }
+      ],
+      "clientSha1": "e877b6a07acd633fb3bb475002175cec036e7b87",
+      "resourcePack": "vanilla default",
+      "language": "en_us",
+      "fontOptionForceUnicode": false,
+      "poolPath": "FontManager.fontSets[minecraft:default].glyphsByWidth",
+      "legacyMappedFields": null,
+      "fontOptionNote": "forceUnicodeFont:false in the isolated saved options file."
+    }
+  ],
+  "bundledProfile": {
+    "fontFamily": "GroundsMinecraft",
+    "candidateCodePointEntries": 194,
+    "classes": {
+      "1": 1,
+      "2": 11,
+      "3": 5,
+      "4": 20,
+      "5": 10,
+      "6": 130,
+      "7": 7,
+      "8": 7,
+      "10": 2,
+      "16": 1
+    }
+  }
+}
