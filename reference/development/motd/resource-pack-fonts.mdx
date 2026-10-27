@@ -224,7 +224,9 @@ The bundled viewer still uses its existing font profile and OFL raster data.
 The optional [bitmap decoder](/reference/development/motd/bitmap-fonts) pairs
 host-supplied RGBA pixels with bitmap glyph metrics. The
 [Unihex decoder](/reference/development/motd/unihex-fonts) handles host-extracted
-`.hex` bytes with per-glyph metrics. Integrating those glyphs
+`.hex` bytes with per-glyph metrics. You can compose their outputs and space
+advances into a [runtime glyph source](/reference/development/motd/runtime-font-source).
+Integrating those glyphs
 into the viewer, TTF decoding, resource-stack merging and native rendering
 calibration remain under [font import issue #8](https://github.com/groundsgg/library-motd/issues/8).
 You supply any original resources locally; the package includes no Mojang font

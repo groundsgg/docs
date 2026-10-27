@@ -1,0 +1,163 @@
+---
+title: "Compose runtime font glyphs"
+description: "Keep selected bitmap, Unihex and space metrics paired with lazy RGBA access in one standalone font source."
+---
+
+Use `createFontGlyphSource` from `@groundsgg/motd/fonts` to combine decoded
+local glyphs into one lookup. You supply layers in the precedence you want;
+the first layer defining a code point wins. The source keeps each selected
+glyph's metrics and raster access together without React, a DOM or Portal.
+
+<Note>
+  This is an unreleased addition after 0.3.0. It is a standalone runtime data
+  source, not a `FontProfile` or an option accepted by the viewer/editor yet.
+  Layout, visible rendering, obfuscation and the inline-editor caret/IME bridge
+  remain under [integration issue
+  #120](https://github.com/groundsgg/library-motd/issues/120). Do not infer
+  native rendered parity from successful composition.
+</Note>
+
+## Compose decoded layers
+
+Decode your selected local resources with the
+[bitmap](/reference/development/motd/bitmap-fonts) and
+[Unihex](/reference/development/motd/unihex-fonts) APIs first. A `space` layer
+accepts scalar-keyed advances, including the `advances` returned by
+[provider inspection](/reference/development/motd/resource-pack-fonts).
+
+```javascript compose-font.mjs
+import {
+  createFontGlyphSource,
+  decodeBitmapGlyphs,
+  decodeUnihexGlyphs,
+} from "@groundsgg/motd/fonts";
+
+// Original synthetic glyphs; no game resources are required.
+const bitmap = decodeBitmapGlyphs(
+  { height: 1, ascent: 1, chars: ["A"] },
+  { width: 1, height: 1, pixels: new Uint8Array([20, 40, 60, 128]) },
+);
+const unihex = decodeUnihexGlyphs({}, [
+  new TextEncoder().encode(
+    "0041:" + "38".repeat(16) + "\n01F600:" + "00".repeat(16),
+  ),
+]);
+if (!bitmap.value || !unihex.value) throw Error("Decode failed");
+
+const result = createFontGlyphSource([
+  { type: "space", advances: { " ": 4 } },
+  { type: "bitmap", glyphs: bitmap.value },
+  { type: "unihex", glyphs: unihex.value },
+]);
+if (!result.value) throw Error("Composition failed");
+
+const source = result.value;
+console.log(source.codePoints); // [32, 65, 128512]
+const a = source.glyphFor(65);
+console.log(a.advance, a.boldOffset); // 2, 1; bitmap layer wins over Unihex A
+console.log([...a.bitmap.pixels().value]); // [20, 40, 60, 128]
+console.log(source.glyphFor(128512).boldOffset); // 0.5; Unihex 😀
+console.log(source.glyphFor(32).bitmap); // null; explicit space glyph
+console.log(source.glyphFor(66)); // undefined; absent B
+```
+
+Layer order is explicit host input. This function does not merge resource-pack
+stacks, reverse a provider graph, select a client version, add bundled fallback
+glyphs or verify that your source is Vanilla-complete. Duplicate declarations
+within one supplied layer also keep the first entry; the decoders have already
+resolved their own input duplicates before this step.
+
+An explicit space or transparent bitmap in an earlier layer hides later glyphs.
+A blank Unihex glyph keeps its decoded width and half-pixel offsets. Neither is
+treated as a missing glyph. U+0000 is retained if supplied by Unihex; importing
+it does not change text control-character handling elsewhere in the library.
+
+## Read metrics and pixels together
+
+The frozen `FontGlyphSource` has `schemaVersion: 1`, sorted numeric `codePoints`
+and `glyphFor(codePoint)`. Unknown code points return `undefined`. Each selected
+`FontSourceGlyph` is frozen and contains:
+
+| Field                        | Meaning                                                      |
+| ---------------------------- | ------------------------------------------------------------ |
+| `codePoint`, `text`          | Numeric Unicode scalar and its one-scalar string.            |
+| `advance`                    | Logical GUI-pixel advance, independent of raster cell width. |
+| `boldOffset`, `shadowOffset` | Per-glyph GUI-pixel offsets; Unihex values remain 0.5.       |
+| `bitmap`                     | Frozen raster geometry and lazy pixel access, or `null`.     |
+
+A bitmap has `pixelWidth`, `pixelHeight`, `oversample`, `bearingLeft`,
+`bearingTop` and `pixels()`. `pixels()` returns the normal
+`Outcome<Uint8Array>` with fresh row-major, unpremultiplied RGBA bytes.
+Successful calls preserve all channel values, including partial alpha and RGB
+under transparent pixels. Check `value` and `diagnostics` before using the data.
+
+Space advances are rounded to Java float32 precision. Zero, negative zero and
+negative finite advances are preserved. A space has no bitmap; its bold/shadow
+offsets are 1. The source does not flatten glyph-specific offsets into a single
+global font setting or normalize scalar sequences into graphemes.
+
+Composition snapshots metadata and the selected provider method. It does not
+request pixel buffers. Every later `pixels()` call invokes that method with
+the original provider receiver, validates the result and copies its fixed byte
+extent. Mutating a returned copy does not affect subsequent reads.
+
+## Bound work and own the resource lifetime
+
+The optional second argument accepts positive integer limits up to fixed
+ceilings. Invalid options are errors rather than silent defaults.
+
+| Limit             | Default   | Ceiling    | Counts                                                 |
+| ----------------- | --------- | ---------- | ------------------------------------------------------ |
+| `maxProviders`    | 128       | 1,024      | Supplied layers, including empty or shadowed layers.   |
+| `maxGlyphs`       | 262,144   | 1,114,112  | All visited entries, including duplicates and shadows. |
+| `maxRasterPixels` | 4,194,304 | 16,777,216 | Pixels per glyph, checked before lazy raster copying.  |
+| `maxDimension`    | 4,096     | 8,192      | Raster width/height and absolute left/top bearings.    |
+
+Layer and glyph-array lengths are captured before visiting their entries, so
+getter-driven growth cannot extend the selected arrays beyond their budgets.
+Space processing counts own enumerable entries and ignores inherited entries.
+Invalid metadata is rejected even when an earlier layer hides that glyph.
+
+The source keeps references to selected decoded providers but adds no retained
+RGBA cache. Separate sources have separate lookup metadata. Release your source
+and any retained glyph handles when you no longer need their providers. A host
+renderer can add a bounded cache keyed by the source identity and its own
+lifetime; do not key only by character or font name.
+
+The supplied decoder outputs are stable snapshots. If you supply structural
+provider objects of your own, keep their pixel contents, callback behavior and
+version stable for the source's lifetime. JavaScript callbacks remain trusted
+host code: this API cannot limit allocation inside them or isolate arbitrary
+code execution. Budget input decoding separately. Fixed byte extents prevent
+backing-buffer growth from enlarging a selected read; they do not make shared
+contents atomic or establish version consistency.
+
+Do not persist the source, its functions or pixel buffers inside a
+`ServerListDocument`. Keep resource selection, loading, rights and disposal in
+your host. No original font files, textures, automatic downloads, archive
+extractor or upload service are added by this API.
+
+## Handle errors and check coverage
+
+Construction errors return `value: null` with no partial source. Lazy raster
+errors return `value: null` for that pixel request; they do not invalidate the
+already composed source or silently select a lower layer.
+
+| Diagnostic code       | Meaning                                                        |
+| --------------------- | -------------------------------------------------------------- |
+| `font-source-input`   | Invalid layer, Unicode scalar, metric or provider metadata.    |
+| `font-source-options` | Invalid limit name or value.                                   |
+| `font-source-limit`   | Exceeded budget; `parameters.limit` identifies the limit.      |
+| `font-source-raster`  | Pixel callback failed, returned no data, or returned bad RGBA. |
+
+Paths use zero-based dotted indices such as `layers.1.glyphs.0`. Callback
+exception details are replaced with fixed messages. Use the normal
+[localization API](/reference/development/motd/localization) for translated
+diagnostics.
+
+Tests use real decoder outputs from original synthetic data and cover mixed
+sources, precedence, blank glyphs, supplementary characters, frozen metadata,
+independent pixel copies, lazy failures, getter mutation and fixed byte bounds.
+Node and packed-package consumers exercise the same public export without React
+or browser globals. The decoders have separate numeric native-provider
+references; this composition layer has no rendered-client calibration yet.
