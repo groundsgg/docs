@@ -1,0 +1,150 @@
+---
+title: "Decode local bitmap fonts"
+description: "Extract matching glyph metrics and RGBA pixels from a host-decoded local bitmap-font atlas."
+---
+
+Use `decodeBitmapGlyphs` from `@groundsgg/motd/fonts` to obtain matching glyph
+metrics and pixel cells from a local bitmap-font image. You supply a bitmap
+definition and its decoded image; the library performs no image-file decoding,
+network request, filesystem access, or upload.
+
+<Note>
+  This is an unreleased addition after 0.3.0. The result is standalone glyph
+  data, not a `FontProfile`. Connecting imported glyphs to the viewer and its
+  layout engine remains separate work under [font import issue
+  #8](https://github.com/groundsgg/library-motd/issues/8).
+</Note>
+
+## Decode an atlas
+
+Your host must supply tightly packed, row-major, **unpremultiplied RGBA** bytes.
+`Uint8Array` and `Uint8ClampedArray` are accepted. Every pixel has four bytes in
+red, green, blue, alpha order. A bitmap leaf from
+[provider inspection](/reference/development/motd/resource-pack-fonts) can be
+passed directly as the definition.
+
+```javascript decode-bitmap.mjs
+import { decodeBitmapGlyphs } from "@groundsgg/motd/fonts";
+
+// Original synthetic image: one partly transparent ink pixel and one empty pixel.
+const pixels = new Uint8ClampedArray([10, 20, 30, 128, 255, 255, 255, 0]);
+const result = decodeBitmapGlyphs(
+  { height: 1, ascent: 1, chars: ["A"] },
+  { width: 2, height: 1, pixels },
+);
+
+if (!result.value) {
+  console.error(result.diagnostics);
+} else {
+  const font = result.value;
+  console.log(font.glyphs[0].advance); // 2 GUI pixels
+  console.log([...font.pixelsFor(65)]); // A's full RGBA cell
+}
+```
+
+The result has `schemaVersion: 1`, `imageWidth`, `imageHeight`, a frozen `glyphs`
+array sorted by numeric code point, and `pixelsFor(codePoint)`. The latter returns
+a fresh full-cell RGBA copy, or `undefined` for an absent code point. Mutating the
+input image or a returned pixel buffer does not change later reads or measured
+advances. Cache returned buffers in your renderer if needed; each call allocates
+one cell.
+
+## Glyph metrics and pixels
+
+Grid rows use Unicode code points, so a supplementary character occupies one
+cell. Empty or nonrectangular grids and unpaired surrogates fail validation.
+U+0000 reserves a cell without producing a glyph. A repeated character uses the
+last declared cell; one aggregate `font-bitmap-duplicates` warning records the
+number of replaced declarations.
+
+Cell width and height use integer division of image dimensions by grid columns
+and rows. Leftover right or bottom image edges are ignored. Pixel extraction
+retains the entire cell, including blank columns, transparent RGB values and
+partial alpha. Only alpha determines ink width: an alpha value of 1 counts as
+ink; nonzero RGB with alpha 0 does not.
+
+Each `BitmapGlyph` contains:
+
+| Field                        | Meaning                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `text`, `codePoint`          | One Unicode scalar and its numeric code point.                                                       |
+| `advance`                    | Native bitmap advance derived from the rightmost nontransparent column. An empty cell advances by 1. |
+| `boldOffset`, `shadowOffset` | Bitmap-provider offsets, both 1 GUI pixel.                                                           |
+| `pixelWidth`, `pixelHeight`  | Full source-cell dimensions.                                                                         |
+| `sourceX`, `sourceY`         | Cell origin in the supplied image.                                                                   |
+| `inkWidth`                   | Rightmost nontransparent column plus 1, or zero for an empty cell.                                   |
+| `scale`, `oversample`        | Java float32 design-height/cell-height scale and its float32 reciprocal.                             |
+| `bearingLeft`, `bearingTop`  | Zero left bearing and the definition's ascent.                                                       |
+
+`advance` follows the source-audited native calculation: multiply ink width by
+the float32 scale, round that multiplication to float32, add 0.5, truncate, and
+add 1. The full raster cell is preserved independently of the measured ink width.
+These metrics must stay paired with their pixels when integrating a renderer.
+
+## Bounds and host responsibilities
+
+The optional third argument contains decoding limits. Values must be positive
+integers within the fixed ceilings.
+
+| Limit          | Default   | Ceiling    | Counts                                                             |
+| -------------- | --------- | ---------- | ------------------------------------------------------------------ |
+| `maxPixels`    | 4,194,304 | 16,777,216 | Supplied atlas pixels; each has four bytes.                        |
+| `maxGlyphs`    | 65,536    | 262,144    | Grid cells, including reserved and duplicate cells.                |
+| `maxDimension` | 4,096     | 8,192      | Each atlas dimension, positive design height, and absolute ascent. |
+
+The image buffer length must equal `width * height * 4`. Width, height and cell
+dimensions must be positive integers. Design height defaults to 8 when omitted,
+must be positive, and must satisfy `ascent <= height`. Ascent may be negative
+within the dimension budget. Explicit `null` does not request a default.
+
+These are usable-decoder limits. The metadata-only provider inspector can retain
+native zero or negative bitmap heights, but this decoder rejects them. It takes
+one private snapshot of the bounded atlas after validating geometry. It does not
+retain your input image or expose its internal buffer.
+
+Decode PNG files before calling this API, and bound compressed bytes, decoded
+dimensions, image format conversion and allocations in your own loader. The
+decoder cannot undo memory already allocated by the host. If your image library
+uses premultiplied alpha or a different channel order, convert it first. This API
+does not infer grayscale PNG semantics or process encoded PNG bytes.
+
+The operation is synchronous. Run large imports in a host worker when needed.
+There is no background task or decoder-owned resource to dispose.
+
+## Diagnostics and verification
+
+Active errors return `value: null`; there is no partial usable glyph set.
+
+| Code                     | Meaning                                                           |
+| ------------------------ | ----------------------------------------------------------------- |
+| `font-bitmap-options`    | Invalid decoding limit.                                           |
+| `font-bitmap-image`      | Invalid image dimensions, byte storage, or RGBA length.           |
+| `font-bitmap-definition` | Malformed grid or unusable glyph geometry.                        |
+| `font-bitmap-limit`      | A decoding budget was exceeded; `parameters.limit` identifies it. |
+| `font-bitmap-duplicates` | Warning: later cells replaced earlier character declarations.     |
+
+Messages use the normal [localization API](/reference/development/motd/localization).
+Provider geometry, alpha scanning, float32 advance calculation and bitmap glyph
+offsets were checked against the official Java 26.3 classes on 2026-10-27. Tests
+use original synthetic RGBA data, including partial transparency, duplicate and
+supplementary characters, fractional scaling, immutable snapshots, resource
+limits and packed Node consumption without DOM or React.
+
+This is source-audit and synthetic decoder coverage. No native rendered
+resource-pack comparison is claimed. Original game assets, Unihex/TTF decoding,
+resource-stack merging and the viewer's font-provider integration remain outside
+this API; see [profile verification limits](/reference/development/motd/profiles).
+
+An additional isolated headless JVM probe executes the official 26.3 bitmap
+provider's `load`, glyph `info`, and `bake` methods with an original 41×82 RGBA
+image. A supplied stitcher observes the glyph bitmap without uploading to a GPU.
+The image has one white pixel with alpha 1 at `(40, 0)` and transparent pixels
+elsewhere; design height and ascent are both 1. The native provider returns
+advance **1**, while unrounded JavaScript arithmetic would return 2 at this
+half-pixel boundary. The numeric
+[reference manifest](https://github.com/groundsgg/library-motd/blob/main/tests/fixtures/client/native-bitmap-provider/26.3/manifest.json)
+records class/input hashes, exact observed metrics and the synthetic pixel
+recipe. The unit test rebuilds that input and checks the decoder against those
+observations. This is execution of provider methods, not a Minecraft screenshot
+or a full native rendering certification; no game binary or font atlas is
+included in the fixture or package.
