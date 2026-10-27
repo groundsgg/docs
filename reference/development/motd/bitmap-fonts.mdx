@@ -134,3 +134,17 @@ This is source-audit and synthetic decoder coverage. No native rendered
 resource-pack comparison is claimed. Original game assets, Unihex/TTF decoding,
 resource-stack merging and the viewer's font-provider integration remain outside
 this API; see [profile verification limits](/reference/development/motd/profiles).
+
+An additional isolated headless JVM probe executes the official 26.3 bitmap
+provider's `load`, glyph `info`, and `bake` methods with an original 41×82 RGBA
+image. A supplied stitcher observes the glyph bitmap without uploading to a GPU.
+The image has one white pixel with alpha 1 at `(40, 0)` and transparent pixels
+elsewhere; design height and ascent are both 1. The native provider returns
+advance **1**, while unrounded JavaScript arithmetic would return 2 at this
+half-pixel boundary. The numeric
+[reference manifest](https://github.com/groundsgg/library-motd/blob/main/tests/fixtures/client/native-bitmap-provider/26.3/manifest.json)
+records class/input hashes, exact observed metrics and the synthetic pixel
+recipe. The unit test rebuilds that input and checks the decoder against those
+observations. This is execution of provider methods, not a Minecraft screenshot
+or a full native rendering certification; no game binary or font atlas is
+included in the fixture or package.
