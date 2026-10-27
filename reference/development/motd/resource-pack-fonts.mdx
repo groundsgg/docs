@@ -184,9 +184,10 @@ packed Node consumption without React or DOM. These checks do not establish a
 rendered resource-pack font match.
 
 The bundled viewer still uses its existing font profile and OFL raster data.
-Decoding bitmap/Unihex data, pairing each glyph's metrics with raster data,
-per-glyph bold/shadow offsets, resource-stack merging, TTF support, and native
-rendering calibration remain under [font import issue #8](https://github.com/groundsgg/library-motd/issues/8).
+The optional [bitmap decoder](/reference/development/motd/bitmap-fonts) pairs
+host-supplied RGBA pixels with bitmap glyph metrics. Integrating those glyphs
+into the viewer, Unihex/TTF decoding, resource-stack merging and native rendering
+calibration remain under [font import issue #8](https://github.com/groundsgg/library-motd/issues/8).
 You supply any original resources locally; the package includes no Mojang font
 files, textures, or automatic downloads. See the existing
 [profile limits](/reference/development/motd/profiles).
