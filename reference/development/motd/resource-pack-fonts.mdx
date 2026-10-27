@@ -174,6 +174,14 @@ callback. Return `undefined` for a missing definition. Thrown reader errors are
 replaced with a fixed diagnostic; private filesystem paths and exception messages
 are not copied into diagnostics.
 
+The resolver captures a fixed byte-view extent before checking budgets or
+decoding JSON. Later growth of a shared backing buffer cannot expand that
+selected extent. Byte storage is identified from the actual typed array;
+overridden instance properties do not replace its type, buffer, offset or length.
+Cross-realm byte arrays and Node buffers remain supported. This fixes the
+selected length, not the byte contents: keep shared input contents stable during
+an import when you need a consistent resource version.
+
 The library supplies no ZIP extraction or file picker. If your host adds an
 archive or directory adapter, it owns compressed and uncompressed size limits,
 entry counts, symlink/root containment, binary image dimensions, selection

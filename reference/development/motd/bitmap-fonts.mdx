@@ -102,6 +102,13 @@ native zero or negative bitmap heights, but this decoder rejects them. It takes
 one private snapshot of the bounded atlas after validating geometry. It does not
 retain your input image or expose its internal buffer.
 
+The selected byte-view extent is fixed before length checks and snapshotting,
+so a growable backing buffer cannot increase the copied atlas after validation.
+The decoder uses the typed array's actual storage metadata, including for
+cross-realm and clamped RGBA arrays. The host still owns allocations and changes
+to its original backing buffer. The private snapshot keeps returned pixels and
+measured advances consistent after copying.
+
 Decode PNG files before calling this API, and bound compressed bytes, decoded
 dimensions, image format conversion and allocations in your own loader. The
 decoder cannot undo memory already allocated by the host. If your image library
