@@ -121,6 +121,35 @@ referenced files are skipped. An inactive unsupported provider is ignored. This
 is an active-graph preflight, not a full native loader's validation of every
 disabled definition.
 
+### Vanilla resources can span a JAR and indexed assets
+
+Provide the complete resource set for the client version you want to inspect.
+A client JAR alone is not always sufficient. In the audited Java 26.3 files,
+`assets/minecraft/font/include/unifont.json` inside the JAR has an empty provider
+list. Asset index 34 supplies `minecraft/font/include/unifont.json` with two
+Unihex providers and a separate `minecraft/font/include/unifont_pua.json`
+definition with another Unihex provider.
+
+A host selecting that version's local indexed assets maps the resolver's
+`assets/minecraft/font/include/unifont.json` request to the index key
+`minecraft/font/include/unifont.json`. Its object hash identifies the local
+`objects/<first-two-hash-characters>/<hash>` file. Resolve the chosen indexed
+resource before the JAR's placeholder for that resource. Your host still owns
+resource precedence, byte limits, version matching and local file containment;
+the resolver does not load an asset index or look up object files itself.
+
+<Warning>
+  A valid graph is not proof that you selected a complete Vanilla resource set.
+  A JAR-only reader can successfully return an empty Unifont graph for this
+  version. Missing files are errors, but intentionally empty provider lists are
+  valid definitions. Do not label a font as Vanilla-complete from graph success
+  alone.
+</Warning>
+
+These paths and counts describe the inspected 26.3 inputs. Other versions can
+use different definitions or asset indices. The library never downloads the
+missing assets, and the bitmap decoder does not add the missing Unihex glyphs.
+
 ## Bound reads and expansion
 
 The optional `limits` object accepts the following integer budgets. You may lower
