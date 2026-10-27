@@ -24,6 +24,10 @@ catch-up replacements. Actual browser and Java-client frame rates can still
 differ; the upper bound does not guarantee exactly 60 changes each second or
 an identical random sequence.
 
+[Browser frame timestamps have limited precision](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame).
+The budget tolerates small rounding differences, bounded by half of the observed
+frame gap, rather than skipping otherwise valid 60-Hz frames.
+
 Candidates come from the selected profile's `font.advances`. A candidate must be
 one Unicode code point. Width classes use the ceiling of the original non-bold
 advance; bold still contributes its separate layout advance. Spaces can occur
@@ -149,8 +153,8 @@ The painter reuses a render canvas and a separate color parser per document.
 Its CSS/bitmap and parsed-color caches stay bounded. Sustained rainbow text
 does not allocate a new backing surface for every glyph on every frame.
 
-Browser regressions cover native frame budgets at 30/60/120/144-Hz browser
-refresh, normal/bold/italic paint, width
+Browser regressions cover native frame budgets at 30/60/120/144/500-Hz browser
+refresh and rounded timestamps, normal/bold/italic paint, width
 classes, blank and supplementary-code-point candidates, stable geometry and
 editing state, live reduced motion, disposal, and iframe ownership. They do not
 certify an independent Windows Java client or shipping Safari.
