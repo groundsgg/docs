@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "clientVersion": "1.21.1",
+  "clientSha1": "30c73b1c5da787909b2f73340419fdf13b9def88",
+  "classSha256": {
+    "flm$a": "95acba0416e6e6c10732d3d18c9ca382f785fa3cfe481407745ed5d088a018bf",
+    "flm$b": "7d1f568f18fda3364dfbe9403d504cdf3eb478af6efa537ed41004de96a37e46",
+    "flm$b$1": "6ce98f6f0832096eb5654a0b9814d8879de9725a8cec212d9ded54785d65b737"
+  },
+  "method": "Executed official 1.21.1 BitmapProvider.Definition.load and glyph.getAdvance/bake in an isolated headless JVM. The helper uses its own named Java package so original JAR signer checks remain intact. A supplied Function observes the SheetGlyphInfo without GPU upload. Not a rendered client capture.",
+  "input": {
+    "width": 41,
+    "height": 82,
+    "definition": {
+      "height": 1,
+      "ascent": 1,
+      "chars": ["A"]
+    },
+    "pixels": [
+      {
+        "x": 40,
+        "y": 0,
+        "rgba": [255, 255, 255, 1]
+      }
+    ],
+    "otherPixels": "RGBA zero",
+    "pngSha256": "a4ba106d01fbbd7294c604e19c6bcdfba6227458dd88045970bafe144387a20e",
+    "rgbaSha256": "7ccf3ec75ff690e4d694b5421717f300025de4acadeabcfc4c38536d20bba1aa"
+  },
+  "expected": {
+    "codePoint": 65,
+    "advance": 1.0,
+    "boldOffset": 1.0,
+    "shadowOffset": 1.0,
+    "scale": 0.012195121496915817,
+    "sourceX": 0.0,
+    "sourceY": 0.0,
+    "pixelWidth": 41.0,
+    "pixelHeight": 82.0,
+    "bearingTop": 1.0,
+    "oversample": 82.0
+  },
+  "classNames": {
+    "flm$a": "net.minecraft.client.gui.font.providers.BitmapProvider$Definition",
+    "flm$b": "net.minecraft.client.gui.font.providers.BitmapProvider$Glyph",
+    "flm$b$1": "net.minecraft.client.gui.font.providers.BitmapProvider$Glyph$1"
+  }
+}

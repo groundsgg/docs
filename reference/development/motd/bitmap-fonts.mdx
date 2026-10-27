@@ -148,3 +148,13 @@ recipe. The unit test rebuilds that input and checks the decoder against those
 observations. This is execution of provider methods, not a Minecraft screenshot
 or a full native rendering certification; no game binary or font atlas is
 included in the fixture or package.
+
+The same original input was also passed through the official **1.21.1** provider
+in an isolated headless JVM. It returned the same advance, scale, oversample,
+cell geometry and bold/shadow offsets. The
+[1.21.1 numeric evidence](https://github.com/groundsgg/docs/blob/main/reference/development/motd/evidence/bitmap-provider-1.21.1-2026-10-27.json)
+records its client/class hashes and the observed values. That older probe uses
+a helper in its own Java package, preserving the original signed JAR's signer
+checks. It is a recorded provider execution; the automated decoder regression
+currently uses the 26.3 fixture. Neither probe certifies every glyph, encoded
+image format, intermediate client version or rendered font effect.
