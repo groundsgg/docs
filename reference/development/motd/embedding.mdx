@@ -39,6 +39,34 @@ For optional animated client-menu backgrounds, provide a `PanoramaBackground` th
 
 Preview defaults to a complete menu excerpt. `presentation: "row"` embeds just the entry. `viewportWidth` and optional `viewportHeight` are physical CSS pixels; `guiScale` maps GUI coordinates to CSS pixels. `selected` controls the native selection frame. `background` accepts `auto`, `dirt`, `panorama`, `none`, or `{imageUrl}`; `auto` follows the selected client profile or host assets. Controls change context, never persisted MOTD intent.
 
+For a row that fills its container, measure the available **content-box width**
+after padding and borders, and update the viewer/editor context on resize. A row
+scene includes four GUI pixels around `profile.geometry.rowWidth`. For an
+available width of at least half that scene width, use:
+
+```ts
+const guiScale = availableWidth / (profile.geometry.rowWidth + 4);
+const fittedContext = {
+  ...context,
+  presentation: "row" as const,
+  guiScale,
+  viewportWidth: availableWidth,
+};
+```
+
+Use the same scale in both axes. To keep a fixed client size, supply a fixed
+numeric `guiScale` instead and retain the logical row width. Let the containing
+surface scroll horizontally when it is narrower than the fixed scene; override
+the package's `max-width: 100%` on `.mcp-wrap` and `.mcp-stage` within that fixed
+surface. Keep editor canvas padding and toolbar sizing in host CSS. These are
+host layout choices and require no Grounds services. Full-menu sizing also
+depends on the chosen client viewport height.
+For fit widths below the supported `0.5` GUI scale, retain that minimum scale
+and use a scrollable surface too. Keep the supplied viewport wide enough for
+the full logical row and its four-GUI-pixel frame; reducing it changes text
+wrapping. Including the frame also avoids exact-fit line changes from fractional
+scale roundoff.
+
 PNG uploads preserve alpha. The editor offers a pixel-art image-plus action on icon hover and keyboard focus, and accepts dropped PNG/JPEG files. Uploading opens a local crop draft: move the square or enter crop coordinates, then Apply or Cancel. Replacement and reset are staged too; one Apply is one undoable change. Pending decoding can be cancelled, and stale uploads cannot overwrite a newer draft or replacement document. Read-only/disabled instances and plain previews have no upload action.
 
 APNG inputs use their static/default PNG image, including when it differs from

@@ -29,6 +29,31 @@ The Portal's example-player setting is a presentation value, not a claim of
 live network presence. Only replace labeled examples after wiring an authorized
 data source for the selected environment.
 
+## Choose the display size
+
+In **Preview settings → Preview size**, **Fit available width** scales the row
+proportionally to the content width of its own editor canvas or viewer container.
+The toolbar keeps its normal size. Each viewer measures its own container, so
+the editor and sidebar preview can use different display scales.
+The library's minimum GUI scale is `0.5`. Below that minimum scene width, the
+Portal retains the native row width and allows horizontal scrolling, preserving
+the MOTD's line breaks.
+
+Choose **Fixed client size** to select a GUI scale from **1×** through **4×**.
+The row retains the selected client geometry and scale when its container
+shrinks. Narrow editor canvases and previews scroll horizontally instead of
+clipping or compressing the row. The editor and its associated preview share
+this choice.
+
+`NetworkPreviewSettings.sizeMode` is optional and defaults to `"fit"`.
+`guiScale` is an optional `1 | 2 | 3 | 4`, defaulting to `2` in fixed mode.
+Both are local presentation settings; changing them does not dirty or save the
+MOTD. They map to the published library's existing `context.guiScale` and
+`context.viewportWidth`, with no Portal-specific package API.
+
+See [embedding](/reference/development/motd/embedding) for the standalone sizing
+contract. This Portal change does not require a new npm release.
+
 ## Use network-wide data
 
 For a global count, supply authoritative presence across all proxies. For a
