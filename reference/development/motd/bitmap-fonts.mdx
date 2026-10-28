@@ -177,6 +177,14 @@ standalone and packed Node consumers cover both directions of rounding. These
 are provider observations, not rendered screenshots or proof that such unusually
 large advances pass every native font-filter path.
 
+The same two images were also executed through the official **1.21.1**
+provider on 2026-10-28. Its glyph's `getAdvance()` returns the same rounded
+values, 16777216 and 16789508, with matching scale, cell geometry, oversample
+and offsets. The [1.21.1 float32 observations](https://github.com/groundsgg/docs/blob/main/reference/development/motd/evidence/bitmap-advance-float32-1.21.1-2026-10-28.json)
+retain that client's hashes and independently observed results. The automated
+large-advance regression still uses the 26.3 fixture; neither probe verifies
+every intermediate client version or rendered font effect.
+
 The same original input was also passed through the official **1.21.1** provider
 in an isolated headless JVM. It returned the same advance, scale, oversample,
 cell geometry and bold/shadow offsets. The
