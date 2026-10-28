@@ -161,3 +161,61 @@ independent pixel copies, lazy failures, getter mutation and fixed byte bounds.
 Node and packed-package consumers exercise the same public export without React
 or browser globals. The decoders have separate numeric native-provider
 references; this composition layer has no rendered-client calibration yet.
+
+## Native geometry observations
+
+An isolated JVM probe on 2026-10-28 executes the official Java 26.3 bitmap and
+Unihex providers with original synthetic inputs. It observes each provider's
+`GlyphBitmap` bounds, constructs the official `BakedSheetGlyph` through a host
+stitcher, and executes `createGlyph` and the resulting styled glyph's `render`
+method. An observing `VertexConsumer` records the emitted positions, colors and
+UVs; its native default methods execute normally.
+
+The probe uses an original 4×4 RGBA bitmap with design height 8 and ascent 7,
+and an original Unihex line `0041:` followed by `38` repeated 16 times. It records
+regular, italic, bold and bold-italic draws, each with shadow enabled and
+disabled: **16 cases and 144 vertices**. The draw origin is `(10.25, 20.5)` with
+an identity transform, synthetic UV bounds `[0, 1]`, and native render flag
+`true`.
+
+| Observed value | Bitmap A | Unihex A |
+| --- | --- | --- |
+| Regular advance | 7 | 2 |
+| Raster cell | 4×4 | 3×16 |
+| Oversample | 0.5 | 2 |
+| Unstyled quad width × height | 8×8 | 1.5×8 |
+| Duplicate bold draw offset | 1 | 0.5 |
+| Shadow offset in both axes | 1 | 0.5 |
+
+The observations keep advance and raster geometry separate. Bold draws also
+expand each quad by approximately 0.1 GUI pixel on each edge before emitting the
+second draw at the provider's bold offset. Italic draws shear the top and bottom
+of the quad; these two input quads shift the top edge by +1 and the bottom edge
+by −1. With shadow enabled, the shadow draw or draws precede the foreground.
+The numeric evidence retains exact float32 coordinates rather than rounding
+them to these explanatory decimal values.
+
+Native `left()`, `right()`, `top()` and `bottom()` accessors do not always give
+the complete extent of emitted vertices. In the bitmap bold case without
+shadow, `right()` returns approximately 18.35, while the duplicate draw reaches
+approximately 19.35. The Unihex case has the same distinction with a 0.5 offset.
+The evidence names these accessor results `reportedBounds` and separately
+records the vertex union as `emittedBounds`. A renderer's raster allocation or
+clipping must account for every emitted draw.
+
+The [numeric geometry evidence](https://github.com/groundsgg/docs/blob/main/reference/development/motd/evidence/glyph-geometry-26.3-2026-10-28.json)
+contains client/class and original-input hashes, pixel recipes, arguments and
+all recorded vertices. No original game assets or classes are included.
+
+<Note>
+  These are CPU vertex observations, not rendered screenshots. The host stitcher
+  supplies synthetic UVs and no GPU texture or render-type objects. It bypasses
+  `FontTexture.add`, atlas allocation, font-set selection, shaders and blending.
+  The bitmap includes partial alpha, but recording vertices does not test alpha
+  cutoff or compositing; recorded ARGB values are vertex attributes, not final
+  framebuffer colors. Other transforms, render flags and depth behavior are not
+  covered. GUI scales, device pixel ratios, decorations, combined
+  provider selection, obfuscation and the editor's caret/IME mapping still need
+  their own calibration under issue #120. These observations do not add a
+  viewer/editor font-source option.
+</Note>
