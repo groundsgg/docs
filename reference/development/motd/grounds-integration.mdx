@@ -85,6 +85,29 @@ not a new mandatory Grounds field in the npm core. If you enrich editor changes
 with `mapChange`, keep metadata in the same history transaction so Undo followed
 by Save restores the intended inheritance.
 
+### Start from the normal MOTD
+
+In the selected environment's Maintenance tab, **Copy normal MOTD** replaces
+only the maintenance MOTD draft with a snapshot of the **saved** normal MOTD.
+It retains formatting and semantic line alignment while preserving other
+maintenance status overrides, the maintenance window and player messages.
+Edit that draft independently, then choose **Save maintenance** to apply it.
+Copying does not save, enable maintenance, change the normal MOTD or create an
+ongoing synchronization link. Later normal-MOTD refreshes do not overwrite the
+copied draft. Read-only users cannot copy or save.
+
+**Use normal MOTD text** has different semantics: an empty maintenance MOTD
+continues to inherit the normal text. Turning inheritance off starts an
+independent copy with its alignment metadata intact. Unsaved edits in the
+Server message tab are not the saved normal snapshot; save those first if you
+want to use them as the maintenance starting point.
+
+Avoid copying the generated MiniMessage fallback manually when the source
+contains dynamic placeholders and alignment. Fixed leading spaces computed
+for the literal `{{region}}` will no longer center the line after the proxy
+resolves it to a shorter value such as `eu`. Preserve the document's alignment
+intent so the runtime measures the resolved text before adding spaces.
+
 ## Validate the actual consumer
 
 Test the installed package and the production bundle, not only source aliases.
