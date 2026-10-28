@@ -154,13 +154,21 @@ ink shadow offset is `0.5`.
 Legacy software viewers compose shadow-ink, shadow-decoration, foreground-ink
 and foreground-decoration layers. Within one line, a later glyph's shadow cannot
 cover an earlier glyph's foreground. Native server lists emit lines separately;
-their depth/blending behavior across overlapping lines still needs framebuffer
-comparison. All required layers are preflighted before
+one opaque overlapping-line framebuffer probe confirms the sampled underline
+depth behavior, while general depth/blending interactions remain unverified.
+All required layers are preflighted before
 reading host pixels and share the same frame allocation limits. The editor does
 not use this imported-font path. Switching a viewer between the two supported
 geometry variants redraws its ink while retaining its source-owned raw cache.
 If a later canvas context is unavailable, the viewer discards all of that
 glyph's staged layers and reports `font-runtime-unavailable`.
+
+The 1.21.1 imported raster origin is half a GUI pixel to the right and one GUI
+pixel below the bundled face's text box. The integer native horizontal anchor
+also avoids different canvas snapping between engines. The viewer reserves
+the extra baseline pixel so a second-line underline
+is retained. A [real-client placement probe](/reference/development/motd/runtime-font-source#framebuffer-placement-probe)
+checks the original glyph's anchor and sampled underline overlap at GUI scale 2.
 
 The [executed CPU geometry evidence](/reference/development/motd/runtime-font-source#native-geometry-observations)
 covers original bitmap/Unihex inputs and native regular, bold, italic and shadow

@@ -271,3 +271,27 @@ pixel center.
   redistributed. The 26.3 observation above retains its narrower glyph-only
   coverage; this 1.21.1 probe does not extend 26.3 decoration certification.
 </Note>
+
+### Framebuffer placement probe
+
+A separate offline Java 1.21.1 client runs on an isolated software-OpenGL display
+at 854×480 with GUI scale 2. An original local resource pack supplies a fully
+opaque 1×14 bitmap for `A`, with height/ascent 14. A localhost status response
+renders a red underlined `A`, then a green `A` on the next line using that font.
+The screenshot stays private; the [numeric framebuffer samples](https://github.com/groundsgg/docs/blob/main/reference/development/motd/evidence/glyph-frame-anchors-1.21.1-2026-10-28.json)
+contain original-input metadata, the client/frame hashes and only the measured
+test-glyph colors/positions.
+
+Relative to the server icon, the green glyph occupies pixels x70–71 and
+y28–55. The earlier red underline occupies x68–73 and y40–41, including where
+it crosses the later green glyph. The viewer matches those sampled positions
+and colors in Chromium, Firefox and WebKit. Imported rasters use the native
+horizontal anchor half a GUI pixel to the right of the bundled text box,
+avoiding engine-dependent canvas snapping. The vertical anchor moves down one
+GUI pixel. This also confirms the sampled opaque underline depth order.
+
+Native oversized ink can extend above the MOTD text box. The viewer retains its
+explicit bounded two-line clipping, so that upward overflow is not reproduced.
+This single original glyph at scale 2 does not certify all font shapes, partial
+alpha, general depth/blending, atlas policies, other scales/DPRs or client
+versions. The `font-runtime-unverified` diagnostic remains active.
