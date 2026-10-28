@@ -50,6 +50,22 @@ Supported bundled per-glyph text now uses deterministic OFL cell masks for norma
 
 The font derivatives now align both `hmtx` and CFF charstring widths; correcting only `hmtx` left 191 regular and 190 bold glyph advances inconsistent, which Windows exposed as wider inline text. `tools/build-fonts.py` reproduces the OFL derivatives with fontTools 4.60.1, preserving outlines and rebuilding charstrings without glyph hints. This is a maintainer operation; npm consumers and ordinary package builds do not require Python.
 
+## Ping indicator under layout zoom
+
+The procedural ping indicator uses a single 10×8 SVG coordinate space for its
+foreground, shadows and incompatible-version cross. The earlier five CSS boxes
+rounded independently at 90% layout zoom and could merge the final two bars,
+even with an integer GUI scale. No game sprite is included.
+
+Browser regressions check five separated columns in viewer and editor at GUI
+scale 2 and layout zoom 80%, 90%, 100%, 110% and 125%, including every active-bar
+count and the editor's version-settings action. Chromium, Firefox and WebKit run
+the cases; Windows CI also includes the Chromium regression. Existing native
+menu-reference tests still compare foreground and shadow masks at their measured
+client scales. The packed production artifact checks the 90% zoom case too.
+This does not establish pixel-perfect output at every zoom/DPR combination or
+at physical scales too small to preserve the source pixel grid.
+
 ## Word wrapping and text capabilities, 2026-10-23
 
 All eight presets declare `font.layout: "java-ltr"`. The shared layout breaks at
