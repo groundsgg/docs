@@ -31,6 +31,31 @@ These checks do not certify every glyph, wrapping case, resource pack, translate
 
 Custom geometry can optionally set `statusRight` (status-text inset), `listFade` (legacy edge-fade height) and `selectionCenterRounding: "floor"`. Omitted values retain the standard status inset and selection centering without a list fade. Full-menu viewports retain their requested physical dimensions when GUI scaling produces fractional logical dimensions; compact row presentation keeps its existing dimensions.
 
+## Alignment precision
+
+Center/right alignment targets the MOTD text area to the right of the server
+icon. It does not center against the entire server row or game window. In the
+current implementation, padding uses whole regular spaces; with the default
+Vanilla font this advances in 4-GUI-pixel steps. Two centered lines can therefore
+have visibly different ink centers even when their measured advances are right.
+
+An isolated official 26.3 capture at 854×480 and GUI scale 2 verified this with a
+103-pixel bold heading and an 88-pixel second line after resolving `{{region}}`
+to `eu`. The modern MOTD area is 267 GUI pixels wide. Regular-space rounding
+produces 84 and 88 pixels of padding, respectively. This remaining precision
+limit is separate from the [maintenance copy metadata fix](/reference/development/motd/grounds-integration#start-from-the-normal-motd).
+
+A diagnostic native test mixed regular 4-pixel spaces and bold 5-pixel spaces:
+18 regular + 2 bold spaces before the heading, and 20 regular + 2 bold spaces
+before the second line. The visible ink centers were 462 and 463 physical pixels,
+against a text-area center of 462. No custom resource pack was used.
+
+This finer algorithm is **not shipped** in 0.4.0. Implementation, export/proxy
+consistency and broader native validation are tracked in
+[library-motd #142](https://github.com/groundsgg/library-motd/issues/142).
+Existing imported whitespace is not automatically rewritten. Raw client captures
+and game files stay outside the repository and npm package.
+
 ## Font and decoration references (2026-10-23)
 
 `tests/fixtures/client/native-font/<version>/` contains 11 cases from a separate official-client launch for each of the eight presets, at 854×480, GUI scale 2 and the vanilla default resource pack. Each manifest records the complete JSON status description, client SHA-1, crop coordinates, cropped-image SHA-256 and source-screenshot SHA-256. The 112 cropped screenshots cover ASCII, umlauts/Latin-1, Greek/Cyrillic/CJK/emoji/symbols, composed and decomposed accents, missing code points, bold, italic, underline, strikethrough, obfuscation and shadows. Runtime game files remain outside the repository; reference screenshots are excluded from npm.
