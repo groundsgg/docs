@@ -97,7 +97,8 @@ transparent bitmap cells remain explicit raster cells. Missing glyphs retain an
 approximate profile width but produce no imported ink and report `missing-glyph`.
 Failed raster reads also produce no imported ink and report controlled errors.
 
-Runtime layout accumulates advances at float32 precision. Aligned output uses
+The native regular/bold-space precision improvement does not change imported
+font alignment. Runtime layout accumulates advances at float32 precision. Aligned output uses
 the imported space glyph and retains the exact synthesized `lines[].spaceCount`
 so serialization does not reconstruct a count from rounded pixel distances.
 A missing, zero or negative space advance cannot materialize alignment and
