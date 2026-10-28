@@ -31,6 +31,49 @@ font or resource pack is already pixel-verified. Keep profile evidence,
 approximation diagnostics and [known limits](/reference/development/motd/limitations) explicit. Unknown
 context-dependent components must not be replaced with invented game data.
 
+## Native atlas sprites in text
+
+A static status response can refer to a client resource that is itself animated.
+Java **1.21.9** introduced the `object` text component, including atlas sprites.
+The [official release notes](https://www.minecraft.net/en-us/article/minecraft-java-edition-1-21-9)
+specify an 8×8-pixel object rectangle and state that bold and italic styles are
+ignored for these objects. For example, an atlas component may contain:
+
+```json
+{
+  "atlas": "minecraft:gui",
+  "sprite": "minecraft:icon/trial_available",
+  "color": "white",
+  "shadow_color": 0
+}
+```
+
+This is different from transmitting a sequence of MOTD frames. The client
+looks up the named resource in its atlas; any supported resource animation is
+client-owned. A server-list viewer targeting Vanilla must account for this
+capability instead of treating every non-obfuscated component as static text.
+
+On 2026-10-28, direct status requests to Cytooxien through its advertised SRV
+target returned two such components in the second description line for protocol
+777 (26.3). The protocol 767 (1.21.1) response omitted them. Its first line used
+Unicode small-capital characters, RGB colors and `shadow_color`, with no custom
+`font` identifier. This observation concerns those responses, not every possible
+client version or future Cytooxien configuration.
+
+The locally installed official 26.3 client contains animation metadata for
+`trial_available`: six frame indexes with durations 10, 2, 2, 2, 2 and 2 ticks.
+That metadata establishes the resource animation; it does not certify our
+viewer's timing or rendering. No original texture is distributed with this
+investigation.
+
+<Warning>
+  Version 0.4.0 does not yet render atlas object components as sprites. Track
+  parsing, version-specific layout, host-supplied resources and native capture
+  validation in [library-motd #141](https://github.com/groundsgg/library-motd/issues/141).
+  Preserve unsupported source and diagnostics rather than substituting invented
+  symbols. Legacy clients need an explicit fallback.
+</Warning>
+
 ## What the native client demonstrated
 
 An isolated official Java 26.3 client (protocol 777) displayed a local status
@@ -73,7 +116,7 @@ or assume that one proxy's count represents the whole network.
 An ordinary Java status export contains one description and icon snapshot.
 It must not invent timeline protocol fields, export CSS as native animation or
 promise that a Vanilla client will continuously update an already displayed
-response. Client-owned obfuscation and panorama motion do not establish support
+response. Client-owned obfuscation, atlas animation and panorama motion do not establish support
 for arbitrary server-supplied animation.
 
 ## Scope decision
