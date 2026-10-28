@@ -1,0 +1,159 @@
+---
+title: "Render imported MOTD fonts"
+description: "Use a paired local glyph source in standalone MOTD viewers with explicit geometry coverage and bounded raster work."
+---
+
+Pass a [paired runtime source](/reference/development/motd/runtime-font-source)
+as `motdFontSource` to `createPreview` or React's `ServerListPreview`. The viewer
+uses the selected glyph's metrics and RGBA together for MOTD text. The server
+name, version/player text, hover content and menu controls keep the profile font.
+
+<Note>
+  This is an unreleased addition after 0.3.0. `java263Profile` declares the
+  supported `font.runtimeGlyphGeometry: "java-26.3"` CPU geometry. Other built-in
+  profiles use their profile text instead and report `font-runtime-profile`
+  when a source is supplied. Older and intermediate clients need their own
+  rendering calibration. The optional editor does not accept this source yet.
+</Note>
+
+## Supply local glyphs to a viewer
+
+This complete browser-module example creates an original square-shaped glyph
+for `A`. Use a bundler that resolves the package and CSS imports.
+
+```javascript imported-font-viewer.js
+import { createDocument, java263Profile, parseText } from "@groundsgg/motd";
+import { createPreview } from "@groundsgg/motd/dom";
+import { createFontGlyphSource, decodeBitmapGlyphs } from "@groundsgg/motd/fonts";
+import "@groundsgg/motd/styles.css";
+
+const decoded = decodeBitmapGlyphs(
+  { height: 8, ascent: 7, chars: ["A"] },
+  { width: 1, height: 1, pixels: new Uint8Array([255, 255, 255, 255]) },
+);
+if (!decoded.value) throw Error("Invalid local bitmap");
+const composed = createFontGlyphSource([
+  { type: "bitmap", glyphs: decoded.value },
+  { type: "space", advances: { " ": 4 } },
+]);
+if (!composed.value) throw Error("Invalid local font source");
+
+const host = document.createElement("div");
+document.body.append(host);
+const context = {
+  base: {
+    version: { protocol: 777, name: "26.3" },
+    players: { online: 5, max: 100, sample: [] },
+    description: "",
+  },
+  clientProtocol: 777,
+  values: {},
+  profile: java263Profile,
+  viewportWidth: 640,
+  guiScale: 2,
+  serverName: "Local font example",
+  pingMs: 10,
+  animations: false,
+};
+const viewer = createPreview(host, {
+  document: createDocument(parseText("<aqua>A <b>A</b>", "minimessage").value),
+  context,
+  motdFontSource: composed.value,
+});
+console.log(viewer.getDiagnostics()); // Includes font-runtime-unverified.
+// When this surface is no longer needed:
+// viewer.destroy();
+```
+
+`ServerListPreview` accepts the same `document`, `context` and `motdFontSource`
+props. Server rendering remains safe and does not materialize pixels. Keep your
+source identity stable, for example with React `useMemo`, and create a new source
+when your resource contents or version changes. The React example has a
+**Show local font example** checkbox with original bitmap/Unihex letter shapes.
+
+For comparisons, set `motdFontSource` independently on each `ComparisonClient`.
+Source replacement clears that viewer's raster cache. Destroying the viewer
+stops its animation and releases its retained raster data. Saved
+`ServerListDocument` values contain no source functions or pixel buffers.
+
+Custom profiles can explicitly declare `font.runtimeGlyphGeometry: "java-26.3"`
+to select these CPU equations. This declaration selects behavior; it does not
+certify a custom profile, an older client or a resource pack. Supplying any
+runtime source marks that preview's `data-profile-verified` as `false`.
+
+## Metrics, scalar lookup and drawing
+
+`layoutText(text, { profile, width, fontSource })` resolves Unicode scalars from
+the source without NFC normalization. Supplementary characters keep UTF-16
+source positions, and combining sequences can contain several glyphs. Ordinary
+layout without a source keeps its existing grapheme behavior. The editor's
+selection/caret model therefore continues to use the ordinary path.
+
+Each layout glyph carries its selected `fontGlyph` metadata. The painter uses
+that same selection for bearings, oversampling, bold/shadow offsets, italic
+shear and lazy RGBA access. Explicit space glyphs have no textured quad;
+transparent bitmap cells remain explicit raster cells. Missing glyphs retain an
+approximate profile width but produce no imported ink and report `missing-glyph`.
+Failed raster reads also produce no imported ink and report controlled errors.
+
+Runtime layout accumulates advances at float32 precision. Aligned output uses
+the imported space glyph and retains the exact synthesized `lines[].spaceCount`
+so serialization does not reconstruct a count from rounded pixel distances.
+A missing, zero or negative space advance cannot materialize alignment and
+reports `alignment-unavailable`. At most 16,384 alignment spaces are synthesized
+across one layout result; requests beyond that budget omit that padding and
+report `font-runtime-alignment-limit`.
+
+With `context.animations: true`, obfuscated MOTD text selects from the supplied
+source's regular-advance ceiling classes and redraws with each selected glyph's
+metrics. It uses the existing menu frame budget and reduced-motion handling.
+Core layout remains deterministic unless you explicitly supply the optional
+draw-time `obfuscationRandom` function. Do not use draw-time random selection to
+persist an MOTD. Native resource-stack filtering and complete native replacement
+pool calibration remain under
+[issue #106](https://github.com/groundsgg/library-motd/issues/106).
+
+## Raster budgets and diagnostics
+
+Each viewer owns its raster cache and active canvases. Viewers do not share
+mutable raster copies, even when they receive the same source.
+
+| Bound | Value |
+| --- | --- |
+| Cached raw RGBA | 8 MiB and 512 entries per viewer/source lifetime |
+| Maximum raw glyph read | 8 MiB; larger cells are rejected before invoking the pixel callback |
+| Active canvas pixel storage | 8 MiB across one MOTD frame |
+| One canvas | 1,048,576 pixels and at most 4,096 pixels per axis |
+| Paint attempts | 1,024 per MOTD frame |
+| Physical paint scale | GUI scale × device pixel ratio in `[0.5, 16]` |
+
+Large quads are clipped to the bounded two-line MOTD viewport; the texture is
+not stretched to fit. Out-of-budget drawing reports `font-runtime-limit`.
+Unavailable canvas drawing reports `font-runtime-unavailable`. These bounds
+cover the renderer's data, not allocations inside trusted host callbacks,
+source construction, temporary conversion buffers or browser/GPU overhead.
+Keep host decoding budgets and source-lifetime guarantees as described in the
+[source API](/reference/development/motd/runtime-font-source).
+
+Use `getDiagnostics()` to inspect current problems, including those arising
+when a later obfuscation candidate needs a different raster. Comparison surfaces
+also update their diagnostic notes when the visible runtime selection changes.
+Diagnostic messages use the normal
+[localization API](/reference/development/motd/localization).
+
+## Verification boundary
+
+The [executed CPU geometry evidence](/reference/development/motd/runtime-font-source#native-geometry-observations)
+covers original bitmap/Unihex inputs and native regular, bold, italic and shadow
+quad coordinates. Unit tests compare the renderer's quads with those exact
+observations. Browser tests exercise GUI scales 1–3, DPR 1–2, partial alpha,
+source isolation, limits, placeholders, motion and React lifecycle. Installed
+Node/DOM consumers, React SSR and a production-bundled viewer are checked too.
+
+`font-runtime-unverified` remains an explicit diagnostic: the software sampler
+does not have full native GPU framebuffer certification. It applies the audited
+text alpha cutoff and atlas-edge sampling policy, but native atlas allocation,
+shader/blending results, all client versions and resource-pack combinations
+still need rendered comparison. There is no original game texture or font
+download in this API. Broader field coverage and the editor's actual caret/IME
+bridge remain under [issue #120](https://github.com/groundsgg/library-motd/issues/120).
