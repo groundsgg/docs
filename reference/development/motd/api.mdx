@@ -62,7 +62,9 @@ that remains available for source mapping. See [profiles.md](/reference/developm
 supported shaping and diagnostic boundaries.
 
 `serializeText(..., { layout })` materializes measured visual lines and their
-space-quantized alignment. Ordinary export preserves source whitespace/newlines.
+native-space alignment. The unreleased [precision fix](/reference/development/motd/profiles#alignment-precision)
+uses regular/bold space advances for supported Java profiles; runtime/custom
+fonts keep their conservative path. Ordinary export preserves source whitespace/newlines.
 Layout that would split a protected component or unresolved token returns
 `protected-layout`; resolve values first or export without layout.
 `evaluateStatus(document, context)` accepts optional

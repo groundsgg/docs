@@ -34,27 +34,52 @@ Custom geometry can optionally set `statusRight` (status-text inset), `listFade`
 ## Alignment precision
 
 Center/right alignment targets the MOTD text area to the right of the server
-icon. It does not center against the entire server row or game window. In the
-current implementation, padding uses whole regular spaces; with the default
-Vanilla font this advances in 4-GUI-pixel steps. Two centered lines can therefore
-have visibly different ink centers even when their measured advances are right.
+icon. It does not center against the entire server row or game window.
 
-An isolated official 26.3 capture at 854×480 and GUI scale 2 verified this with a
-103-pixel bold heading and an 88-pixel second line after resolving `{{region}}`
-to `eu`. The modern MOTD area is 267 GUI pixels wide. Regular-space rounding
-produces 84 and 88 pixels of padding, respectively. This remaining precision
-limit is separate from the [maintenance copy metadata fix](/reference/development/motd/grounds-integration#start-from-the-normal-motd).
+<Note>
+  The finer algorithm below is an unreleased patch tracked in
+  [library-motd #145](https://github.com/groundsgg/library-motd/pull/145) and
+  [Proxy #113](https://github.com/groundsgg/plugin-proxy/pull/113).
+  Published 0.4.0 still rounds padding to regular 4-GUI-pixel spaces.
+</Note>
 
-A diagnostic native test mixed regular 4-pixel spaces and bold 5-pixel spaces:
-18 regular + 2 bold spaces before the heading, and 20 regular + 2 bold spaces
-before the second line. The visible ink centers were 462 and 463 physical pixels,
-against a text-area center of 462. No custom resource pack was used.
+The patch chooses the closest realizable mixture of regular 4-pixel and bold
+5-pixel spaces. Only measured Java LTR profiles with that space advance and bold
+offset use it. The search stays within the remaining line width; equal-distance
+choices prefer the larger padding, then fewer bold spaces. Very short gaps can
+still be unrepresentable. Layout, editor/viewer positioning and materialized
+MiniMessage, JSON and legacy output use the same result. Invisible padding's
+bold style does not change the message's own formatting.
 
-This finer algorithm is **not shipped** in 0.4.0. Implementation, export/proxy
-consistency and broader native validation are tracked in
-[library-motd #142](https://github.com/groundsgg/library-motd/issues/142).
-Existing imported whitespace is not automatically rewritten. Raw client captures
-and game files stay outside the repository and npm package.
+Custom profiles without these metrics, and imported runtime font sources,
+retain their regular-space behavior. Runtime sources also retain their bounded
+float32 accumulation and exact synthesized-space count. This does not certify
+arbitrary client resource packs.
+
+For the modern 267-pixel text area, a 103-pixel bold heading receives 82 pixels
+of padding; `Stage System | eu` advances 88 pixels and receives 90 pixels of
+padding. The latter resolves `{{region}}` before measuring. A variable's literal
+spelling must not determine its final runtime position. Ordinary source export
+and saved source remain unchanged; explicit layout export synthesizes padding.
+Existing imported leading whitespace is not automatically stripped or migrated.
+The [maintenance snapshot action](/reference/development/motd/grounds-integration#start-from-the-normal-motd)
+preserves alignment intent without copying fallback padding as editable text.
+
+Independent official-client captures used the **actual `evaluateStatus` JSON**
+for `eu` and `europe`, at 854×480, GUI scale 2 and the Vanilla default pack:
+
+| Client | Text-area center (physical pixels) | Heading ink center | Second-line ink center, both values |
+| --- | --- | --- | --- |
+| 26.3 | 462 | 462 | 463 |
+| 1.21.1 | 466 | 466 | 467 |
+
+The visible line centers differ by one physical pixel in these cases. The
+browser regression checks the same foreground left edges and widths in both
+viewer and inline editor, across Chromium, Firefox and WebKit. Numeric fixtures
+record the original test responses, client hashes, resource-pack settings and
+capture hashes under `tests/fixtures/client/native-alignment/`. Raw screenshots
+and game files are not distributed. This bounded evidence does not certify
+every string, GUI scale, font or client version; profiles remain unverified.
 
 ## Font and decoration references (2026-10-23)
 
