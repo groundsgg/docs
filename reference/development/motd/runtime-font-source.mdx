@@ -10,11 +10,12 @@ glyph's metrics and raster access together without React, a DOM or Portal.
 
 <Note>
   This is an unreleased addition after 0.3.0. It is a standalone runtime data
-  source, not a `FontProfile` or an option accepted by the viewer/editor yet.
-  Layout, visible rendering, obfuscation and the inline-editor caret/IME bridge
-  remain under [integration issue
-  #120](https://github.com/groundsgg/library-motd/issues/120). Do not infer
-  native rendered parity from successful composition.
+  source. The [MOTD font viewer](/reference/development/motd/runtime-font-viewer)
+  accepts it through `motdFontSource` when the profile declares the supported
+  CPU geometry. Inline-editor caret/IME integration and broader native rendering
+  calibration remain under [issue
+  #120](https://github.com/groundsgg/library-motd/issues/120). Successful
+  composition does not establish native rendered parity.
 </Note>
 
 ## Compose decoded layers
@@ -95,6 +96,13 @@ Space advances are rounded to Java float32 precision. Zero, negative zero and
 negative finite advances are preserved. A space has no bitmap; its bold/shadow
 offsets are 1. The source does not flatten glyph-specific offsets into a single
 global font setting or normalize scalar sequences into graphemes.
+
+Factory-created sources also expose `randomGlyphFor(advance, random)`. This
+selects from the source's own glyphs whose regular advance has the same ceiling;
+`random` must be finite and in `[0, 1)`. Unknown classes or invalid arguments
+return `undefined`. Candidate metadata is built lazily without requesting
+pixels. These are explicit-source classes, not a reconstruction of native
+`FontSet` provider filters or its complete replacement pool.
 
 Composition snapshots metadata and the selected provider method. It does not
 request pixel buffers. Every later `pixels()` call invokes that method with
@@ -216,6 +224,7 @@ all recorded vertices. No original game assets or classes are included.
   framebuffer colors. Other transforms, render flags and depth behavior are not
   covered. GUI scales, device pixel ratios, decorations, combined
   provider selection, obfuscation and the editor's caret/IME mapping still need
-  their own calibration under issue #120. These observations do not add a
-  viewer/editor font-source option.
+  their own native calibration under issue #120. The subsequent
+  [viewer integration](/reference/development/motd/runtime-font-viewer) uses
+  these CPU observations with explicit coverage limits.
 </Note>
