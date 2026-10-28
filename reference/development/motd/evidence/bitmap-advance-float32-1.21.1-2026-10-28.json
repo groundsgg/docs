@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "clientVersion": "1.21.1",
+  "clientSha1": "30c73b1c5da787909b2f73340419fdf13b9def88",
+  "classSha256": {
+    "flm$a": "95acba0416e6e6c10732d3d18c9ca382f785fa3cfe481407745ed5d088a018bf",
+    "flm$b": "7d1f568f18fda3364dfbe9403d504cdf3eb478af6efa537ed41004de96a37e46",
+    "flm$b$1": "6ce98f6f0832096eb5654a0b9814d8879de9725a8cec212d9ded54785d65b737"
+  },
+  "classNames": {
+    "flm$a": "net.minecraft.client.gui.font.providers.BitmapProvider$Definition",
+    "flm$b": "net.minecraft.client.gui.font.providers.BitmapProvider$Glyph",
+    "flm$b$1": "net.minecraft.client.gui.font.providers.BitmapProvider$Glyph$1"
+  },
+  "observedAt": "2026-10-28",
+  "method": "Executed official 1.21.1 BitmapProvider.Definition.load, glyph.getAdvance and bake in an isolated headless JVM using original synthetic PNG inputs. A host Function observes SheetGlyphInfo without GPU upload. The helper uses its own named package to preserve original signer checks. The input options field records library decoder limits, not a native load argument. Provider observations only; no rendered screenshot, FontSet filtering or shader/blending coverage.",
+  "cases": [
+    {
+      "name": "round-down-at-default-limit",
+      "input": {
+        "width": 4096,
+        "height": 1,
+        "definition": {
+          "height": 4096,
+          "ascent": 1,
+          "chars": [
+            "A"
+          ]
+        },
+        "pixels": [
+          {
+            "x": 4095,
+            "y": 0,
+            "rgba": [
+              255,
+              255,
+              255,
+              255
+            ]
+          }
+        ],
+        "otherPixels": "RGBA zero",
+        "options": {},
+        "pngSha256": "ca702416af30462a7eb1b57f5069dbcb5b660df0cc6219553b6f8657c5c100b0",
+        "rgbaSha256": "b40aa3731589a4d9749eb9bf06cde967fff4f542057805349ce17c88e23419d6"
+      },
+      "observed": {
+        "codePoint": 65,
+        "advance": 16777216.0,
+        "boldOffset": 1.0,
+        "shadowOffset": 1.0,
+        "scale": 4096.0,
+        "sourceX": 0.0,
+        "sourceY": 0.0,
+        "pixelWidth": 4096,
+        "pixelHeight": 1,
+        "bearingTop": 1.0,
+        "oversample": 0.000244140625,
+        "colored": true
+      }
+    },
+    {
+      "name": "round-up-with-explicit-limit",
+      "input": {
+        "width": 4097,
+        "height": 1,
+        "definition": {
+          "height": 4098,
+          "ascent": 1,
+          "chars": [
+            "A"
+          ]
+        },
+        "pixels": [
+          {
+            "x": 4096,
+            "y": 0,
+            "rgba": [
+              255,
+              255,
+              255,
+              255
+            ]
+          }
+        ],
+        "otherPixels": "RGBA zero",
+        "options": {
+          "maxDimension": 8192
+        },
+        "pngSha256": "008a3afa3cac854f1256b72df8fcfdf662d8d36d7f11a627958d5f0661e11485",
+        "rgbaSha256": "9c2adfc044b8dbf59821ac5d32f873d1353d7b5ca55856517633e2f3d4ee77ea"
+      },
+      "observed": {
+        "codePoint": 65,
+        "advance": 16789508.0,
+        "boldOffset": 1.0,
+        "shadowOffset": 1.0,
+        "scale": 4098.0,
+        "sourceX": 0.0,
+        "sourceY": 0.0,
+        "pixelWidth": 4097,
+        "pixelHeight": 1,
+        "bearingTop": 1.0,
+        "oversample": 0.00024402147391811013,
+        "colored": true
+      }
+    }
+  ]
+}
