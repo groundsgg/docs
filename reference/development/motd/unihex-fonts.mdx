@@ -8,10 +8,12 @@ supplied `.hex` bytes. The function returns paired glyph metrics and RGBA cells
 without a DOM, React, Portal, filesystem, or network connection.
 
 <Note>
-  This is an unreleased addition after 0.3.0. It produces standalone glyph data,
-  not a renderable `FontProfile`. Viewer/layout integration, archive selection,
-  resource stacks and full native rendered calibration remain under [font import
-  issue #8](https://github.com/groundsgg/library-motd/issues/8).
+  Available in `@groundsgg/motd` 0.4.0 and newer. It produces standalone glyph data,
+  not a renderable `FontProfile`. Compose a [paired runtime source](/reference/development/motd/runtime-font-source)
+  to use it in the [MOTD viewer](/reference/development/motd/runtime-font-viewer)
+  with a supported client profile. Archive selection, resource stacks,
+  inline-editor integration and full native rendered calibration remain under
+  [font import issue #8](https://github.com/groundsgg/library-motd/issues/8).
 </Note>
 
 ## Decode selected records

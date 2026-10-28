@@ -9,10 +9,9 @@ its formatting remain intact. Only the viewer's displayed replacement ink
 changes.
 
 <Note>
-  This page describes the correction in [library PR
-  #110](https://github.com/groundsgg/library-motd/pull/110), after package
-  0.3.0. Version 0.3.0 uses an 80 ms interval. Check the changelog and your
-  installed package version before relying on the corrected behavior.
+  The render-frame correction from [library PR
+  #110](https://github.com/groundsgg/library-motd/pull/110) is available in
+  `@groundsgg/motd` 0.4.0 and newer. Version 0.3.0 uses an 80 ms interval.
 </Note>
 
 ## Replacement behavior
@@ -41,9 +40,9 @@ by layout. For example, a regular advance of `4.25` and bold offset of `0.5`
 still selects ceiling class `5`; the bold layout advance is `4.75`. Zero or
 larger configured offsets follow the same rule. Direct lookup also preserves
 ceiling classes at floating-point boundaries. This correction
-is unreleased after 0.3.0 and does not add imported
-[runtime font sources](/reference/development/motd/runtime-font-source) to the
-viewer or certify arbitrary font rasterization.
+is available in 0.4.0 and newer. It does not certify arbitrary font rasterization;
+the [runtime font viewer](/reference/development/motd/runtime-font-viewer) has
+separate supported-profile limits for locally decoded glyph pixels.
 
 Changing a replacement does not change the stored text, glyph positions, line
 breaks, selection, source offsets, or undo history. The viewer retains its source
