@@ -31,13 +31,22 @@ data source for the selected environment.
 
 ## Choose the display size
 
-In **Preview settings → Preview size**, **Fit available width** scales the row
-proportionally to the content width of its own editor canvas or viewer container.
-The toolbar keeps its normal size. Each viewer measures its own container, so
-the editor and sidebar preview can use different display scales.
-The library's minimum GUI scale is `0.5`. Below that minimum scene width, the
-Portal retains the native row width and allows horizontal scrolling, preserving
-the MOTD's line breaks.
+In **Preview settings → Preview size**, **Automatic (whole GUI scales)** chooses
+the largest whole GUI scale that fits the content width of its own editor canvas
+or viewer container. It scales both axes equally and leaves the remaining space
+free. For a 309-GUI-pixel scene, 632 or 900 CSS pixels of available width both
+select 2× (618 CSS pixels); 927 CSS pixels selects 3×.
+
+The minimum automatic scale is 1×. Below that scene width, the Portal retains
+the native row width and allows horizontal scrolling, preserving the MOTD's
+line breaks. The editor row starts at the canvas padding instead of centering
+an odd remaining gap, which could add a half-pixel offset. The toolbar keeps
+its normal size. Each viewer measures its own container, so the editor and
+sidebar preview can use different automatic scales.
+
+This avoids fractional GUI transforms that soften text and thin ping bars.
+It is not a claim of pixel-perfect output at every browser zoom level or device
+pixel ratio.
 
 Choose **Fixed client size** to select a GUI scale from **1×** through **4×**.
 The row retains the selected client geometry and scale when its container
