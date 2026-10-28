@@ -77,8 +77,11 @@ Each `BitmapGlyph` contains:
 | `bearingLeft`, `bearingTop`  | Zero left bearing and the definition's ascent.                                                       |
 
 `advance` follows the source-audited native calculation: multiply ink width by
-the float32 scale, round that multiplication to float32, add 0.5, truncate, and
-add 1. The full raster cell is preserved independently of the measured ink width.
+the float32 scale, round that multiplication to float32, add 0.5, truncate,
+add 1, and convert the resulting integer to float32 as native `GlyphInfo` does.
+Above 2²⁴, float32 cannot represent every integer, so that final conversion can
+round the returned advance down or up. Ordinary small advances remain exact.
+The full raster cell is preserved independently of the measured ink width.
 These metrics must stay paired with their pixels when integrating a renderer.
 
 ## Bounds and host responsibilities
@@ -155,6 +158,24 @@ recipe. The unit test rebuilds that input and checks the decoder against those
 observations. This is execution of provider methods, not a Minecraft screenshot
 or a full native rendering certification; no game binary or font atlas is
 included in the fixture or package.
+
+Two further official 26.3 provider executions on 2026-10-28 check the final
+integer-to-float32 conversion using original one-row images. Each image has only
+its final pixel opaque white, with ascent 1:
+
+| Image | Design height | Stored integer advance | Returned `GlyphInfo` advance |
+| --- | --- | --- | --- |
+| 4096×1 | 4096 | 16777217 | 16777216 |
+| 4097×1 | 4098 | 16789507 | 16789508 |
+
+The first case fits the default decoder limits. The second explicitly sets
+`maxDimension: 8192`; the default limit still rejects it. The
+[float32 advance manifest](https://github.com/groundsgg/library-motd/blob/main/tests/fixtures/client/native-bitmap-advance-float32/26.3/manifest.json)
+records class and input hashes, pixel recipes and observed metrics. Unit tests
+rebuild both images and verify the returned advance and unchanged RGBA cells;
+standalone and packed Node consumers cover both directions of rounding. These
+are provider observations, not rendered screenshots or proof that such unusually
+large advances pass every native font-filter path.
 
 The same original input was also passed through the official **1.21.1** provider
 in an isolated headless JVM. It returned the same advance, scale, oversample,
