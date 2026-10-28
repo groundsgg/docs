@@ -9,10 +9,11 @@ uses the selected glyph's metrics and RGBA together for MOTD text. The server
 name, version/player text, hover content and menu controls keep the profile font.
 
 <Note>
-  This is an unreleased addition after 0.3.0. `java263Profile` declares the
-  supported `font.runtimeGlyphGeometry: "java-26.3"` CPU geometry. Other built-in
+  This is an unreleased addition after 0.3.0. `java1211Profile` and `java263Profile`
+  declare the supported `font.runtimeGlyphGeometry: "java-1.21.1"` and
+  `"java-26.3"` CPU geometry respectively. Other built-in
   profiles use their profile text instead and report `font-runtime-profile`
-  when a source is supplied. Older and intermediate clients need their own
+  when a source is supplied. Other older and intermediate clients need their own
   rendering calibration. The optional editor does not accept this source yet.
 </Note>
 
@@ -76,8 +77,8 @@ Source replacement clears that viewer's raster cache. Destroying the viewer
 stops its animation and releases its retained raster data. Saved
 `ServerListDocument` values contain no source functions or pixel buffers.
 
-Custom profiles can explicitly declare `font.runtimeGlyphGeometry: "java-26.3"`
-to select these CPU equations. This declaration selects behavior; it does not
+Custom profiles can explicitly declare `font.runtimeGlyphGeometry: "java-1.21.1"`
+or `"java-26.3"` to select those CPU equations. This declaration selects behavior; it does not
 certify a custom profile, an older client or a resource pack. Supplying any
 runtime source marks that preview's `data-profile-verified` as `false`.
 
@@ -143,9 +144,29 @@ Diagnostic messages use the normal
 
 ## Verification boundary
 
+The Java 1.21.1 path keeps legacy rendering separate. Bold glyphs use a duplicate
+draw at the provider's offset, without the additional 26.3 quad expansion.
+Legacy underline quads occupy logical `y + 8` through `y + 9`; strikethrough
+occupies `y + 3.5` through `y + 4.5`. Both extend from `x - 1` to `x + advance`.
+Their shadow shifts by one GUI pixel, even when the selected Unihex glyph's
+ink shadow offset is `0.5`.
+
+Legacy software viewers compose shadow-ink, shadow-decoration, foreground-ink
+and foreground-decoration layers. Within one line, a later glyph's shadow cannot
+cover an earlier glyph's foreground. Native server lists emit lines separately;
+their depth/blending behavior across overlapping lines still needs framebuffer
+comparison. All required layers are preflighted before
+reading host pixels and share the same frame allocation limits. The editor does
+not use this imported-font path. Switching a viewer between the two supported
+geometry variants redraws its ink while retaining its source-owned raw cache.
+If a later canvas context is unavailable, the viewer discards all of that
+glyph's staged layers and reports `font-runtime-unavailable`.
+
 The [executed CPU geometry evidence](/reference/development/motd/runtime-font-source#native-geometry-observations)
 covers original bitmap/Unihex inputs and native regular, bold, italic and shadow
-quad coordinates. Unit tests compare the renderer's quads with those exact
+quad coordinates. The additional 1.21.1 evidence includes 32 two-glyph cases
+and 960 vertices from native text/effect passes, plus a 48-vertex fractional
+coordinate probe that fixes the float32 decoration operation order. Unit tests compare the renderer's quads with those exact
 observations. Browser tests exercise GUI scales 1–3, DPR 1–2, partial alpha,
 source isolation, limits, placeholders, motion and React lifecycle. Installed
 Node/DOM consumers, React SSR and a production-bundled viewer are checked too.

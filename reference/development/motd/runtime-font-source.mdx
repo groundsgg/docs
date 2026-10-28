@@ -18,6 +18,8 @@ glyph's metrics and raster access together without React, a DOM or Portal.
   composition does not establish native rendered parity.
 </Note>
 
+
+
 ## Compose decoded layers
 
 Decode your selected local resources with the
@@ -227,4 +229,45 @@ all recorded vertices. No original game assets or classes are included.
   their own native calibration under issue #120. The subsequent
   [viewer integration](/reference/development/motd/runtime-font-viewer) uses
   these CPU observations with explicit coverage limits.
+</Note>
+
+### Java 1.21.1 text and decoration passes
+
+An additional headless JVM observation executes the official 1.21.1 bitmap and
+Unihex provider load/bake methods, `Font.drawInBatch(FormattedCharSequence)`,
+`StringRenderOutput`, and `BakedGlyph`/`Effect` methods. It uses the same original
+input recipes and emits the sequence `AA` for each selected provider. The
+32 regular/bold, upright/italic, shadow and combined-decoration cases record
+960 vertices, colors, UVs and buffer-request boundaries.
+
+The legacy provider advances, raster cells, oversampling and per-glyph bold/ink
+shadow offsets agree with the values in the table above. Its bold quads do not
+receive the 26.3 expansion. Legacy decorations occupy different bounds and
+always use a one-pixel shadow offset. Native rendering emits the complete
+shadow text and its effects before the complete foreground text and its
+effects within each drawn line. The [viewer](/reference/development/motd/runtime-font-viewer#verification-boundary)
+selects those equations and composition rules explicitly.
+
+The [1.21.1 numeric evidence](https://github.com/groundsgg/docs/blob/main/reference/development/motd/evidence/glyph-geometry-1.21.1-2026-10-28.json)
+contains installed client/class hashes, the original recipes and arguments,
+observer hash and all CPU observations. Legacy effect vertices are recorded in
+native bottom-left/bottom-right/top-right/top-left order; renderer tests
+normalize that winding to the software sampler's coordinate convention while
+preserving exact bounds and pass order. An additional 48-vertex probe uses
+`x = 0.5000000596046448` and `y = 0` to verify the float32 operation order at
+physical pixel boundaries. Native shadows add their offset before the
+decoration's horizontal endpoints and calculate the bottom before subtracting
+one for the top. Reordering those operations can move a sampled edge across a
+pixel center.
+
+<Note>
+  This observer seeds native FontSet info, baked-glyph and white-glyph caches
+  with explicitly selected original glyphs and synthetic normalized UV/render
+  types. It bypasses normal provider selection/filtering and atlas allocation.
+  An observing MultiBufferSource/VertexConsumer records actual native CPU
+  emissions; it does not render a client framebuffer. The evidence does not
+  certify GPU shaders, blending, atlas sampling, obfuscation pools, all Unicode
+  inputs, GUI scales, overlapping MOTD-line depth interactions or editor caret/IME behavior. No original game files are
+  redistributed. The 26.3 observation above retains its narrower glyph-only
+  coverage; this 1.21.1 probe does not extend 26.3 decoration certification.
 </Note>
