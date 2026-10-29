@@ -1,0 +1,225 @@
+---
+title: "Variable discovery and host catalogs"
+description: "Expose available placeholders, register standalone catalog metadata, and keep preview examples separate from saved source and runtime bindings."
+---
+
+Use the editor's **Variables** button to search the variables available for the
+active MOTD, version or hover text field. The toolbar's **Insert placeholder**
+action opens the same picker. The Variables button stays visible with either
+fixed or selection-based text tools.
+
+<Info>
+The catalog API described here is implemented on library Main but is not yet
+published. Published `@groundsgg/motd@0.4.0` supports custom `context.values` and
+the earlier placeholder tool; it does not include `variableCatalog`,
+`listVariables` or the persistent Variables button. Use these additions after
+installing a published version that contains issue #144.
+</Info>
+
+## Keep metadata, preview values and runtime values separate
+
+| Data | Purpose | Stored in the document? |
+| --- | --- | --- |
+| `variableCatalog` | Names, labels, descriptions, display-only examples and discovery scope | No |
+| `context.values` | Values supplied by the host for this preview or runtime evaluation | No |
+| Placeholder node such as `{{region}}` | Saved variable name, formatting and position | Yes |
+
+`exampleValue` is catalog information. It does not register a substitution value
+or fill a missing `context.values` entry. The picker labels the actual supplied
+value as **Preview** and metadata as **Example**. An entry without a value shows
+**No preview value supplied**.
+
+The editor uses the same resolved values as its text rendering. Its `players`
+and `max` previews follow the displayed count rules when those counts are
+available, including overrides of base player counts. They can therefore differ
+from a same-named `context.values` entry. Supply authorized network-wide data in
+your host when you want live counts; the library does not query proxies.
+
+Inserting a variable stores its name, not its current preview or example. Normal
+MiniMessage export retains `{{name}}`. Runtime evaluation still uses the
+existing `resolveText` / `evaluateStatus` contract; there is no separate catalog
+substitution engine.
+
+## Configure the standalone editor
+
+Use this shared configuration for the DOM or React adapter:
+
+```ts motd-config.ts
+import {
+  createDocument,
+  parseText,
+  java263Profile,
+  type PreviewContext,
+  type VariableCatalogEntry,
+} from "@groundsgg/motd";
+
+export const initialDocument = createDocument(
+  parseText("<gold>{{server.name}}</gold><newline><gray>{{region}}", "minimessage").value!,
+);
+export const context: PreviewContext = {
+  base: {
+    version: { protocol: 777, name: "26.3" },
+    players: { online: 42, max: 100, sample: [] },
+    description: "",
+  },
+  clientProtocol: 777,
+  values: { "server.name": "My network", region: "EU" },
+  profile: java263Profile,
+  viewportWidth: 640,
+  guiScale: 2,
+  serverName: "Example server",
+  pingMs: 20,
+  animations: false,
+};
+export const variableCatalog: readonly VariableCatalogEntry[] = [
+  { name: "players", label: "Players", description: "Displayed online count" },
+  { name: "max", label: "Maximum players" },
+  { name: "region", label: "Region", exampleValue: "EU" },
+  {
+    name: "server.name",
+    label: "Server name",
+    description: "A host-defined variable with a literal dotted name",
+    exampleValue: "Your network",
+    fields: ["motd", "hover"],
+  },
+];
+```
+
+Names use ASCII letters, digits, underscores, dots and hyphens, with a maximum
+length of 128 characters for new picker entries. A dotted name is a literal key:
+provide `values["server.name"]`, not a nested object.
+
+<Tabs>
+<Tab title="DOM">
+Add a host element to your page:
+
+```html
+<div id="editor"></div>
+```
+
+```ts editor.ts
+import { createEditor } from "@groundsgg/motd/dom";
+import type { ServerListDocument } from "@groundsgg/motd";
+import "@groundsgg/motd/styles.css";
+import { initialDocument, context, variableCatalog } from "./motd-config.js";
+
+const host = document.querySelector<HTMLElement>("#editor");
+if (!host) throw new Error("Missing editor host");
+let value = structuredClone(initialDocument);
+const onChange = (next: ServerListDocument) => {
+  value = next;
+  // Persist this document through your application's normal save flow.
+};
+const editor = createEditor(host, {
+  document: value,
+  context,
+  variableCatalog,
+  onChange,
+});
+// Call editor.destroy() when the owning view is removed.
+```
+</Tab>
+<Tab title="React">
+```tsx MotdEditor.tsx
+import { useState } from "react";
+import { ServerListEditor } from "@groundsgg/motd/react";
+import "@groundsgg/motd/styles.css";
+import { initialDocument, context, variableCatalog } from "./motd-config.js";
+
+export function MotdEditor() {
+  const [value, setValue] = useState(() => structuredClone(initialDocument));
+  return (
+    <ServerListEditor
+      document={value}
+      context={context}
+      variableCatalog={variableCatalog}
+      onChange={setValue}
+    />
+  );
+}
+```
+</Tab>
+</Tabs>
+
+No Portal services, account, registry callback or remote lookup are required.
+Labels and descriptions are host-provided strings. Localize them in your host;
+the editor's own controls use its [normal label API](/reference/development/motd/localization).
+
+## Choose discovery and field scope
+
+Omit `variableCatalog` to discover the editor's own resolved preview-value keys.
+An explicit catalog is authoritative: only its eligible names are listed, even
+when `context.values` contains other keys. Passing `[]` intentionally lists no
+variables. Keep `players` and `max` in a custom catalog if you want to advertise
+them.
+
+Omit an entry's `fields` to list it in every text field. Supply any combination
+of `"motd"`, `"version"` and `"hover"` to limit its discovery scope. Filtering
+happens before deduplication, so the same name can have different descriptions
+in separate fields.
+
+For application contexts such as maintenance, supply a different catalog and
+preview values when your host mode changes. For example, append your host's
+maintenance-only bindings to a shared catalog for that editor instance. Remove
+those entries and values when returning to its normal context. Grounds-specific
+bindings belong in the consuming application, not a mandatory npm catalog.
+
+`editor.update(...)` and React prop changes refresh an open picker without
+saving the document or losing its search control. External document replacement
+invalidates the captured selection and closes the picker.
+
+<Note>
+Discovery scope is not authorization. The manual name field and source editor
+can retain names outside the catalog. Enforce permissions and runtime bindings
+in your application; do not pass unauthorized preview values to the client.
+</Note>
+
+## Handle missing and unknown names
+
+The picker distinguishes an empty field catalog from a search with no matches.
+You can enter a custom name manually; an unlisted name displays a hint to check
+the host's supported variables. Imported unknown placeholders remain intact.
+When no resolution value exists, the existing `unknown-placeholder` diagnostic
+and unresolved source behavior still apply.
+
+The picker considers at most the first 4,096 catalog entries and shows at most
+60 matches at once. Refine the search when more matches are available. Invalid
+names and malformed entries are ignored; metadata never executes as HTML.
+
+## Read-only, keyboard and history behavior
+
+- **Read-only:** inspect and search the catalog; insertion is disabled.
+- **Disabled editor:** the Variables button cannot open the picker.
+- **Hidden controls:** set `features: { variables: false }` to hide discovery and
+  insertion tools. Existing placeholders still render and export.
+- **Keyboard:** focus Variables and press Enter, type a search, Tab to a choice
+  and press Enter. Escape closes the picker.
+- **Selection and formatting:** insertion targets the saved text selection and
+  retains selected atomic formatting or pending caret formatting.
+- **Undo:** insertion is one action, separate from typing before or after it.
+- **Input limits:** a variable that would push a MOTD beyond two visible lines
+  is rejected; the picker stays open and the source remains unchanged.
+
+Each editor owns its picker and captured selection. Closing or destroying it
+invalidates its choice callbacks; other instances retain their own catalogs.
+
+## Use catalog metadata without a DOM
+
+The pure core exports `listVariables`, `isVariableName`, `VariableCatalogEntry`,
+`VariableField` and `ListVariablesOptions`:
+
+```ts
+import { isVariableName, listVariables } from "@groundsgg/motd";
+
+const entries = listVariables(
+  { region: "EU", internal: "not advertised" },
+  { catalog: [{ name: "region", description: "Host region" }], field: "motd" },
+);
+// [{ name: "region", description: "Host region" }]
+isVariableName("server.name"); // true
+```
+
+`listVariables` returns detached metadata. It does not resolve text, infer a
+player count, create document nodes or register runtime values. The editor
+passes its already-resolved preview keys into this helper; standalone callers
+supply their own values.

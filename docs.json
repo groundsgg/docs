@@ -240,6 +240,7 @@
                     "group": "Text and assets",
                     "pages": [
                       "reference/development/motd/formats",
+                      "reference/development/motd/variables",
                       "reference/development/motd/inline-effects",
                       "reference/development/motd/import-assistance",
                       "reference/development/motd/icons",

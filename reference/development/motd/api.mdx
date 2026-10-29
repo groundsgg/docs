@@ -17,6 +17,13 @@ automatic application. See [import-assistance.md](/reference/development/motd/im
 without a DOM or pixel decoder. Status evaluation, runtime templates and imports
 share this projection; saved source stays unchanged. See [icon-animation.md](/reference/development/motd/icons).
 
+The unreleased `listVariables(values, { catalog?, field? })` returns detached,
+field-filtered catalog metadata; `isVariableName(value)` checks picker name
+syntax. `VariableCatalogEntry`, `VariableField` and `ListVariablesOptions`
+describe this standalone contract. The DOM/React `EditorOptions.variableCatalog`
+and `features.variables` control discovery, not runtime substitution. See
+[variables](/reference/development/motd/variables) for publication status and examples.
+
 `@groundsgg/motd` exports the types in `src/core/model.ts` and these functions:
 
 | Function                                        | Purpose                                                               |
