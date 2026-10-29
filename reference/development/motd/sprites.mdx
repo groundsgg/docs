@@ -28,6 +28,16 @@ This complete example uses original single-color demo frames. The custom
 client pack for in-game use; configuring the web preview does not install a pack
 in Minecraft.
 
+<Warning>
+  An active **global client pack** is different from a server pack offered on
+  joining. Vanilla does not download server packs during a status ping and
+  removes them from the active resource stack on disconnect. A cached server
+  pack does not supply custom resources to the server list. Use built-in
+  resources for a default Vanilla target; offer custom identifiers only for an
+  explicitly selected client resource set. See the
+  [native pack-loading test](/reference/development/motd/vanilla-behavior#resource-packs-in-the-server-list).
+</Warning>
+
 ```ts
 import {
   createDocument,
@@ -105,7 +115,11 @@ Each `SpriteCatalogEntry` supplies `atlas`, `sprite` and `label`. Optional
 `animated` describes the entry in the picker; actual playback comes from the
 provider's frames. Optional `profiles` restricts the entry to a profile-ID
 allowlist. `requiresResourcePack` labels custom resources that need an active
-client pack; it does not download or activate one.
+global client pack already enabled by the player; it does not download or
+activate one. The bundled DOM and React demos keep their custom catalog and
+provider disabled until **Locally enabled demo client pack** is selected.
+Disabling that example resource set retains inserted identifiers and shows the
+missing-resource fallback instead of replacing document content.
 
 A nonempty catalog enables **Insert sprite** in the MOTD text tools. Set
 `features.sprites: false` to hide insertion while retaining imported components

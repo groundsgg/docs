@@ -97,6 +97,52 @@ measurement; original textures and full screenshots are not published with it.
 
 ## What the native client demonstrated
 
+### Resource packs in the server list
+
+A server-status response supplies resource identifiers, not resource files. A
+server cannot install its resource pack through the server-list ping. Built-in
+resources are already available; custom fonts or sprites need a matching pack
+that the player has separately enabled in their global client resource settings.
+
+| Resource state | Server-list result |
+| --- | --- |
+| Default Vanilla resources | Built-in supported sprites render, including their native animation. Unknown custom sprite and font identifiers use missing resources. |
+| Pack offered by a server during joining | Downloads after the player starts joining and accepts the pack. It does not supply the earlier server-list preview. |
+| Previously downloaded server pack after disconnect | Removed from the active resource stack. Cached download files do not make it active in the server list. |
+| Matching pack enabled globally by the player | Custom sprites and fonts can render before joining, using Vanilla's normal resource loading. |
+
+An isolated, unmodified Java 26.3 client demonstrated these cases on
+2026-10-29. The same status response referenced the built-in
+`minecraft:icon/trial_available`, a synthetic `audit:probe` sprite and a
+synthetic `audit:custom` bitmap font. With default resources, only the built-in
+sprite rendered correctly, and the fixture received no pack download while
+the list was displayed.
+
+After **Join Server**, a local protocol fixture offered the synthetic pack in
+the configuration stage. The client prompted for permission, downloaded it and
+reported `SUCCESSFULLY_LOADED`. The active resource-manager log then included
+the server pack. After a controlled disconnect, the log returned to Vanilla
+resources and the server list again showed missing custom resources. The pack
+download could remain cached on disk without remaining active.
+
+A separate launch with the same pack already selected in the global client
+resource settings rendered both custom resources after a status ping, without
+any login or download. Each resource matched 256 original fixture-color pixels
+at GUI scale 2. The
+[public measurement manifest](https://github.com/groundsgg/library-motd/blob/main/tests/fixtures/client/native-resource-pack-scope/26.3.json)
+records the client hash, exact input, original pack definitions, observations and
+private capture checksums. This test covers the official Linux 26.3 client; the
+server-pack test ended in configuration and did not enter a game world.
+
+Keep default-resource and explicitly selected client-pack contexts separate.
+Supplying `spriteProvider`, `motdFontSource` or a custom sprite catalog to the web
+viewer does not make those resources available to a Minecraft player. The demo
+therefore offers its original custom sprites only after selecting **Locally
+enabled demo client pack**. This models a pack already active in the client,
+not one delivered by the server or installed by the web editor.
+
+### Status snapshots and refresh
+
 An isolated official Java 26.3 client (protocol 777) displayed a local status
 response containing FRAME A. Future responses were changed to FRAME B without
 refreshing the list. After 65.941 seconds the row still displayed A, and the
