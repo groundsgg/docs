@@ -29,6 +29,40 @@ The Portal's example-player setting is a presentation value, not a claim of
 live network presence. Only replace labeled examples after wiring an authorized
 data source for the selected environment.
 
+## Preserve historical aligned source
+
+Forge checks that the editor document, its MiniMessage fallback and the compiled
+runtime template agree. A library upgrade can change the generated padding
+without changing the document's text or alignment intent. Existing saved
+normal and maintenance documents must remain readable and saveable through
+that transition.
+
+The API adapter first compares the supplied fallback with the active library's
+output. For aligned MOTDs only, it can also accept the exact output of the
+pinned `@groundsgg/motd@0.1.1` compatibility serializer. Both the top-level
+`text`/`motd` and `editor.fallbackText` must match. The runtime template must
+still exactly match the current compiler's output.
+
+This compatibility path validates the historical MOTD model and rejects unknown
+node or style semantics, including native sprite nodes and newer shadow fields.
+It does not approximate whitespace or remove leading spaces to make a mismatch
+pass. Version, icon, player and hover settings stay under the current contract
+and remain unchanged.
+
+Reads preserve the stored fallback bytes and configuration version. You can
+load and save an unchanged historical document; a new edit can use the active
+serializer's canonical output. A legacy fallback-only edit still discards stale
+editor metadata instead of restoring the old text. An actually contradictory
+source or runtime template is rejected.
+
+<Info>
+This adapter prepares the dependency upgrade. Forge's active library dependency
+remains at `0.1.1` until a compatible version is published and explicitly pinned.
+Do not enable the [native sprite picker](/reference/development/motd/sprites)
+in Portal before that API upgrade. An adapter merge alone does not publish an
+npm version or activate a Portal or proxy deployment.
+</Info>
+
 ## Choose the display size
 
 In **Preview settings → Preview size**, **Automatic (whole GUI scales)** chooses
