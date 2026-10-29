@@ -7,6 +7,15 @@ Use `resolveFontProviders` from `@groundsgg/motd/fonts` to inspect the active
 provider graph of a locally selected resource set. It works without React, a DOM,
 Portal, filesystem access, or network access.
 
+<Warning>
+  Custom fonts in a server-list MOTD require corresponding resources already
+  active in the player's global client resource settings. A server pack offered
+  during joining is not loaded by the status ping and is removed from the active
+  resource stack on disconnect. Importing font data into this library changes
+  the web resource context, not the player's Minecraft resource context. See the
+  [official-client pack-loading comparison](/reference/development/motd/vanilla-behavior#resource-packs-in-the-server-list).
+</Warning>
+
 <Note>
   Available in `@groundsgg/motd` 0.4.0 and newer. This entry point produces metadata,
   not a renderable `FontProfile`. It does not change the viewer's font or expand
