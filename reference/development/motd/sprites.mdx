@@ -1,0 +1,202 @@
+---
+title: "Native inline sprites"
+description: "Render native atlas components and configure a host-supplied, optional MOTD sprite picker."
+---
+
+<Warning>
+  This feature is unreleased. Published version 0.4.0 does not provide these
+  options. Implementation is tracked in
+  [library-motd #146](https://github.com/groundsgg/library-motd/pull/146);
+  consumer dependency updates and deployment remain separate.
+</Warning>
+
+Native atlas sprites are inline text objects, independent of the 64×64 server
+favicon. The client reads a resource identifier from the status description and
+looks it up in its own atlas. An animated resource can move while the received
+status snapshot remains unchanged. See the
+[native client observations](/reference/development/motd/vanilla-behavior#native-atlas-sprites-in-text).
+
+## Configure resources and the picker
+
+Supply `context.spriteProvider(sprite, profile)` for rendering. Supply
+`EditorOptions.spriteCatalog` to offer insertion. Both options work through the
+DOM adapter and as React props. Neither requires the Grounds Portal or a server
+connection.
+
+This complete example uses original single-color demo frames. The custom
+`grounds:demo_pulse` identifier also needs a matching resource in an active
+client pack for in-game use; configuring the web preview does not install a pack
+in Minecraft.
+
+```ts
+import {
+  createDocument,
+  java263Profile,
+  parseText,
+  type PreviewContext,
+  type SpriteCatalogEntry,
+} from "@groundsgg/motd";
+import { createEditor } from "@groundsgg/motd/dom";
+import "@groundsgg/motd/styles.css";
+
+const host = window.document.createElement("div");
+window.document.body.append(host);
+const frame = (color: string) =>
+  "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><path fill="${color}" d="M0 0h8v8H0z"/></svg>`,
+  );
+const frames = [
+  { url: frame("#65dbc4"), ticks: 10 },
+  { url: frame("#e8c17c"), ticks: 10 },
+];
+const spriteCatalog: readonly SpriteCatalogEntry[] = [{
+  atlas: "minecraft:gui",
+  sprite: "grounds:demo_pulse",
+  label: "Demo pulse",
+  animated: true,
+  requiresResourcePack: true,
+}];
+const context: PreviewContext = {
+  base: {
+    version: { protocol: 777, name: "26.3" },
+    players: { online: 42, max: 500, sample: [] },
+    description: "",
+  },
+  clientProtocol: 777,
+  profile: java263Profile,
+  values: {},
+  viewportWidth: 680,
+  guiScale: 2,
+  serverName: "My server",
+  pingMs: 35,
+  animations: true,
+  spriteProvider: ({ atlas, sprite }) =>
+    atlas === "minecraft:gui" && sprite === "grounds:demo_pulse"
+      ? { frames }
+      : undefined,
+};
+const statusDocument = createDocument(
+  parseText("<white>Hello <sprite:gui:'grounds:demo_pulse'>", "minimessage").value!,
+);
+const editor = createEditor(host, {
+  document: statusDocument,
+  context,
+  spriteCatalog,
+  features: { sprites: true },
+  onChange(next) {
+    // Persist next through your application; asset URLs stay in context.
+    console.log(next);
+  },
+});
+// Call editor.destroy() when this host is removed.
+```
+
+Use static square images for individual frames. Data URLs must use an allowed
+image media type and the supported form shown by the demos; remote resources
+need appropriate CORS and Content Security Policy permissions. The provider owns
+the resource mapping: resource identifiers are never interpreted as URLs and
+never cause automatic requests to a public asset mirror. Check the
+[asset rights boundary](/reference/development/motd/embedding#third-party-minecraft-asset-mirrors)
+before supplying original game files.
+
+## Catalog and editor behavior
+
+Each `SpriteCatalogEntry` supplies `atlas`, `sprite` and `label`. Optional
+`animated` describes the entry in the picker; actual playback comes from the
+provider's frames. Optional `profiles` restricts the entry to a profile-ID
+allowlist. `requiresResourcePack` labels custom resources that need an active
+client pack; it does not download or activate one.
+
+A nonempty catalog enables **Insert sprite** in the MOTD text tools. Set
+`features.sprites: false` to hide insertion while retaining imported components
+and viewer rendering. With no catalog, the library still imports and renders
+supported components. Read-only and disabled states block insertion. Version
+text and player-sample hover are legacy-string paths, so this picker targets the
+MOTD description only.
+
+Search uses labels and resource identifiers. Up to 60 matching choices are shown
+from a bounded 4,096-entry catalog; refine the search for additional choices.
+The picker uses static first-frame thumbnails and labels animated entries.
+Keyboard focus, Escape and the existing compact-screen sheet behavior remain
+available. Insertion uses the saved selection as one atomic, undoable operation;
+the normal two-visible-line input boundary still applies. Profile, catalog or
+permission changes invalidate an open picker. Sprite atoms can be selected,
+formatted and deleted as a unit.
+
+## Native layout and compatibility
+
+Java 1.21.9 introduced atlas object text. Built-in profiles from 1.21.11 onward
+have `atlasSprites: { advance: 8, boldOffset: 1 }`; a custom profile must opt in
+explicitly. Native 26.3 measurements demonstrate an 8×8 image with advance 8
+normally and 9 with bold. Bold and italic do not stretch or shear the image.
+Tint, transparent pixels and packed ARGB `shadowColor` remain separate from
+advance. Native text alpha below 0.1 is discarded after opacity multiplication.
+
+Older profiles omit supported sprite leaves with a `sprite-unsupported-client`
+diagnostic. Their status output uses the same omission rather than inventing an
+emoji or claiming resource playback. Unknown component metadata remains protected
+source; it is not silently converted to an editable sprite.
+
+`evaluateStatus` uses the explicit `motdLayout.profile` when supplied. Without
+one, protocol 773 and newer retain native sprites and older protocols omit them.
+The existing default padded-text width remains 271; provide the selected
+client's profile and measured width for native alignment.
+
+## Source and persistence
+
+Sprite leaves persist only resource identifiers:
+
+```json
+{
+  "id": "sprite-1",
+  "type": "sprite",
+  "atlas": "minecraft:gui",
+  "sprite": "minecraft:icon/trial_available"
+}
+```
+
+Native JSON exports an atlas object. Standard MiniMessage exports
+`<sprite:"minecraft:gui":"minecraft:icon/trial_available">`, supported by
+Adventure 4.25 and later. Known numeric `shadow_color` values map to
+`TextStyle.shadowColor`; MiniMessage shadow tags preserve their alpha.
+
+Canonical MiniMessage is persistent source. Even when materializing a padded
+fallback with a legacy text-layout profile, serialization preserves sprite tags
+and uses their 8/9 advances. Client-specific omission belongs to status evaluation
+and JSON output, not saving editor intent. This keeps semantic documents and
+backward-compatible fallback storage aligned without erasing the feature.
+Legacy section/ampersand output rejects sprite conversion by default. Explicit
+`lossy: "reduce"` omits sprites with a diagnostic and retains neighboring text.
+
+Frame URLs, catalog labels, playback state and provider functions are never
+persisted in the server document or sent as Minecraft status fields. Updating
+consumers also need a validator/compiler that understands sprite leaves; do not
+add a Portal picker ahead of the matching API/proxy compatibility update.
+
+## Playback, failures and ownership
+
+`SpriteAsset.frames` contains one to 64 frames. Each has `url` and optional
+integer `ticks` from 1 to 12,000, default 1; a native tick is 50 ms. This API uses
+step frames, not resource-pack interpolation. Instances in one document share a
+monotonic animation phase. `context.animations: false` and reduced-motion mode
+freeze the first frame without modifying source.
+
+Decoded frames must be square and at most 1,024 pixels per side. Each painter
+bounds cached URLs to 64 and decoded retention to 4,194,304 pixels. Unused entries
+can be evicted; invalid frames are released and unused pending loads are
+cancelled. Resource failures show a missing-resource fallback and diagnostics,
+while the original identifiers remain intact. Destroy editor/viewer handles to
+release their owned loads and callbacks.
+
+The advanced `renderText` export accepts an optional owned `SpritePainter` after
+the runtime-font painter argument. Import `SpritePainter` from
+`@groundsgg/motd/dom`, construct it with the owning DOM `Document`, pass it to
+`renderText`, and destroy it with your surface. Calling low-level `renderText`
+without that owner reports `sprite-renderer-required`. Normal viewer/editor
+handles manage ownership automatically.
+
+The public native fixture records input, geometry and hashes. Private comparisons
+of the official 26.3 resource matched both MOTD lines in viewer and editor across
+Chromium, Firefox and WebKit at the measured GUI scale. Original game images and
+full captures are not included in npm or this documentation. These bounded
+results do not certify every client, resource pack, browser zoom or asset.
