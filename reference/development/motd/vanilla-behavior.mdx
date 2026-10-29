@@ -78,9 +78,10 @@ for the measured path, independently of metadata or a browser simulation.
 The fixture also compared an undecorated object with an otherwise identical
 object carrying `bold: true` and `italic: true`. Both displayed the same
 16×16-physical-pixel sprite at GUI scale 2, while the following text began two
-physical pixels farther right after the decorated object. Keep that observed
-spacing difference separate from sprite appearance; its advance/style interaction
-still needs a focused audit before implementing layout. These observations cover
+physical pixels farther right after the decorated object. A read-only probe of
+that client's atlas glyph metrics reports advance 8 normally and 9 with bold;
+the native text builder uses that bold-aware advance. Keep this spacing behavior
+separate from sprite appearance when implementing layout. These observations cover
 this 26.3 setup, not historical clients, custom resource packs or Windows Java.
 Private capture hashes and exact fixture input are retained with the native
 measurement; original textures and full screenshots are not published with it.
