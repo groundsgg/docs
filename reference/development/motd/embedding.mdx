@@ -143,3 +143,16 @@ imports preserve overlong documents; their extra lines remain available without
 scrolling the two visible rows. Existing overflow can be shortened or cleared,
 but new hidden growth is rejected. Browser spellcheck is disabled on inline text
 surfaces; focusing a field adds no synthetic underline to the client rendering.
+
+## Discover host-defined variables
+
+The unreleased `EditorOptions.variableCatalog` describes available names,
+labels, descriptions, display-only examples and text-field scope. Omit it to
+infer own resolved preview keys, or pass an explicit catalog (including `[]`)
+to control discovery. The persistent Variables button works with either toolbar
+placement and supports read-only inspection. `features.variables: false` hides
+these controls without removing document placeholders.
+
+See [variable discovery and host catalogs](/reference/development/motd/variables)
+for complete DOM/React examples, context updates, source fidelity and the
+separation between catalog examples and `context.values`.
