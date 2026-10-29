@@ -66,6 +66,25 @@ That metadata establishes the resource animation; it does not certify our
 viewer's timing or rendering. No original texture is distributed with this
 investigation.
 
+An isolated official 26.3 client with the default resource pack also demonstrated
+this animation in the server list on 2026-10-29. A local fixture sent one status
+response containing two instances of this sprite, one per MOTD line. Across
+120 timestamped samples spanning about 3.96 seconds, both instances displayed all
+six resource frames in the same phase. Every sample matched the corresponding
+resource frame's opaque pixels at GUI scale 2. The fixture received no second
+status request during the measurement. This establishes native atlas animation
+for the measured path, independently of metadata or a browser simulation.
+
+The fixture also compared an undecorated object with an otherwise identical
+object carrying `bold: true` and `italic: true`. Both displayed the same
+16×16-physical-pixel sprite at GUI scale 2, while the following text began two
+physical pixels farther right after the decorated object. Keep that observed
+spacing difference separate from sprite appearance; its advance/style interaction
+still needs a focused audit before implementing layout. These observations cover
+this 26.3 setup, not historical clients, custom resource packs or Windows Java.
+Private capture hashes and exact fixture input are retained with the native
+measurement; original textures and full screenshots are not published with it.
+
 <Warning>
   Version 0.4.0 does not yet render atlas object components as sprites. Track
   parsing, version-specific layout, host-supplied resources and native capture
