@@ -103,6 +103,33 @@ The host controls URLs and authorization. Blob URLs support local-only image sel
 
 The host is responsible for the applicable resource permissions. Check the current [EULA](https://www.minecraft.net/en-us/eula) and [Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) before distributing original game files. The library ships independent illustrations and OFL fonts; supplying a file or URL does not change that resource's license.
 
+### Third-party Minecraft asset mirrors
+
+The [minecraft-assets repository](https://github.com/InventivetalentDev/minecraft-assets)
+and [MC Assets explorer](https://mcasset.cloud/26.3/assets) are useful for finding
+versioned resource names. The repository's README describes extracted game JAR
+assets and downloaded resources. On 2026-10-29, neither its default branch nor
+its `26.3` branch contained a license file establishing permission to redistribute
+the original panoramas. The explorer identifies itself as unaffiliated with
+Mojang or Microsoft.
+
+Do not treat availability on either service as a license grant. Minecraft's
+[EULA](https://www.minecraft.net/en-us/eula) restricts distribution of its content;
+the [Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) retain
+Mojang/Microsoft's asset rights and define additional permissions. Their allowances
+for gameplay screenshots do not by themselves establish permission to redistribute
+extracted panorama textures. A mirror's own software license, CORS headers or
+successful image request would not establish those rights either. Direct linking
+instead of self-hosting does not resolve that permission question.
+
+Keep the bundled original illustrations as the public default. You can supply
+authorized local resources through the existing provider without adding them to
+the npm package or a shared CDN. If you want to host original versioned game
+assets for Portal users, first establish the applicable permission for that exact
+use; a local client installation alone does not establish redistribution rights.
+The source and hosting decision remains open in
+[library-motd #9](https://github.com/groundsgg/library-motd/issues/9).
+
 NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
 Use `createComparison` (DOM) or `ServerListComparison` (optional React) to compare one document across independent client contexts. See [comparison.md](/reference/development/motd/comparison) for lifecycle, diagnostics and examples.
