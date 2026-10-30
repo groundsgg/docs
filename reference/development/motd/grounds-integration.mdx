@@ -108,6 +108,63 @@ Test at least two proxies and a remote player. Include unavailable/stale data,
 permission denial, region changes, and isolated Stage/Production settings. Do
 not silently use local proxy counts when the global source is unavailable.
 
+### Read the authoritative presence API
+
+`service-player` exposes `GET /v1/players/counts/proxies` with this response
+shape:
+
+```json Example session snapshot
+{
+  "proxies": [
+    { "proxyId": "proxy-eu-1", "region": "eu", "players": 12 },
+    { "proxyId": "proxy-us-1", "region": "us", "players": 8 }
+  ],
+  "total": 20
+}
+```
+
+Use `total` for the service's network-wide count. Sum rows for an explicitly
+selected region when you need a regional view. A missing region is unknown;
+do not assign it to the selected region. Historical sessions without a proxy
+identifier can contribute to `total` without appearing in `proxies`, so do not
+replace `total` with the row sum. Keep any unassigned remainder separate from
+known regional counts.
+
+`GET /v1/players/counts/servers` groups the same session store by backend server.
+Its `total` also includes players who have not reached a backend yet. Adding
+backend counts is therefore not a substitute for the network total.
+
+Both endpoints require a workload bearer token when service authentication is
+enabled. The current verifier checks the cluster's signing keys and the
+`grounds-services` audience; the response does not identify Stage or Production.
+Bind the provider's URL and credential to the selected environment in the host.
+Keep workload credentials on the backend, behind the Portal's existing network
+read permission checks. A configuration-service credential is not implicitly a
+presence-service credential.
+
+### Distinguish observation time from session freshness
+
+These endpoints count stored sessions. Their queries do not exclude old
+heartbeats directly; the scheduled cleanup removes expired sessions. The
+defaults are a 90-second session TTL and a 30-second cleanup interval. Cleanup
+delays or failures can extend that period, so these settings are not a hard
+freshness guarantee.
+
+The response contains no observation timestamp, heartbeat watermark or maximum
+capacity. A host's fetch-completion time records receipt, not the last time every
+player was confirmed online. If you retain a previous response after a failed
+refresh, label it as stale; a `401`, `503` or disconnected provider must not
+become a fresh count of zero. Keep advertised maximum capacity under its own
+configuration instead of deriving it from online presence.
+
+<Info>
+The upstream count API is available in source, but Forge's network routes still
+provide configuration documents only. Portal continues to show labeled example
+counts. The environment-bound provider and Portal integration remain tracked in
+[library-motd issue #21](https://github.com/groundsgg/library-motd/issues/21).
+This contract does not activate a live source or change a deployment.
+</Info>
+
 ## Maintenance inheritance
 
 Your adapter must distinguish an inherited field from an explicit reset. For
