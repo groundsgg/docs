@@ -11,15 +11,38 @@ workers. A browser failure blocks the shared validation and publishing jobs.
 Failed cases retain a Playwright trace and screenshot in the existing CI report
 artifacts. The input-bounds, native-italic and native-composition suites also attach
 `native-selection-events.json`: the last 256 focus, keyboard, input, composition
-and selection events, including bounded selection text, endpoints and timing.
-Endpoints include rendered field offsets so identical per-glyph text nodes can
-be distinguished. Native composing flags and the pixel-rendering fallback mode
-are recorded alongside them.
+and selection events. The diagnostic observer also correlates those
+events with the actual controller-owned ProseMirror selection before and after
+state updates. The timeline retains metadata only: node types, endpoint offsets,
+rendered field offsets, selected length, focus state, monotonic timing, native
+`isTrusted`, composing flags and pixel-rendering fallback mode. Model records
+contain `from`, `to`, `anchor`, `head`, `empty` and document size, with the field
+and before/after phase kept separate. This distinguishes atomic source positions
+from expanded placeholder text without retaining that text.
+
+This JSON attachment excludes selected text and node contents.
+Navigation/control keys and input types use fixed allowlists; other payloads are
+classified as `other`. It does not redact Playwright's separate screenshot,
+trace or DOM error-context artifacts. Use controlled fixture data when collecting
+those artifacts.
 These observers do not alter input or selection. Open a retained trace with
 `npx playwright show-trace path/to/trace.zip`; inspect its JSON attachment to
-compare native event ordering with the failed assertion. Passing cases discard
-their traces and do not attach the event history. Tests are not automatically
-retried; intermittent failures still block validation.
+compare native event ordering and model positions with the failed assertion.
+The model observer is installed only in diagnostic test fixtures, forwards the
+original view update unchanged and restores its hook during teardown. It is
+excluded from the npm runtime. Passing cases do not attach the event history.
+If page inspection or artifact writing fails, diagnostics do not replace the
+original failed assertion. Tests are not automatically retried; intermittent
+failures still block validation.
+
+The existing exact-caret preconditions and native edit assertions remain
+unchanged. The historical Firefox overflow incident in
+[#80](https://github.com/groundsgg/library-motd/issues/80) is still not reproduced
+naturally; adding a timeline does not establish its cause or fix it. The observer
+adds some execution overhead, so an instrumented run is not an uninstrumented
+timing reference. A private deliberately failing fixture verifies attachment and
+preservation of its original assertion failure; it is separate from reproducing
+the historical incident.
 
 The Windows GitHub Actions job additionally uploads `windows-resource-diagnostics`
 for seven days, including passing runs. Its numeric JSONL snapshots contain TCP
