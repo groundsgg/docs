@@ -157,12 +157,69 @@ refresh, label it as stale; a `401`, `503` or disconnected provider must not
 become a fresh count of zero. Keep advertised maximum capacity under its own
 configuration instead of deriving it from online presence.
 
+### Configure the Forge provider
+
+Forge exposes `GET /v1/admin/network/{stage|prod}/presence`. It requires
+`ADMIN_AREA_ACCESS` and the selected environment's view or manage permission,
+independently of configuration-service availability. Configure these optional
+backend bindings to connect the corresponding presence service:
+
+| Environment | HTTP(S) origin | Projected workload token file |
+| --- | --- | --- |
+| Stage | `NETWORK_PRESENCE_STAGE_URL` | `NETWORK_PRESENCE_STAGE_TOKEN_FILE` |
+| Production | `NETWORK_PRESENCE_PRODUCTION_URL` | `NETWORK_PRESENCE_PRODUCTION_TOKEN_FILE` |
+
+Use a service origin without a path, credentials, query or fragment. Forge
+requests the fixed `/v1/players/counts/proxies` route and rereads the token file
+on each request. Neither environment inherits the other's connection or the
+configuration client's credential. Bind each origin to the intended environment;
+the upstream API cannot attest that mapping for you.
+
+The response includes `environment`, `source: "service-player"`, `receivedAt`,
+`total`, aggregated `regions: [{ region, players }]`, and `unknownRegion`.
+`unknownRegion` includes null-region rows and any remainder not attributable
+through the upstream proxy groups. Forge does not forward proxy identities or
+workload credentials. `receivedAt` records receipt and validation, not heartbeat
+freshness or an advertised maximum capacity.
+
+A disconnected provider or upstream failure returns `503`; invalid count data
+returns `502`. Responses use `Cache-Control: private, no-store`. Forge follows
+no redirects, bounds the complete request to five seconds and limits streamed
+JSON to 256 KiB. It does not cache a previous count or return zero on failure.
+Both connections remain unavailable until their bindings are supplied.
+
+### Choose a Portal preview source
+
+In **Preview settings → Player count source**, choose:
+
+- **Example values** to keep the existing manually chosen example count. This
+  default does not request presence data.
+- **Network sessions** to use the selected environment's authoritative `total`.
+- **Selected region sessions** to use only the known count for **Preview region**.
+  Regions reported by the provider also appear in that selector. Missing regions
+  contribute zero known sessions; unassigned sessions remain separate.
+
+Editor and viewer share the same snapshot. The library evaluates player-count
+rules and `{{players}}` from that context, including offset and headroom rules.
+The source supplies online counts only: configured maximum rules remain
+independent, and an inherited maximum still uses the labeled 500-player example.
+Changing the source, region or received snapshot does not dirty or save a MOTD.
+
+Portal refreshes an enabled source every ten seconds while the page is active.
+Its receipt-age display measures the browser's last successful response, not
+the upstream heartbeat age. A response becomes **Stale snapshot** at 30 seconds
+or immediately after a failed refresh. Previously received counts can remain
+visible under that label. Without a successful snapshot, Portal explicitly
+labels its example fallback; an authorization denial discards the displayed
+cached counts and uses that labeled fallback too. Stage and Production use
+separate queries, and a late response from a previous environment cannot replace
+the selected environment's snapshot.
+
 <Info>
-The upstream count API is available in source, but Forge's network routes still
-provide configuration documents only. Portal continues to show labeled example
-counts. The environment-bound provider and Portal integration remain tracked in
-[library-motd issue #21](https://github.com/groundsgg/library-motd/issues/21).
-This contract does not activate a live source or change a deployment.
+This integration uses the published library without adding a transport to its
+core. Source tests and local HTTP/browser fixtures do not establish production
+connectivity or activate deployment bindings. Package release, Portal activation
+and proxy rollout remain separate actions.
 </Info>
 
 ## Maintenance inheritance
