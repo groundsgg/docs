@@ -23,49 +23,50 @@ Supply `context.spriteProvider(sprite, profile)` for rendering. Supply
 DOM adapter and as React props. Neither requires the Grounds Portal or a server
 connection.
 
-This complete example uses original single-color demo frames. The custom
-`grounds:demo_pulse` identifier also needs a matching resource in an active
-client pack for in-game use; configuring the web preview does not install a pack
-in Minecraft.
+## Select the Vanilla catalog
 
-<Warning>
-  An active **global client pack** is different from a server pack offered on
-  joining. Vanilla does not download server packs during a status ping and
-  removes them from the active resource stack on disconnect. A cached server
-  pack does not supply custom resources to the server list. Use built-in
-  resources for a default Vanilla target; offer custom identifiers only for an
-  explicitly selected client resource set. See the
-  [native pack-loading test](/reference/development/motd/vanilla-behavior#resource-packs-in-the-server-list).
-</Warning>
+The unreleased `vanillaSpriteCatalog(profile)` core export returns immutable
+metadata for 20 curated built-in GUI-atlas sprites. Each entry was checked in
+the official 1.21.11, 26.1, 26.1.1, 26.1.2, 26.2 and 26.3 archives. Those audited
+versions currently share the selected resource IDs; image files are still
+resolved for the selected version. The list includes hearts, armor, food,
+effect icons, the animated trial icon and animated music notes. It is a curated
+selection, not every resource in the client atlas.
+
+Older bundled profiles, unknown client versions and profiles without
+`atlasSprites` return an empty catalog. Recompute the catalog when changing
+profiles. The function requires no React, DOM, filesystem, Portal or network.
+It supplies resource IDs and labels, not original game pixels or download URLs.
+The [metadata audit](https://github.com/groundsgg/library-motd/blob/6345c4ff2046d293e8ae244e5e0169b4425cb3fc/tests/fixtures/client/vanilla-sprite-catalog.json)
+records archive hashes, resource hashes, sizes, animation frame order and ticks.
+
+Supply authorized resources through the existing `SpriteProvider`. This example
+offers the trial icon once your host has made its six square frame images
+available at the example URLs. The names below describe host-owned routes;
+the package does not install or host those files.
 
 ```ts
 import {
   createDocument,
   java263Profile,
   parseText,
+  vanillaSpriteCatalog,
   type PreviewContext,
-  type SpriteCatalogEntry,
+  type SpriteAsset,
 } from "@groundsgg/motd";
 import { createEditor } from "@groundsgg/motd/dom";
 import "@groundsgg/motd/styles.css";
 
 const host = window.document.createElement("div");
 window.document.body.append(host);
-const frame = (color: string) =>
-  "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><path fill="${color}" d="M0 0h8v8H0z"/></svg>`,
-  );
-const frames = [
-  { url: frame("#65dbc4"), ticks: 10 },
-  { url: frame("#e8c17c"), ticks: 10 },
-];
-const spriteCatalog: readonly SpriteCatalogEntry[] = [{
-  atlas: "minecraft:gui",
-  sprite: "grounds:demo_pulse",
-  label: "Demo pulse",
-  animated: true,
-  requiresResourcePack: true,
-}];
+const assets = new Map<string, SpriteAsset>([
+  ["minecraft:icon/trial_available", {
+    frames: [10, 2, 2, 2, 2, 2].map((ticks, i) => ({
+      url: `/private-assets/26.3/icon/trial_available-${i}.png`,
+      ticks,
+    })),
+  }],
+]);
 const context: PreviewContext = {
   base: {
     version: { protocol: 777, name: "26.3" },
@@ -80,26 +81,30 @@ const context: PreviewContext = {
   serverName: "My server",
   pingMs: 35,
   animations: true,
-  spriteProvider: ({ atlas, sprite }) =>
-    atlas === "minecraft:gui" && sprite === "grounds:demo_pulse"
-      ? { frames }
+  spriteProvider: ({ atlas, sprite }, profile) =>
+    profile.clientVersion === "26.3" && atlas === "minecraft:gui"
+      ? assets.get(sprite)
       : undefined,
 };
-const statusDocument = createDocument(
-  parseText("<white>Hello <sprite:gui:'grounds:demo_pulse'>", "minimessage").value!,
-);
 const editor = createEditor(host, {
-  document: statusDocument,
+  document: createDocument(parseText(
+    '<white>Hello <sprite:gui:"minecraft:icon/trial_available">', "minimessage",
+  ).value!),
   context,
-  spriteCatalog,
-  features: { sprites: true },
-  onChange(next) {
-    // Persist next through your application; asset URLs stay in context.
-    console.log(next);
-  },
+  spriteCatalog: vanillaSpriteCatalog(context.profile).filter((item) => assets.has(item.sprite)),
+  onChange(next) { console.log(next); },
 });
 // Call editor.destroy() when this host is removed.
 ```
+
+<Warning>
+  A built-in resource is already present in the corresponding Vanilla client.
+  A custom resource identifier still needs a matching pack globally enabled by
+  the player. Server packs offered on joining do not supply resources to the
+  earlier server-list ping and are removed from the active stack on disconnect.
+  Configuring a web provider never installs a Minecraft pack. See the
+  [native pack-loading test](/reference/development/motd/vanilla-behavior#resource-packs-in-the-server-list).
+</Warning>
 
 Use static square images for individual frames. Data URLs must use an allowed
 image media type and the supported form shown by the demos; remote resources
@@ -116,10 +121,11 @@ Each `SpriteCatalogEntry` supplies `atlas`, `sprite` and `label`. Optional
 provider's frames. Optional `profiles` restricts the entry to a profile-ID
 allowlist. `requiresResourcePack` labels custom resources that need an active
 global client pack already enabled by the player; it does not download or
-activate one. The bundled DOM and React demos keep their custom catalog and
-provider disabled until **Locally enabled demo client pack** is selected.
-Disabling that example resource set retains inserted identifiers and shows the
-missing-resource fallback instead of replacing document content.
+activate one. The normal DOM and React examples use only the selected client's
+Vanilla catalog. Custom Pulse/Gem choices and the client-pack toggle are absent.
+Without an explicitly configured resource provider, original resources remain
+missing; the examples do not substitute original artwork or fetch an asset mirror.
+Changing client versions or resource availability retains inserted identifiers.
 
 A nonempty catalog enables **Insert sprite** in the MOTD text tools. Set
 `features.sprites: false` to hide insertion while retaining imported components
@@ -145,6 +151,23 @@ explicitly. Native 26.3 measurements demonstrate an 8×8 image with advance 8
 normally and 9 with bold. Bold and italic do not stretch or shear the image.
 Tint, transparent pixels and packed ARGB `shadowColor` remain separate from
 advance. Native text alpha below 0.1 is discarded after opacity multiplication.
+
+Frames larger than 8×8 retain their original texels until rasterization at the
+physical GUI scale. Reducing a 9×9 heart or 18×18 effect icon to 8×8 before
+scaling loses detail that Vanilla preserves. Texel-center selection is explicit;
+browser canvas downscaling can differ even with smoothing disabled. Frame RGBA
+data is cached once per retained image and released with its bounded owner.
+Owned output rasters cap detail at physical GUI scale 8; fractional or larger
+physical scales are not certified pixel exact.
+
+The default-resource 26.3 client displayed all 20 catalog items on both MOTD
+lines, with bold/italic on the second line. At GUI scale 2, 216 comparisons of
+the 18 static sprites' opaque foregrounds matched the native capture exactly:
+both lines, viewer/editor, Chromium/Firefox/WebKit. The
+[measurement manifest](https://github.com/groundsgg/library-motd/blob/6345c4ff2046d293e8ae244e5e0169b4425cb3fc/tests/fixtures/client/vanilla-sprite-native-26.3.json)
+records exact input, scope and private evidence hashes. This does not certify
+every transparent edge, shadow combination, historical client or animation phase.
+Original synthetic 9×9 stripe tests separately cover GUI scales 1–3 and DPR 1–2.
 
 Older profiles omit supported sprite leaves with a `sprite-unsupported-client`
 diagnostic. Their status output uses the same omission rather than inventing an
@@ -214,3 +237,28 @@ of the official 26.3 resource matched both MOTD lines in viewer and editor acros
 Chromium, Firefox and WebKit at the measured GUI scale. Original game images and
 full captures are not included in npm or this documentation. These bounded
 results do not certify every client, resource pack, browser zoom or asset.
+
+## Local maintainer preview
+
+The optional development setup reads explicitly supplied official client archives
+and writes original frames to a new private directory outside the repository.
+The exporter requires Python with Pillow, checks each archive against the audited
+version hash and performs no downloads. Never commit or publish that output.
+
+```sh
+python3 tools/reference/export-vanilla-sprites.py \
+  --client 26.3=/path/to/your/official-client.jar \
+  --output /path/outside/repository/private-sprites
+MOTD_VANILLA_SPRITE_DIR=/path/outside/repository/private-sprites \
+  npm run dev -- --port 4174 --strictPort
+```
+
+Repeat `--client VERSION=JAR` for the other audited versions you own. The
+private endpoint serves only bounded manifest/PNG paths on an explicitly
+loopback-bound development server. It is disabled without the environment
+variable, does not follow links outside its resource directory, and is not
+included in production example builds or the npm runtime. The examples show
+resource availability separately from native component compatibility. Missing
+files stay missing; there is no custom-resource-pack switch or implicit game
+asset download. A host shipping a public demo must arrange its own authorized
+resource provider separately.

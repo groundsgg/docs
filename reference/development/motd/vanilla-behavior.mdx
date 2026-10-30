@@ -136,10 +136,11 @@ server-pack test ended in configuration and did not enter a game world.
 
 Keep default-resource and explicitly selected client-pack contexts separate.
 Supplying `spriteProvider`, `motdFontSource` or a custom sprite catalog to the web
-viewer does not make those resources available to a Minecraft player. The demo
-therefore offers its original custom sprites only after selecting **Locally
-enabled demo client pack**. This models a pack already active in the client,
-not one delivered by the server or installed by the web editor.
+viewer does not make those resources available to a Minecraft player. The normal DOM/React examples therefore use a
+[curated Vanilla catalog](/reference/development/motd/sprites#select-the-vanilla-catalog)
+for the selected client, without custom demo choices or a client-pack switch.
+Original images still require an explicitly configured web resource provider;
+that provider does not change which resources Minecraft itself has loaded.
 
 ### Status snapshots and refresh
 

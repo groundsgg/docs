@@ -24,6 +24,12 @@ describe this standalone contract. The DOM/React `EditorOptions.variableCatalog`
 and `features.variables` control discovery, not runtime substitution. See
 [variables](/reference/development/motd/variables) for publication status and examples.
 
+The unreleased `vanillaSpriteCatalog(profile)` returns immutable metadata for a
+curated set of built-in GUI-atlas sprites in audited capable client versions.
+It returns no entries for unknown versions or absent sprite capability and
+loads no images. Supply corresponding resources through `SpriteProvider`; see
+[Vanilla sprite catalogs](/reference/development/motd/sprites#select-the-vanilla-catalog).
+
 `@groundsgg/motd` exports the types in `src/core/model.ts` and these functions:
 
 | Function                                        | Purpose                                                               |
