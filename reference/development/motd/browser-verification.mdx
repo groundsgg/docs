@@ -11,7 +11,7 @@ workers. A browser failure blocks the shared validation and publishing jobs.
 Failed cases retain a Playwright trace and screenshot in the existing CI report
 artifacts. The input-bounds, native-italic and native-composition suites also attach
 `native-selection-events.json`: the last 256 focus, keyboard, input, composition
-and selection events. The pending diagnostic update also correlates those
+and selection events. The diagnostic observer also correlates those
 events with the actual controller-owned ProseMirror selection before and after
 state updates. The timeline retains metadata only: node types, endpoint offsets,
 rendered field offsets, selected length, focus state, monotonic timing, native
@@ -20,7 +20,7 @@ contain `from`, `to`, `anchor`, `head`, `empty` and document size, with the fiel
 and before/after phase kept separate. This distinguishes atomic source positions
 from expanded placeholder text without retaining that text.
 
-The update removes selected text and node contents from this JSON attachment.
+This JSON attachment excludes selected text and node contents.
 Navigation/control keys and input types use fixed allowlists; other payloads are
 classified as `other`. It does not redact Playwright's separate screenshot,
 trace or DOM error-context artifacts. Use controlled fixture data when collecting
