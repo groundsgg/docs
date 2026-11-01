@@ -1,15 +1,8 @@
----
-title: "Claude Code setup"
-description: "Configure Claude Code for your documentation workflow"
-icon: "asterisk"
----
-
-````markdown
 # Mintlify documentation
 
 ## Working relationship
 - You can push back on ideas-this can lead to better documentation. Cite sources and explain your reasoning when you do so
-- ALWAYS ask for clarification rather than making assumptions
+- Ask when a requirement is ambiguous and a wrong guess would be costly; otherwise state your assumption and proceed
 - NEVER lie, guess, or make up information
 
 ## Project context
@@ -50,5 +43,3 @@ icon: "asterisk"
 - Skip frontmatter on any MDX file
 - Use absolute URLs for internal links
 - Include untested code examples
-- Make assumptions - always ask for clarification
-````
