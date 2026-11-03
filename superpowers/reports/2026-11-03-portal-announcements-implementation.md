@@ -1,11 +1,11 @@
 ---
 title: "Portal-Meldungen: Umsetzung und Prüfung"
-description: "Lokale Implementierung, Review-Korrekturen, Prüfbelege und die noch offenen Aktivierungsschritte."
+description: "Implementierung, Prüfbelege, aktive Stage-Artefakte und direkter Portal-Worker-Rollout."
 ---
 
 # Portal-Meldungen: Umsetzung und Prüfung
 
-Stand: 3. November 2026. Die Quellcode-Umsetzung ist lokal geprüft und in acht Repositories auf `feat/portal-announcements` committet. Alle acht Arbeitskopien sind sauber. Es wurde nichts gepusht, veröffentlicht, gemergt oder live aktiviert.
+Stand: 3. November 2026, nach dem beauftragten Deployment. Die Funktion ist auf Stage und im Portal aktiv; der aktuelle Aktivierungsstand steht unten. Die Commit- und Prüftabellen dokumentieren den ursprünglichen lokalen Implementierungsstand vor dem Rollout.
 
 ## Ergebnis
 
@@ -16,9 +16,9 @@ Stand: 3. November 2026. Die Quellcode-Umsetzung ist lokal geprüft und in acht 
 - Autoritative Namespace-Snapshots und Polling reparieren verpasste NATS-Hinweise. Fehlerhafte Antworten erhalten den letzten gültigen Stand; ein wirklich fehlender oder leerer Inhalt entfernt die eigene Anzeige.
 - Idempotenter Seed übernimmt die drei vorhandenen Hinweise und überschreibt weder leere noch bearbeitete Dokumente. Ownership-Guards und Runbook ermöglichen eine sequenzielle Ablösung der Lobby-Anzeige.
 
-## Commits und Arbeitskopien
+## Ursprüngliche Implementierungscommits und Arbeitskopien
 
-| Bereich | Abschließender Commit | Arbeitskopie |
+| Bereich | Ursprünglicher Commit | Arbeitskopie |
 | --- | --- | --- |
 | hud | `c1a9294` | `/home/lukas/grounds/.worktrees/scoreboard-library-minigame-api` |
 | proxy | `938c2d7` | `/home/lukas/grounds/.worktrees/scoreboard-plugin-proxy` |
@@ -29,7 +29,7 @@ Stand: 3. November 2026. Die Quellcode-Umsetzung ist lokal geprüft und in acht 
 | deploy | `fd1a2b1` | `/home/lukas/grounds/.worktrees/scoreboard-deploy` |
 | pulumi | `9388d3a` | `/home/lukas/grounds/.worktrees/grounds-pulumi-forge-4.14.0` |
 
-## Verifikation
+## Ursprüngliche lokale Verifikation
 
 | Bereich | Tatsächlich ausgeführter Nachweis | Ergebnis |
 | --- | --- | --- |
