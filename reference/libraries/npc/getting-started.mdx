@@ -1,0 +1,119 @@
+---
+title: "Run the NPC example"
+description: "Build the local candidate and learn the API from the shared and personal Minestom examples."
+---
+
+Start with a checkout containing the redesigned `library-npc` API. The independent example is a
+small host application: it resolves the library from Maven, starts Minestom and hosts a neutral
+resource pack. Use JDK 25.
+
+## Build and start the shared scenario
+
+<Steps>
+<Step title="Build the local library candidate">
+From the `library-npc` repository root, run:
+
+```sh
+./gradlew check apiCheck dokkaGenerate publishAllPublicationsToReviewRepository
+```
+
+The candidate version is in `version.txt`. Its Maven publications are written to `.evidence/maven`.
+Source builds and this local repository do not need a Grounds package token.
+</Step>
+<Step title="Run the independent example">
+
+```sh
+./gradlew -p examples/standalone-minestom run -PnpcRepository="file:$PWD/.evidence/maven"
+```
+
+Connect to `localhost:25574` and accept the resource pack hosted on port `25575`. You should see
+a body and head near `(0, 40, 0)`. If those ports are occupied, append
+`-PnpcPort=25584 -PnpcPackPort=25585` and connect to the chosen game port.
+</Step>
+<Step title="Observe shared and connection-specific changes">
+Run `/npcwave` for the shared one-second gesture, `/npclook` for shared head look, and `/npcmove`
+to move the root to `(2, 40, 0)`. A second player sees these changes too.
+
+Run `/npcscale` to set scale `1.3` and glow only for the calling player's connection. The second
+player keeps the normal appearance. `/npcremove` stops the host's advance task and removes the
+NPC; restart the application to recreate it.
+</Step>
+</Steps>
+
+## Read responsibilities instead of one large entrypoint
+
+| Read order | Source in `examples/standalone-minestom/src/main/java/example` | Responsibility |
+| --- | --- | --- |
+| 1 | `NpcDemo.java` | Choose the shared application and register shutdown ownership. |
+| 2 | `DemoApplication.java` | Build the request; retain the start token; await hidden readiness; publish; drain failure and shutdown. |
+| 3 | `DemoNpcModel.java` | Define the neutral two-bone model and typed idle/wave clips. |
+| 4 | `SharedNpcPlayback.java` | Own increasing absolute clip milliseconds and cancel the host task. |
+| 5 | `SharedNpcCommands.java` | Observe command stages and apply shared versus viewer-specific state. |
+| 6 | `PersonalNpcCommands.java`, `PersonalNpcSessions.java` | Add private channels and retain per-connection cancellation ownership. |
+| 7 | `DemoServer.java`, `DemoPackHost.java` | Configure the local world, server and pack hosting. |
+
+The example README explains every command and its expected result. The code lives in the
+[NPC library repository](https://github.com/groundsgg/library-npc); use the source matching the
+candidate you built.
+
+`examples/` teaches host integration. `fixtures/` contains separate Java and Kotlin consumers
+that check Maven artifact reuse. `tools/` checks artifact contents, licensing and the actual origin
+of resolved dependency JARs. Synthetic test players live in the example's separate `src/smoke` tree.
+
+## Reuse the example in another directory
+
+Pass the version explicitly when the example no longer has a parent `version.txt`:
+
+```sh
+./gradlew -p /absolute/path/to/copied-example run \
+  -PnpcVersion=0.3.0-api-review-SNAPSHOT \
+  -PnpcRepository=file:///absolute/path/to/library-npc/.evidence/maven
+```
+
+Keep the selected repository exclusive for `gg.grounds:npc-core` and `gg.grounds:npc-minestom`, as
+the example build does. After rebuilding a mutable local candidate, use Gradle
+`--refresh-dependencies` if it still resolves the previous bytes. Your host supplies its own
+supported Minestom dependency; the adapter's Minestom dependency is compile-only.
+
+## Verify the two supported runtime profiles
+
+The public profile uses Minestom `2026.10.07-26.2`:
+
+```sh
+./gradlew -p examples/standalone-minestom test smoke -PnpcRepository="file:$PWD/.evidence/maven"
+```
+
+For the Grounds `2026.11.08-26.3-grounds` profile, supply a file containing the complete matching
+runtime JAR paths separated by the platform's path separator:
+
+```sh
+./gradlew -p examples/standalone-minestom smokeGroundsProfile \
+  -PnpcRepository="file:$PWD/.evidence/maven" \
+  -PgroundsClasspathFile=/absolute/path/to/classpath.local
+```
+
+Both smoke tasks use ephemeral ports and print `NPC standalone smoke OK` after exercising spawn,
+private A/B isolation, head look, movement and cleanup. `runGroundsProfile` starts the interactive
+shared scenario with the matching 26.3 pack instead. Real-client visuals/audio, licensed-content
+and actual backend/proxy transfer checks remain separate acceptance work.
+
+## Troubleshoot common first-run problems
+
+<AccordionGroup>
+<Accordion title="The model is invisible or has missing textures">
+Accept the resource pack, check that its HTTP port is available, and use the pack matching your
+runtime profile. A model definition names item-model resources; it does not contain their client graphics.
+</Accordion>
+<Accordion title="The shared clip does not advance">
+Install a host driver and pass increasing absolute clip milliseconds. The example advances
+`50`, `100`, `150` and so on; repeatedly passing `50` seeks to the same instant.
+</Accordion>
+<Accordion title="The shared wave is silent">
+Sound cues are model metadata. Default sound sinks are silent; inject `NpcSoundSink` for shared
+delivery. The personal example injects an exclusive recipient sink so A's private wave is audible only to A.
+</Accordion>
+<Accordion title="The current example fails against version 0.2.0">
+The redesigned packages and commands are breaking changes. Use the local candidate above, or
+the older release-tag examples with `0.2.0`. Read the [migration guide](/reference/libraries/npc/migration).
+</Accordion>
+</AccordionGroup>

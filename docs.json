@@ -213,6 +213,16 @@
             "pages": [
               "reference/development/jvm-modules/service-registry",
               {
+                "group": "NPC library",
+                "pages": [
+                  "reference/libraries/npc/index",
+                  "reference/libraries/npc/getting-started",
+                  "reference/libraries/npc/shared-npcs",
+                  "reference/libraries/npc/personal-presentations",
+                  "reference/libraries/npc/migration"
+                ]
+              },
+              {
                 "group": "Minestom Runtime",
                 "pages": [
                   "reference/development/minestom-runtime/index",

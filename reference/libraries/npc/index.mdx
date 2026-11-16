@@ -1,0 +1,70 @@
+---
+title: "NPC library"
+description: "Create shared NPCs and per-connection visual presentations with the numeric core and Minestom adapter."
+---
+
+Use `library-npc` when your Minestom application needs to render an authored NPC, drive its shared
+animation, or give one player a private clip, head pose and sound channel. You retain the lifecycle
+owner while the library prepares, publishes and removes the display entities.
+
+<Info>
+These pages describe the breaking `0.3.0-api-review-SNAPSHOT` source candidate. Build and consume it
+from a local review repository. The published `0.2.0` API uses older packages and methods; use its
+release-tag documentation until a coordinated release of the redesigned API is available.
+</Info>
+
+## Choose the module you need
+
+| Module | Use it for |
+| --- | --- |
+| `gg.grounds:npc-core` | Immutable model definitions, bounded schema-1 JSON decoding, validation and numeric pose sampling. It has no Minestom dependency. |
+| `gg.grounds:npc-minestom` | Shared display rendering, visibility/update policy, movement, viewer overrides and optional private presentations. It exposes core transitively. |
+
+Use JDK 25 to build or run the supported Minestom host. The library source uses Kotlin 2.2.20 and
+targets JVM 24. Public Minestom is `2026.10.07-26.2`; the separate Grounds profile uses
+`2026.11.08-26.3-grounds`.
+
+## Separate rendering from content and interactions
+
+The NPC library accepts an already selected model and an owning Minestom instance. Your host
+loads content, resolves item-model resources, supplies sound callbacks and decides when an NPC
+may be published. The numeric decoder evaluates no expressions or scripts.
+
+Scenes place logical elements and own interaction/collision policy. Resource packs supply the
+client's model and sound resources; downloading a pack does not create an NPC. For the wider
+system, read [scene and pack concepts](/build/content/concepts) and the
+[scene runtime API](/reference/plugins/scenes/runtime). Rebuild the Scene NPC adapter and its
+consumers together when adopting the breaking API.
+
+## Find the API by concept
+
+| Package | Main concepts |
+| --- | --- |
+| `gg.grounds.npc.core.model` | `NpcModel`, bones, parts, bounds and sound cues |
+| `gg.grounds.npc.core.animation` | Typed clips/tracks/keyframes and pose sampling |
+| `gg.grounds.npc.core.math` | Vectors, transforms and defensive matrix snapshots |
+| `gg.grounds.npc.core.io` and `.validation` | JSON decoding, stricter limits and structured problems |
+| `gg.grounds.npc.minestom` | `NpcRenderer`, spawn request, start token, preparation result and shared handle |
+| Minestom `.config`, `.transform`, `.viewer`, `.spi` | Policy, placement, connection overrides and host callbacks |
+| Minestom `.presentation` and `.error` | Private ownership and operational failures |
+
+Use supported public entrypoints; packages named `internal` contain implementation details.
+Generate the complete KDoc reference from the matching source checkout with
+`./gradlew dokkaGenerate`; open `build/dokka/html/index.html`.
+
+## Start with a runnable scenario
+
+<CardGroup cols={2}>
+<Card title="Run and read the example" icon="play" href="/reference/libraries/npc/getting-started">
+Build the local candidate, run the demo and follow the source in a useful order.
+</Card>
+<Card title="Own a shared NPC" icon="clock" href="/reference/libraries/npc/shared-npcs">
+Understand preparation, publication, absolute clip time and asynchronous cleanup.
+</Card>
+<Card title="Use personal presentations" icon="user" href="/reference/libraries/npc/personal-presentations">
+Give each concrete player connection independent clip, head and sound channels.
+</Card>
+<Card title="Migrate the older API" icon="code" href="/reference/libraries/npc/migration">
+Update imports, builders and commands across NPC, Scene, Lobby and optional Dialogue integration.
+</Card>
+</CardGroup>

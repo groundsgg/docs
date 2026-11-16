@@ -1,0 +1,72 @@
+---
+title: "Migrate the NPC API"
+description: "Update packages, builders and lifecycle commands and rebuild Scene, Lobby and optional Dialogue consumers together."
+---
+
+The redesigned source API intentionally breaks source and JVM signatures from `0.2.0`.
+Schema-1 model JSON, resource IDs and authored units remain compatible. Recompile Java and Kotlin
+consumers against one matching candidate set.
+
+## Update packages and construction
+
+| Previous API | Redesigned API |
+| --- | --- |
+| Model types at `gg.grounds.npc.core` | `gg.grounds.npc.core.model` |
+| Vectors, matrices and transforms at the core root | `gg.grounds.npc.core.math` |
+| Clips, keyframes and sampling at the core root | `gg.grounds.npc.core.animation` |
+| JSON decoder, limits and decode results at the core root | `gg.grounds.npc.core.io` |
+| `NpcProblem` at the core root | `gg.grounds.npc.core.validation.NpcProblem` |
+| Minestom options, transforms, viewer state and callbacks at its root | `.config`, `.transform`, `.viewer` and `.spi` |
+| Personal types at the Minestom root | `gg.grounds.npc.minestom.presentation` |
+| Positional optional options constructors and `copy` | `builder(requiredValues).property(value).build()` and `toBuilder()` |
+| Loop/interpolation strings in numeric definitions | `NpcLoopMode` and `NpcInterpolation` |
+| Nested track string maps | Bone-ID map of `NpcBoneTrack(position, rotation, scale)` |
+| Clip `.length` and keyframe `.time` | `.lengthSeconds` and `.timeSeconds` |
+
+Options are immutable construction results. Preparation rejections defensively copy a nonempty
+diagnostic list and no longer expose data-class `copy` or destructuring.
+
+## Update lifecycle and animation calls
+
+| Previous call | Redesigned call |
+| --- | --- |
+| `startAnimation(id, millis)` | `playClip(id, millis)`; `playClip(id)` starts at zero |
+| `advanceAnimation(millis)` | `advanceClipTo(millis)` with absolute clip-local milliseconds |
+| `stopAnimation(null)` | `stopClip()` |
+| `stopAnimation(id)` | `stopClipIfPlaying(id)` |
+| `NpcPresentations.prepare(parent, options)` | `parent.preparePresentation(options)` |
+
+Retain preparation tokens before asynchronous readiness, publish hidden handles explicitly and
+await cancellation on every failed installation path. `closed()` observes final cleanup without
+closing. Custom or delegating `NpcHandle` implementations forward `preparePresentation` directly.
+
+Keep numeric sampling in seconds, shared command time in milliseconds, and rotations in degrees.
+Shared playback still needs a host clock; private playback uses the library's monotonic clock.
+
+## Rebuild a coordinated candidate set
+
+<Steps>
+<Step title="Build the NPC producer">
+Build and locally publish `0.3.0-api-review-SNAPSHOT` from the matching source checkout. Run its
+tests, `apiCheck`, strict Dokka generation and artifact-origin checks.
+</Step>
+<Step title="Rebuild Scene and application consumers">
+Rebuild the Scene NPC adapter against the same NPC candidate before rebuilding Lobby. Scene
+exports NPC types in its API. Keep Scene generation/publication guards, colliders and asynchronous
+rollback/resource drains intact.
+
+For optional Dialogue NPC integration, update the actor adapter and fixture while keeping the
+base Dialogue Minestom module independent of NPC. Preserve private sound isolation, cancellation
+during preparation and restoration of the shared NPC.
+</Step>
+<Step title="Verify actual artifact reuse">
+Run independent Java/Kotlin consumers, both runtime profiles and the host tests. Verify the
+actual loaded JAR origins and hashes; matching Maven version strings alone do not identify a
+mutable snapshot's bytes. Retain a complete previous candidate set for rollback.
+</Step>
+</Steps>
+
+The review labels `0.3.0-api-review-SNAPSHOT` for NPC and `0.5.0-api-review-SNAPSHOT` for Scene
+are local integration candidates, not published release promises. Do not mix the redesigned
+NPC JAR with an older compiled Scene adapter. Complete real-client visual/audio, licensed-content
+and actual reconnect/backend/proxy ownership checks before product rollout.
