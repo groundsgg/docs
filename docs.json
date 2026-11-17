@@ -217,6 +217,7 @@
                 "pages": [
                   "reference/libraries/npc/index",
                   "reference/libraries/npc/getting-started",
+                  "reference/libraries/npc/importing",
                   "reference/libraries/npc/shared-npcs",
                   "reference/libraries/npc/personal-presentations",
                   "reference/libraries/npc/migration"

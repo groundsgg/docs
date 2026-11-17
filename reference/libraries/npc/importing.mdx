@@ -1,0 +1,200 @@
+---
+title: "Import models and build a pack"
+description: "Compile original Blockbench models through a reusable API or standalone CLI, generate matching server data and merge resourcepacks."
+---
+
+Use one importer to prepare models before deployment or import them when your application starts.
+Both paths produce the same model definitions and client contributions. Your host loads the server
+bundle and distributes its matching resourcepack. Restart to adopt edited models.
+
+<Note>
+  The importer is part of the current development source. Released NPC `1.0.0`
+  provides the numeric and rendering APIs but has no `npc-importer` or `npc-cli`
+  module. Until an importer-capable version is published, build all modules from
+  the matching source as shown below.
+</Note>
+
+## Compile an original example
+
+Use JDK 25 and run from the `library-npc` checkout. The source contains an original two-part
+`bot.bbmodel`; it needs neither Grounds services nor purchased models.
+
+<Steps>
+<Step title="Build the tool and local libraries">
+
+```sh
+NPC_VERSION="$(cat version.txt)-local-SNAPSHOT"
+./gradlew -PversionOverride="$NPC_VERSION" :npc-cli:executableJar :npc-cli:assembleDist publishAllPublicationsToReviewRepository
+```
+
+The executable JAR includes its dependencies. Application ZIP/TAR distributions also include
+Windows and Unix start scripts. The normal `gg.grounds:npc-cli` Maven artifact supports Gradle
+`JavaExec`; the CLI runs without Minestom.
+
+</Step>
+<Step title="Validate the authored model">
+
+```sh
+java -jar "npc-cli/build/libs/npc-cli-$NPC_VERSION-all.jar" validate \
+  --input examples/standalone-minestom/models --namespace npc_demo --target 26.3 \
+  --config examples/standalone-minestom/models/import.json
+```
+
+Validation writes no content. Unsupported features produce a source filename, field path and
+diagnostic code. The original model has body/head parts and `idle`/`wave` clips.
+
+</Step>
+<Step title="Generate the bundle and merge a base pack">
+
+```sh
+java -jar "npc-cli/build/libs/npc-cli-$NPC_VERSION-all.jar" compile \
+  --input examples/standalone-minestom/models --namespace npc_demo --target 26.3 \
+  --config examples/standalone-minestom/models/import.json \
+  --base-pack examples/standalone-minestom/base-pack --output build/npc-example
+```
+
+Choose a new output directory. You receive `server-content.zip`, `resourcepack.zip`,
+`pack-fragment/` and `manifest.json`. The model ID is `npc_demo:npc/bot`.
+
+</Step>
+</Steps>
+
+## Choose when to import
+
+<Tabs>
+<Tab title="Load prepared content">
+Your runtime needs `npc-core`; rendering also uses `npc-minestom` and your own Minestom dependency.
+Keep the importer/CLI in the build pipeline when you only load prepared data on the server.
+
+<CodeGroup>
+```java Java
+import gg.grounds.npc.core.io.content.NpcContentLoader;
+import java.nio.file.Path;
+
+var content = NpcContentLoader.load(Path.of("npc-content/server-content.zip"));
+content.verifyResourcePack(Path.of("npc-content/resourcepack.zip"));
+var model = content.getModels().get("npc_demo:npc/bot");
+if (model == null) throw new IllegalStateException("Required bot model is missing");
+
+````
+
+```kotlin Kotlin
+import gg.grounds.npc.core.io.content.NpcContentLoader
+import java.nio.file.Path
+
+val content = NpcContentLoader.load(Path.of("npc-content/server-content.zip"))
+content.verifyResourcePack(Path.of("npc-content/resourcepack.zip"))
+val model = requireNotNull(content.models["npc_demo:npc/bot"])
+````
+
+</CodeGroup>
+
+Pass the selected model to the [shared NPC lifecycle](/reference/libraries/npc/shared-npcs).
+The loader also accepts an extracted content directory. It validates the complete snapshot before
+returning an immutable model lookup.
+
+</Tab>
+<Tab title="Import during startup">
+Add the matching `gg.grounds:npc-importer` build and invoke the API before accepting players:
+
+```java
+import gg.grounds.npc.importer.NpcModelImporter;
+import gg.grounds.npc.importer.config.NpcImportOptions;
+import gg.grounds.npc.importer.config.NpcMinecraftTarget;
+import gg.grounds.npc.core.io.content.NpcContentLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+var work = Files.createTempDirectory("npc-startup-");
+var options = NpcImportOptions.builder(
+    Path.of("models"), "my_plugin", NpcMinecraftTarget.MINECRAFT_26_3).build();
+var output = NpcModelImporter.compile(options, work.resolve("content"));
+var content = NpcContentLoader.load(output.getServerContent());
+content.verifyResourcePack(output.getResourcePack());
+```
+
+Your application retains the generated pack for its pack host and removes its temporary files
+after NPC and pack-host shutdown. Import is synchronous; run it outside an instance tick.
+
+</Tab>
+</Tabs>
+
+## Keep server data and client assets together
+
+| Output               | Purpose                                                                       |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `server-content.zip` | Numeric models, model index and versioned bundle contract.                    |
+| `resourcepack.zip`   | Complete Minecraft pack with generated client assets and optional base files. |
+| `pack-fragment/`     | Generated client assets for an existing product pack composer.                |
+| `manifest.json`      | Content ID, compiler/target and SHA-256 hashes of the final archives.         |
+
+The Content ID identifies generated models and their client contributions. It stays the same when
+you move the sources or add unrelated base-pack files. Final archive hashes identify the exact
+files you distribute. Pack verification checks dedicated asset bytes and contributed sound entries;
+it allows unrelated assets and additional sound events.
+
+For Grounds, compile once in the product pipeline and distribute the same checked content to all
+backends. The Scene catalog must agree with that bundle. Each connection still establishes its own
+pack readiness, and each backend creates its own NPC handles. The importer does not host packs,
+activate a CDN channel or transfer live entities between servers.
+
+## Merge rules
+
+The base can be a ZIP or a directory containing `pack.mcmeta`. Its supported version range must
+include `--target`. The result narrows metadata to the selected target and retains unrelated fields,
+the base description and icon. `--description "My NPC pack"` explicitly replaces the description.
+
+- Unrelated files retain their bytes; identical paths with identical bytes are deduplicated.
+- Different bytes at the same path are a conflict. Change the namespace or correct the input.
+- Sound registries merge disjoint sound IDs; repeated IDs require equivalent definitions.
+- Active overlays or filters that alter required NPC contributions are rejected. Overlay files remain; output metadata keeps only overlays active for the selected target and narrows their ranges. Legacy compatibility fields are removed.
+- Input packs stay unchanged; no partial output is published after a failed compile.
+
+## Input formats and identities
+
+The first importer supports generic/free `.bbmodel` 5.0 and legacy 4.10, cubes, bone hierarchies,
+pivots, rotations/reflection, explicit face UVs and embedded/local PNG textures. Animations support
+numeric position/rotation/scale with `linear`, `step` and `catmullrom`; loop modes are `once`, `loop`
+and `hold`. Legacy animation axes are normalized.
+
+Meshes, box UVs, Molang/scripts, Bezier/global/quaternion tracks and `.ajmodel`/Bedrock imports are
+unsupported. A file extension is not a promise to accept every feature authored in Blockbench.
+
+An input can be one file or a recursively read directory. For example,
+`models/town/merchant.bbmodel` with namespace `my_plugin` becomes `my_plugin:npc/town/merchant`.
+Normalized ID collisions are errors. An optional schema-1 configuration assigns explicit model IDs
+and clip sound bindings. Local OGG files become pack assets; `"external": true` declares a sound
+event supplied by Minecraft or your host. The library's sound sinks still control actual delivery.
+
+## Use Gradle and the explained example
+
+The independent `fixtures/gradle-importer-consumer` resolves the CLI through Maven and executes a
+`JavaExec` task with declared model inputs and generated outputs. It then loads and verifies the
+result using the separately resolved core. You can copy it outside the producer checkout; pass
+`npcVersion` and `npcRepository` explicitly. The task removes only the generated build directory it
+owns before rebuilding changed inputs.
+
+Run `runImportedDemo` or `runPrecompiledDemo` in `examples/standalone-minestom` for the public 26.2
+runtime, or their `GroundsDemo` variants with the exact Grounds 26.3 classpath. Both modes share the
+same lifecycle and commands. The example README explains ports, source reading order and expected
+results. The matching checkout of the [NPC source repository](https://github.com/groundsgg/library-npc)
+includes `docs/importing.md` with complete Gradle, ID/sound and CLI configuration.
+
+## CLI options and failures
+
+Both commands require `--input`, `--namespace` and `--target` (`26.2` or `26.3`). `compile` also
+requires `--output`. Optional inputs are `--base-pack`, `--config` and `--description`.
+Use `--json` for structured results/diagnostics and `--debug` for technical failure details.
+
+| Exit | Meaning                                                         |
+| ---- | --------------------------------------------------------------- |
+| `0`  | Successful validation or compilation.                           |
+| `2`  | Invalid or missing CLI option.                                  |
+| `3`  | Invalid/unsupported content, merge conflict or existing output. |
+| `4`  | Filesystem read/write failure.                                  |
+| `1`  | Unexpected internal failure.                                    |
+
+For an output conflict, choose a fresh directory or remove only the generated output owned by your
+build. For invisible geometry, first verify the bundle/pack pair, the client's pack acceptance and
+the selected target. Native client visuals/audio remain a separate check from compilation and
+synthetic lifecycle tests.
