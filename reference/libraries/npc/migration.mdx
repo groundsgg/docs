@@ -3,9 +3,9 @@ title: "Migrate the NPC API"
 description: "Update packages, builders and lifecycle commands and rebuild Scene, Lobby and optional Dialogue consumers together."
 ---
 
-The redesigned source API intentionally breaks source and JVM signatures from `0.2.0`.
+NPC `1.0.0` intentionally breaks source and JVM signatures from `0.2.0`.
 Schema-1 model JSON, resource IDs and authored units remain compatible. Recompile Java and Kotlin
-consumers against one matching candidate set.
+consumers against one matching released dependency set.
 
 ## Update packages and construction
 
@@ -43,16 +43,16 @@ closing. Custom or delegating `NpcHandle` implementations forward `preparePresen
 Keep numeric sampling in seconds, shared command time in milliseconds, and rotations in degrees.
 Shared playback still needs a host clock; private playback uses the library's monotonic clock.
 
-## Rebuild a coordinated candidate set
+## Rebuild a coordinated released dependency set
 
 <Steps>
-<Step title="Build the NPC producer">
-Build and locally publish `0.3.0-api-review-SNAPSHOT` from the matching source checkout. Run its
-tests, `apiCheck`, strict Dokka generation and artifact-origin checks.
+<Step title="Select the NPC producer release">
+Use the published NPC `1.0.0` artifacts or build that exact source locally. The release workflow
+verifies independent Java/Kotlin consumers and the standalone example against GitHub Packages.
 </Step>
 <Step title="Rebuild Scene and application consumers">
-Rebuild the Scene NPC adapter against the same NPC candidate before rebuilding Lobby. Scene
-exports NPC types in its API. Keep Scene generation/publication guards, colliders and asynchronous
+Use the published `scene-npc-minestom:1.0.0` adapter with NPC `1.0.0` when rebuilding Lobby.
+Scene exports NPC types in its API. Keep Scene generation/publication guards, colliders and asynchronous
 rollback/resource drains intact.
 
 For optional Dialogue NPC integration, update the actor adapter and fixture while keeping the
@@ -62,11 +62,11 @@ during preparation and restoration of the shared NPC.
 <Step title="Verify actual artifact reuse">
 Run independent Java/Kotlin consumers, both runtime profiles and the host tests. Verify the
 actual loaded JAR origins and hashes; matching Maven version strings alone do not identify a
-mutable snapshot's bytes. Retain a complete previous candidate set for rollback.
+mutable snapshot's bytes. Retain a complete previous dependency set for rollback.
 </Step>
 </Steps>
 
-The review labels `0.3.0-api-review-SNAPSHOT` for NPC and `0.5.0-api-review-SNAPSHOT` for Scene
-are local integration candidates, not published release promises. Do not mix the redesigned
-NPC JAR with an older compiled Scene adapter. Complete real-client visual/audio, licensed-content
+NPC `1.0.0` replaces the earlier local API-review label. Use Scene `1.0.0` for this API;
+Scene `0.5.0` remains the older adapter for NPC `0.2.0`. Do not mix the redesigned
+NPC JAR with that older compiled adapter. Complete real-client visual/audio, licensed-content
 and actual reconnect/backend/proxy ownership checks before product rollout.

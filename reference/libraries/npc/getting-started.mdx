@@ -1,23 +1,61 @@
 ---
 title: "Run the NPC example"
-description: "Build the local candidate and learn the API from the shared and personal Minestom examples."
+description: "Use released NPC packages and learn the API from the shared and personal Minestom examples."
 ---
 
-Start with a checkout containing the redesigned `library-npc` API. The independent example is a
+Use the released NPC `1.0.0` packages in your host, or start with a matching `library-npc` source checkout. The independent example is a
 small host application: it resolves the library from Maven, starts Minestom and hosts a neutral
 resource pack. Use JDK 25.
+
+## Add the published library to your host
+
+GitHub Packages requires authentication even for public Maven artifacts. Put `github.user` and
+`github.token` with `read:packages` in your local `~/.gradle/gradle.properties` or CI secrets.
+Your host supplies the Minestom dependency; `npc-minestom` exposes the numeric core transitively.
+
+```kotlin build.gradle.kts
+plugins { java }
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
+
+repositories {
+    mavenCentral()
+    val npcArtifacts = maven {
+        url = uri("https://maven.pkg.github.com/groundsgg/library-npc")
+        credentials {
+            username = providers.gradleProperty("github.user").orNull
+            password = providers.gradleProperty("github.token").orNull
+        }
+    }
+    exclusiveContent {
+        forRepositories(npcArtifacts)
+        filter {
+            includeModule("gg.grounds", "npc-core")
+            includeModule("gg.grounds", "npc-minestom")
+        }
+    }
+}
+
+dependencies {
+    implementation("gg.grounds:npc-minestom:1.0.0")
+    implementation("net.minestom:minestom:2026.10.07-26.2")
+}
+```
+
+For numeric definitions and pose sampling without a platform adapter, select
+`gg.grounds:npc-core:1.0.0` instead. The complete runnable host below shows server setup and cleanup.
 
 ## Build and start the shared scenario
 
 <Steps>
-<Step title="Build the local library candidate">
+<Step title="Build a local publication">
 From the `library-npc` repository root, run:
 
 ```sh
 ./gradlew check apiCheck dokkaGenerate publishAllPublicationsToReviewRepository
 ```
 
-The candidate version is in `version.txt`. Its Maven publications are written to `.evidence/maven`.
+The source version is in `version.txt`. Its Maven publications are written to `.evidence/maven`.
 Source builds and this local repository do not need a Grounds package token.
 </Step>
 <Step title="Run the independent example">
@@ -54,7 +92,7 @@ NPC; restart the application to recreate it.
 
 The example README explains every command and its expected result. The code lives in the
 [NPC library repository](https://github.com/groundsgg/library-npc); use the source matching the
-candidate you built.
+version you built.
 
 `examples/` teaches host integration. `fixtures/` contains separate Java and Kotlin consumers
 that check Maven artifact reuse. `tools/` checks artifact contents, licensing and the actual origin
@@ -66,7 +104,7 @@ Pass the version explicitly when the example no longer has a parent `version.txt
 
 ```sh
 ./gradlew -p /absolute/path/to/copied-example run \
-  -PnpcVersion=0.3.0-api-review-SNAPSHOT \
+  -PnpcVersion=1.0.0 \
   -PnpcRepository=file:///absolute/path/to/library-npc/.evidence/maven
 ```
 
@@ -113,7 +151,7 @@ Sound cues are model metadata. Default sound sinks are silent; inject `NpcSoundS
 delivery. The personal example injects an exclusive recipient sink so A's private wave is audible only to A.
 </Accordion>
 <Accordion title="The current example fails against version 0.2.0">
-The redesigned packages and commands are breaking changes. Use the local candidate above, or
+The redesigned packages and commands are breaking changes. Use NPC `1.0.0` with the current examples, or
 the older release-tag examples with `0.2.0`. Read the [migration guide](/reference/libraries/npc/migration).
 </Accordion>
 </AccordionGroup>
