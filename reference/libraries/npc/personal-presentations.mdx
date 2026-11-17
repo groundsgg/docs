@@ -1,0 +1,156 @@
+---
+title: "Personal NPC presentations"
+description: "Give one concrete player connection independent clip, head-look and sound channels while retaining shared ownership."
+---
+
+A personal presentation replaces the common NPC visual only for one concrete player connection.
+Other viewers keep seeing the common NPC or their own presentation. The shared parent owns the
+pending and active private groups and drains them when it closes.
+
+## Retain the private start token
+
+Call `parent.preparePresentation(NpcPresentationOptions.builder(player).build())` and retain its
+`NpcPresentationStart` before observing `ready()`. A ready result contains hidden parts.
+Observe `publish()` before exposing the private handle to your application.
+
+Use the same prepare/ready/publish/cancel discipline as a shared NPC. A close can race preparation
+before a handle exists; retain and cancel the start token rather than relying on the eventual handle.
+`PersonalNpcSessions` in the example demonstrates this race and removes sessions when `closed()`
+reports expiry or parent cleanup.
+
+## Understand independent channels
+
+Both channels initially follow the current shared sample, including shared seeks and stops.
+
+| Operation | Clip channel | Head channel |
+| --- | --- | --- |
+| Publish a new presentation | Follows shared | Follows shared |
+| `playClip(id)` | Private, starts at local time zero | Keeps its current mode |
+| `applyHeadLook(yaw, pitch)` | Keeps its current mode | Private |
+| `stopClip()` | Private idle/rest | Keeps its current mode |
+| `followSharedClip()` | Follows shared | Keeps its current mode |
+| `followSharedHeadLook()` | Keeps its current mode | Follows shared |
+
+The default private sample interval is 50 ms and uses the library's monotonic clock. Your host
+does not advance private time. Parent root/local movement and per-viewer scale/glow still apply
+without resetting private channels. There is no separate private position/collider API.
+
+Stopping a private clip retains that channel's ownership. Following releases a channel back to
+the parent's current sample. Closing the presentation removes its displays and restores the
+parent's latest shared visual for a still-valid connection.
+
+## Route sound only to the recipient
+
+Default private sound delivery is silent. Supply `NpcViewerSoundSink` through the options builder
+and deliver only to the provided recipient. A shared spatial broadcast would leak private audio
+to other players.
+
+An explicit private `playClip` emits its cue once. Following, snapshots, movement and scale/glow
+updates do not replay it. Closing a presentation cannot stop audio already delivered to the client.
+
+The runnable example's complete command adapter wires the recipient sink and observes each command stage:
+
+```java PersonalNpcCommands.java
+package example;
+
+import gg.grounds.npc.minestom.*;
+import gg.grounds.npc.minestom.presentation.NpcPresentationHandle;
+import gg.grounds.npc.minestom.presentation.NpcPresentationOptions;
+import java.util.*;
+import java.util.concurrent.*;
+import net.minestom.server.MinecraftServer;
+import net.minestom.server.command.builder.Command;
+
+/** The optional presentation scenario: independent channels belong to a concrete connection. */
+final class PersonalNpcCommands {
+  static NpcPresentationOptions options(net.minestom.server.entity.Player player) {
+    // Private cues target the supplied recipient only; do not broadcast them around the parent NPC.
+    return NpcPresentationOptions.builder(player)
+        .sounds(
+            (recipient, origin, sound) ->
+                recipient.playSound(
+                    net.kyori.adventure.sound.Sound.sound(
+                        net.kyori.adventure.key.Key.key(sound.getKey()),
+                        net.kyori.adventure.sound.Sound.Source.MASTER,
+                        (float) sound.getVolume(),
+                        (float) sound.getPitch())))
+        .build();
+  }
+
+  static void register(PersonalNpcSessions personal) {
+    playerCommand("personal", player -> personal.open(player).thenApply(handle -> null));
+    playerCommand(
+        "personalwave", player -> personal.with(player, handle -> handle.playClip("wave")));
+    playerCommand(
+        "personalidle", player -> personal.with(player, handle -> handle.playClip("idle")));
+    // Stopping retains the private channel. Following releases it back to the common NPC.
+    playerCommand("personalstop", player -> personal.with(player, NpcPresentationHandle::stopClip));
+    playerCommand(
+        "personallook", player -> personal.with(player, handle -> handle.applyHeadLook(35, -15)));
+    playerCommand(
+        "personalfollow",
+        player ->
+            personal.with(
+                player,
+                handle ->
+                    handle
+                        .followSharedClip()
+                        .thenCompose(ignored -> handle.followSharedHeadLook())));
+    playerCommand("personalclose", personal::close);
+  }
+
+  static void playerCommand(
+      String name,
+      java.util.function.Function<net.minestom.server.entity.Player, CompletionStage<Void>>
+          operation) {
+    var command = new Command(name);
+    command.setDefaultExecutor(
+        (sender, context) -> {
+          if (sender instanceof net.minestom.server.entity.Player player)
+            operation
+                .apply(player)
+                .exceptionally(
+                    error -> {
+                      player.sendMessage("NPC demo: " + error.getMessage());
+                      return null;
+                    });
+        });
+    MinecraftServer.getCommandManager().register(command);
+  }
+}
+```
+
+## Verify with two clients
+
+From the matching `library-npc` source root, stop the shared demo before reusing its ports and run:
+
+```sh
+./gradlew -p examples/standalone-minestom runPersonalDemo -PnpcRepository="file:$PWD/.evidence/maven"
+```
+
+<Steps>
+<Step title="Start with common visuals">
+Connect A and B and accept the pack on both. A runs `/personal`; its private visual initially
+follows both shared channels. B still sees the common NPC.
+</Step>
+<Step title="Take private ownership">
+A runs `/personalwave` and then `/personallook`. Only A sees its private gesture/head pose, and
+only A hears its wave cue. B can create and control its own presentation independently.
+</Step>
+<Step title="Stop, follow and close separately">
+`/personalstop` keeps A's clip private in rest/idle. `/personalfollow` releases both channels to
+the current shared pose but retains the presentation. `/personalclose` removes the presentation
+and restores the common visual for A.
+</Step>
+</Steps>
+
+## Bound ownership to the connection
+
+The demo uses `IdentityHashMap<Player, Session>` deliberately. A new connection with the same UUID
+must not inherit an old handle, cancellation token or viewer override. Instance departure,
+reconnect and backend/proxy transfer invalidate local ownership. Establish fresh ownership at
+the destination instead of transporting handles or entity IDs.
+
+Default budgets are 32 presentations and 1024 additional parts per shared parent. A 50-part model
+therefore admits at most 20 private groups under the part budget. Admission is checked before
+hiding the common NPC, so rejected preparation does not leave the player without its shared visual.
