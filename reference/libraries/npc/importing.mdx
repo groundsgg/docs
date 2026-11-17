@@ -157,8 +157,12 @@ pivots, rotations/reflection, explicit face UVs and embedded/local PNG textures.
 numeric position/rotation/scale with `linear`, `step` and `catmullrom`; loop modes are `once`, `loop`
 and `hold`. Legacy animation axes are normalized.
 
-Meshes, box UVs, Molang/scripts, Bezier/global/quaternion tracks and `.ajmodel`/Bedrock imports are
-unsupported. A file extension is not a promise to accept every feature authored in Blockbench.
+Editor Box UV flags are supported when explicit per-face UV rectangles are saved; missing UVs
+are never derived from `uv_offset`. Authored hitboxes support inflation and model-space bounds;
+rotated hitbox cubes or ancestors are rejected with a field diagnostic.
+
+Meshes, UVs available only as box offsets, Molang/scripts, Bezier/global/quaternion tracks and
+`.ajmodel`/Bedrock imports are unsupported. A file extension is not a promise to accept every feature authored in Blockbench.
 
 An input can be one file or a recursively read directory. For example,
 `models/town/merchant.bbmodel` with namespace `my_plugin` becomes `my_plugin:npc/town/merchant`.
@@ -199,4 +203,6 @@ build. For invisible geometry, first verify the bundle/pack pair, the client's p
 the selected target. Native client visuals/audio remain a separate check from compilation and
 synthetic lifecycle tests.
 
-Box-UV-Markierungen sind erlaubt, wenn die Datei bereits konkrete UV-Rechtecke pro Fläche enthält. Fehlende UVs werden nicht aus `uv_offset` berechnet.
+Compilation accounts generated client/server bytes and entry counts as resources are collected.
+Configuration, bundle metadata and sound registries are limited to 4 MiB before text decoding;
+compiled models are limited to 2 MiB and original Blockbench sources to 16 MiB.
