@@ -8,10 +8,11 @@ Both paths produce the same model definitions and client contributions. Your hos
 bundle and distributes its matching resourcepack. Restart to adopt edited models.
 
 <Note>
-  The importer is part of the current development source. Released NPC `1.0.0`
-  provides the numeric and rendering APIs but has no `npc-importer` or `npc-cli`
-  module. Until an importer-capable version is published, build all modules from
-  the matching source as shown below.
+  NPC `1.1.0` publishes `npc-core`, `npc-minestom`, `npc-importer` and
+  `npc-cli`. Use one matching version for all selected modules. The older
+  `1.0.0` release has no importer or CLI. [Release
+  downloads](https://github.com/groundsgg/library-npc/releases/tag/v1.1.0)
+  include the executable JAR and application distributions.
 </Note>
 
 ## Compile an original example
@@ -20,22 +21,34 @@ Use JDK 25 and run from the `library-npc` checkout. The source contains an origi
 `bot.bbmodel`; it needs neither Grounds services nor purchased models.
 
 <Steps>
-<Step title="Build the tool and local libraries">
+<Step title="Get the CLI">
+Use an authenticated GitHub CLI to download the release, or build a local candidate when editing the library.
 
-```sh
-NPC_VERSION="$(cat version.txt)-local-SNAPSHOT"
-./gradlew -PversionOverride="$NPC_VERSION" :npc-cli:executableJar :npc-cli:assembleDist publishAllPublicationsToReviewRepository
+<CodeGroup>
+```sh Released CLI
+NPC_VERSION=1.1.0
+mkdir -p build/npc-tools
+gh release download "v$NPC_VERSION" --repo groundsgg/library-npc \
+  --pattern "npc-cli-$NPC_VERSION-all.jar" --dir build/npc-tools
+NPC_CLI="build/npc-tools/npc-cli-$NPC_VERSION-all.jar"
 ```
 
-The executable JAR includes its dependencies. Application ZIP/TAR distributions also include
-Windows and Unix start scripts. The normal `gg.grounds:npc-cli` Maven artifact supports Gradle
-`JavaExec`; the CLI runs without Minestom.
+```sh Local source build
+NPC_VERSION="$(cat version.txt)-local-SNAPSHOT"
+./gradlew -PversionOverride="$NPC_VERSION" :npc-cli:executableJar :npc-cli:assembleDist publishAllPublicationsToReviewRepository
+NPC_CLI="npc-cli/build/libs/npc-cli-$NPC_VERSION-all.jar"
+```
+
+</CodeGroup>
+
+The executable includes its dependencies. ZIP/TAR distributions include Windows and Unix scripts.
+The normal `gg.grounds:npc-cli:1.1.0` Maven artifact supports Gradle `JavaExec` without Minestom.
 
 </Step>
 <Step title="Validate the authored model">
 
 ```sh
-java -jar "npc-cli/build/libs/npc-cli-$NPC_VERSION-all.jar" validate \
+java -jar "$NPC_CLI" validate \
   --input examples/standalone-minestom/models --namespace npc_demo --target 26.3 \
   --config examples/standalone-minestom/models/import.json
 ```
@@ -47,7 +60,7 @@ diagnostic code. The original model has body/head parts and `idle`/`wave` clips.
 <Step title="Generate the bundle and merge a base pack">
 
 ```sh
-java -jar "npc-cli/build/libs/npc-cli-$NPC_VERSION-all.jar" compile \
+java -jar "$NPC_CLI" compile \
   --input examples/standalone-minestom/models --namespace npc_demo --target 26.3 \
   --config examples/standalone-minestom/models/import.json \
   --base-pack examples/standalone-minestom/base-pack --output build/npc-example
@@ -95,7 +108,7 @@ returning an immutable model lookup.
 
 </Tab>
 <Tab title="Import during startup">
-Add the matching `gg.grounds:npc-importer` build and invoke the API before accepting players:
+Add `gg.grounds:npc-importer:1.1.0` and invoke the API before accepting players:
 
 ```java
 import gg.grounds.npc.importer.NpcModelImporter;

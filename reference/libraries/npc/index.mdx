@@ -8,20 +8,20 @@ animation, or give one player a private clip, head pose and sound channel. You r
 owner while the library prepares, publishes and removes the display entities.
 
 <Info>
-  The shared/personal lifecycle pages describe the released NPC `1.0.0` API,
-  available from GitHub Packages. The [model import
-  guide](/reference/libraries/npc/importing) covers the new importer-capable
-  source builds. The older `0.2.0` API uses different packages and methods;
-  follow the [migration guide](/reference/libraries/npc/migration) when updating
-  an existing host.
+  NPC `1.1.0` is available from GitHub Packages and includes the importer and
+  CLI. The shared/personal lifecycle retains the redesigned 1.0 API. Use the
+  [model import guide](/reference/libraries/npc/importing) for source or
+  prepared-content loading. The older `0.2.0` API uses different packages and
+  methods; follow the [migration guide](/reference/libraries/npc/migration) when
+  updating an existing host.
 </Info>
 
 ## Published versions
 
-| Library           | Release                                                                 | Compatibility                                                    |
-| ----------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| NPC               | [1.0.0](https://github.com/groundsgg/library-npc/releases/tag/v1.0.0)   | Redesigned model, lifecycle and presentation API described here. |
-| Scene NPC adapter | [1.0.0](https://github.com/groundsgg/library-scene/releases/tag/v1.0.0) | Uses NPC 1.0.0; rebuild application consumers together.          |
+| Library           | Release                                                                 | Compatibility                                                        |
+| ----------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| NPC               | [1.1.0](https://github.com/groundsgg/library-npc/releases/tag/v1.1.0)   | Rendering API plus content loading, model imports and CLI.           |
+| Scene NPC adapter | [1.0.0](https://github.com/groundsgg/library-scene/releases/tag/v1.0.0) | Compatible with NPC 1.1.0; select matching NPC modules in your host. |
 
 ## Choose the module you need
 
@@ -29,6 +29,8 @@ owner while the library prepares, publishes and removes the display entities.
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `gg.grounds:npc-core`     | Immutable model definitions, bounded schema-1 JSON decoding, validation and numeric pose sampling. It has no Minestom dependency.                |
 | `gg.grounds:npc-minestom` | Shared display rendering, visibility/update policy, movement, viewer overrides and optional private presentations. It exposes core transitively. |
+| `gg.grounds:npc-importer` | Startup or build-time Blockbench imports and pack compilation.                                                                                   |
+| `gg.grounds:npc-cli`      | Standalone CLI or Gradle JavaExec tooling.                                                                                                       |
 
 Use JDK 25 to build or run the supported Minestom host. The library source uses Kotlin 2.2.20 and
 targets JVM 24. Public Minestom is `2026.10.07-26.2`; the separate Grounds profile uses

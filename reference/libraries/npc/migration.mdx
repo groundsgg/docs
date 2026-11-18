@@ -9,32 +9,32 @@ consumers against one matching released dependency set.
 
 ## Update packages and construction
 
-| Previous API | Redesigned API |
-| --- | --- |
-| Model types at `gg.grounds.npc.core` | `gg.grounds.npc.core.model` |
-| Vectors, matrices and transforms at the core root | `gg.grounds.npc.core.math` |
-| Clips, keyframes and sampling at the core root | `gg.grounds.npc.core.animation` |
-| JSON decoder, limits and decode results at the core root | `gg.grounds.npc.core.io` |
-| `NpcProblem` at the core root | `gg.grounds.npc.core.validation.NpcProblem` |
-| Minestom options, transforms, viewer state and callbacks at its root | `.config`, `.transform`, `.viewer` and `.spi` |
-| Personal types at the Minestom root | `gg.grounds.npc.minestom.presentation` |
-| Positional optional options constructors and `copy` | `builder(requiredValues).property(value).build()` and `toBuilder()` |
-| Loop/interpolation strings in numeric definitions | `NpcLoopMode` and `NpcInterpolation` |
-| Nested track string maps | Bone-ID map of `NpcBoneTrack(position, rotation, scale)` |
-| Clip `.length` and keyframe `.time` | `.lengthSeconds` and `.timeSeconds` |
+| Previous API                                                         | Redesigned API                                                      |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Model types at `gg.grounds.npc.core`                                 | `gg.grounds.npc.core.model`                                         |
+| Vectors, matrices and transforms at the core root                    | `gg.grounds.npc.core.math`                                          |
+| Clips, keyframes and sampling at the core root                       | `gg.grounds.npc.core.animation`                                     |
+| JSON decoder, limits and decode results at the core root             | `gg.grounds.npc.core.io`                                            |
+| `NpcProblem` at the core root                                        | `gg.grounds.npc.core.validation.NpcProblem`                         |
+| Minestom options, transforms, viewer state and callbacks at its root | `.config`, `.transform`, `.viewer` and `.spi`                       |
+| Personal types at the Minestom root                                  | `gg.grounds.npc.minestom.presentation`                              |
+| Positional optional options constructors and `copy`                  | `builder(requiredValues).property(value).build()` and `toBuilder()` |
+| Loop/interpolation strings in numeric definitions                    | `NpcLoopMode` and `NpcInterpolation`                                |
+| Nested track string maps                                             | Bone-ID map of `NpcBoneTrack(position, rotation, scale)`            |
+| Clip `.length` and keyframe `.time`                                  | `.lengthSeconds` and `.timeSeconds`                                 |
 
 Options are immutable construction results. Preparation rejections defensively copy a nonempty
 diagnostic list and no longer expose data-class `copy` or destructuring.
 
 ## Update lifecycle and animation calls
 
-| Previous call | Redesigned call |
-| --- | --- |
-| `startAnimation(id, millis)` | `playClip(id, millis)`; `playClip(id)` starts at zero |
-| `advanceAnimation(millis)` | `advanceClipTo(millis)` with absolute clip-local milliseconds |
-| `stopAnimation(null)` | `stopClip()` |
-| `stopAnimation(id)` | `stopClipIfPlaying(id)` |
-| `NpcPresentations.prepare(parent, options)` | `parent.preparePresentation(options)` |
+| Previous call                               | Redesigned call                                               |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| `startAnimation(id, millis)`                | `playClip(id, millis)`; `playClip(id)` starts at zero         |
+| `advanceAnimation(millis)`                  | `advanceClipTo(millis)` with absolute clip-local milliseconds |
+| `stopAnimation(null)`                       | `stopClip()`                                                  |
+| `stopAnimation(id)`                         | `stopClipIfPlaying(id)`                                       |
+| `NpcPresentations.prepare(parent, options)` | `parent.preparePresentation(options)`                         |
 
 Retain preparation tokens before asynchronous readiness, publish hidden handles explicitly and
 await cancellation on every failed installation path. `closed()` observes final cleanup without
@@ -47,17 +47,18 @@ Shared playback still needs a host clock; private playback uses the library's mo
 
 <Steps>
 <Step title="Select the NPC producer release">
-Use the published NPC `1.0.0` artifacts or build that exact source locally. The release workflow
+Use the published NPC `1.1.0` artifacts (which retain the redesigned 1.0 API) or build that exact source locally. The release workflow
 verifies independent Java/Kotlin consumers and the standalone example against GitHub Packages.
 </Step>
 <Step title="Rebuild Scene and application consumers">
-Use the published `scene-npc-minestom:1.0.0` adapter with NPC `1.0.0` when rebuilding Lobby.
+Use the published `scene-npc-minestom:1.0.0` adapter with NPC `1.1.0` when rebuilding Lobby.
 Scene exports NPC types in its API. Keep Scene generation/publication guards, colliders and asynchronous
 rollback/resource drains intact.
 
 For optional Dialogue NPC integration, update the actor adapter and fixture while keeping the
 base Dialogue Minestom module independent of NPC. Preserve private sound isolation, cancellation
 during preparation and restoration of the shared NPC.
+
 </Step>
 <Step title="Verify actual artifact reuse">
 Run independent Java/Kotlin consumers, both runtime profiles and the host tests. Verify the

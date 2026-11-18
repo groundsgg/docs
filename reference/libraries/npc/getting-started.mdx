@@ -3,7 +3,7 @@ title: "Run the NPC example"
 description: "Use released NPC packages and learn the API from the shared and personal Minestom examples."
 ---
 
-Use the released NPC `1.0.0` packages in your host, or start with a matching `library-npc` source checkout. The independent example is a
+Use the released NPC `1.1.0` packages in your host, or start with a matching `library-npc` source checkout. The independent example is a
 small host application: it resolves the library from Maven, starts Minestom and hosts a neutral
 resource pack. Use JDK 25.
 
@@ -32,18 +32,20 @@ repositories {
         filter {
             includeModule("gg.grounds", "npc-core")
             includeModule("gg.grounds", "npc-minestom")
+            includeModule("gg.grounds", "npc-importer")
+            includeModule("gg.grounds", "npc-cli")
         }
     }
 }
 
 dependencies {
-    implementation("gg.grounds:npc-minestom:1.0.0")
+    implementation("gg.grounds:npc-minestom:1.1.0")
     implementation("net.minestom:minestom:2026.10.07-26.2")
 }
 ```
 
 For numeric definitions and pose sampling without a platform adapter, select
-`gg.grounds:npc-core:1.0.0` instead. The complete runnable host below shows server setup and cleanup.
+`gg.grounds:npc-core:1.1.0` instead. The complete runnable host below shows server setup and cleanup.
 
 ## Build and start the shared scenario
 
@@ -57,6 +59,7 @@ From the `library-npc` repository root, run:
 
 The source version is in `version.txt`. Its Maven publications are written to `.evidence/maven`.
 Source builds and this local repository do not need a Grounds package token.
+
 </Step>
 <Step title="Run the independent example">
 
@@ -67,6 +70,7 @@ Source builds and this local repository do not need a Grounds package token.
 Connect to `localhost:25574` and accept the resource pack hosted on port `25575`. You should see
 a body and head near `(0, 40, 0)`. If those ports are occupied, append
 `-PnpcPort=25584 -PnpcPackPort=25585` and connect to the chosen game port.
+
 </Step>
 <Step title="Observe shared and connection-specific changes">
 Run `/npcwave` for the shared one-second gesture, `/npclook` for shared head look, and `/npcmove`
@@ -75,20 +79,21 @@ to move the root to `(2, 40, 0)`. A second player sees these changes too.
 Run `/npcscale` to set scale `1.3` and glow only for the calling player's connection. The second
 player keeps the normal appearance. `/npcremove` stops the host's advance task and removes the
 NPC; restart the application to recreate it.
+
 </Step>
 </Steps>
 
 ## Read responsibilities instead of one large entrypoint
 
-| Read order | Source in `examples/standalone-minestom/src/main/java/example` | Responsibility |
-| --- | --- | --- |
-| 1 | `NpcDemo.java` | Choose the shared application and register shutdown ownership. |
-| 2 | `DemoApplication.java` | Build the request; retain the start token; await hidden readiness; publish; drain failure and shutdown. |
-| 3 | `DemoNpcModel.java` | Define the neutral two-bone model and typed idle/wave clips. |
-| 4 | `SharedNpcPlayback.java` | Own increasing absolute clip milliseconds and cancel the host task. |
-| 5 | `SharedNpcCommands.java` | Observe command stages and apply shared versus viewer-specific state. |
-| 6 | `PersonalNpcCommands.java`, `PersonalNpcSessions.java` | Add private channels and retain per-connection cancellation ownership. |
-| 7 | `DemoServer.java`, `DemoPackHost.java` | Configure the local world, server and pack hosting. |
+| Read order | Source in `examples/standalone-minestom/src/main/java/example` | Responsibility                                                                                          |
+| ---------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1          | `NpcDemo.java`                                                 | Choose the shared application and register shutdown ownership.                                          |
+| 2          | `DemoApplication.java`                                         | Build the request; retain the start token; await hidden readiness; publish; drain failure and shutdown. |
+| 3          | `DemoNpcModel.java`                                            | Define the neutral two-bone model and typed idle/wave clips.                                            |
+| 4          | `SharedNpcPlayback.java`                                       | Own increasing absolute clip milliseconds and cancel the host task.                                     |
+| 5          | `SharedNpcCommands.java`                                       | Observe command stages and apply shared versus viewer-specific state.                                   |
+| 6          | `PersonalNpcCommands.java`, `PersonalNpcSessions.java`         | Add private channels and retain per-connection cancellation ownership.                                  |
+| 7          | `DemoServer.java`, `DemoPackHost.java`                         | Configure the local world, server and pack hosting.                                                     |
 
 The example README explains every command and its expected result. The code lives in the
 [NPC library repository](https://github.com/groundsgg/library-npc); use the source matching the
@@ -104,11 +109,11 @@ Pass the version explicitly when the example no longer has a parent `version.txt
 
 ```sh
 ./gradlew -p /absolute/path/to/copied-example run \
-  -PnpcVersion=1.0.0 \
+  -PnpcVersion=1.1.0 \
   -PnpcRepository=file:///absolute/path/to/library-npc/.evidence/maven
 ```
 
-Keep the selected repository exclusive for `gg.grounds:npc-core` and `gg.grounds:npc-minestom`, as
+Keep the selected repository exclusive for the four `gg.grounds:npc-*` modules, as
 the example build does. After rebuilding a mutable local candidate, use Gradle
 `--refresh-dependencies` if it still resolves the previous bytes. Your host supplies its own
 supported Minestom dependency; the adapter's Minestom dependency is compile-only.
@@ -138,20 +143,24 @@ and actual backend/proxy transfer checks remain separate acceptance work.
 ## Troubleshoot common first-run problems
 
 <AccordionGroup>
-<Accordion title="The model is invisible or has missing textures">
-Accept the resource pack, check that its HTTP port is available, and use the pack matching your
-runtime profile. A model definition names item-model resources; it does not contain their client graphics.
-</Accordion>
-<Accordion title="The shared clip does not advance">
-Install a host driver and pass increasing absolute clip milliseconds. The example advances
-`50`, `100`, `150` and so on; repeatedly passing `50` seeks to the same instant.
-</Accordion>
-<Accordion title="The shared wave is silent">
-Sound cues are model metadata. Default sound sinks are silent; inject `NpcSoundSink` for shared
-delivery. The personal example injects an exclusive recipient sink so A's private wave is audible only to A.
-</Accordion>
-<Accordion title="The current example fails against version 0.2.0">
-The redesigned packages and commands are breaking changes. Use NPC `1.0.0` with the current examples, or
-the older release-tag examples with `0.2.0`. Read the [migration guide](/reference/libraries/npc/migration).
-</Accordion>
+  <Accordion title="The model is invisible or has missing textures">
+    Accept the resource pack, check that its HTTP port is available, and use the
+    pack matching your runtime profile. A model definition names item-model
+    resources; it does not contain their client graphics.
+  </Accordion>
+  <Accordion title="The shared clip does not advance">
+    Install a host driver and pass increasing absolute clip milliseconds. The
+    example advances `50`, `100`, `150` and so on; repeatedly passing `50` seeks
+    to the same instant.
+  </Accordion>
+  <Accordion title="The shared wave is silent">
+    Sound cues are model metadata. Default sound sinks are silent; inject
+    `NpcSoundSink` for shared delivery. The personal example injects an
+    exclusive recipient sink so A's private wave is audible only to A.
+  </Accordion>
+  <Accordion title="The current example fails against version 0.2.0">
+    The redesigned packages and commands are breaking changes. Use NPC `1.1.0`
+    with the current examples, or the older release-tag examples with `0.2.0`.
+    Read the [migration guide](/reference/libraries/npc/migration).
+  </Accordion>
 </AccordionGroup>
