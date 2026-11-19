@@ -19,8 +19,8 @@ github.token=YOUR_READ_PACKAGES_TOKEN
 ```
 
 Keep the token out of your project and Git history. In CI, provide the properties through
-your secret store; Gradle also accepts `ORG_GRADLE_PROJECT_github.user` and
-`ORG_GRADLE_PROJECT_github.token` environment variables.
+your secret store as `GITHUB_ACTOR` and `GITHUB_TOKEN`; the build below accepts these
+environment variables when the user-level properties are absent.
 
 ## Add the repository and dependency
 
@@ -35,7 +35,9 @@ repositories {
                 url = uri("https://maven.pkg.github.com/groundsgg/library-npc")
                 credentials {
                     username = providers.gradleProperty("github.user").orNull
+                        ?: providers.environmentVariable("GITHUB_ACTOR").orNull
                     password = providers.gradleProperty("github.token").orNull
+                        ?: providers.environmentVariable("GITHUB_TOKEN").orNull
                 }
             }
         }

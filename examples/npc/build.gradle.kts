@@ -11,7 +11,9 @@ repositories {
                 url = uri("https://maven.pkg.github.com/groundsgg/library-npc")
                 credentials {
                     username = providers.gradleProperty("github.user").orNull
+                        ?: providers.environmentVariable("GITHUB_ACTOR").orNull
                     password = providers.gradleProperty("github.token").orNull
+                        ?: providers.environmentVariable("GITHUB_TOKEN").orNull
                 }
             }
         }
