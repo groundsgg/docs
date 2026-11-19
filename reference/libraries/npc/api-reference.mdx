@@ -1,0 +1,115 @@
+---
+title: "NPC API reference"
+description: "Find the public modules, lifecycle operations, units and import options after completing the guides."
+---
+
+The examples target NPC **2.0.0**. Use the [first NPC guide](/reference/libraries/npc/getting-started)
+for a complete integration; use this page to look up a particular contract.
+
+## Modules
+
+| Module | Responsibility |
+| --- | --- |
+| `npc-core` | Immutable model data, validation, content loading and numeric pose sampling. No Minestom dependency. |
+| `npc-minestom` | Shared rendering and per-player presentations. Exposes core; your host supplies Minestom. |
+| `npc-importer` | Synchronous Blockbench import and resourcepack generation in an application or build tool. |
+| `npc-cli` | The same importer as a standalone executable or Gradle `JavaExec` dependency. |
+
+## Shared NPC lifecycle
+
+| Operation | Result |
+| --- | --- |
+| `NpcRenderer.prepare(request)` | An immediate `NpcStart` cancellation token. |
+| `start.ready()` | A stage containing hidden `Ready(handle)` or `Rejected(problems)`. |
+| `handle.publish()` | A stage for admitting the prepared NPC to viewers. |
+| `handle.closeAsync()` or `start.cancel()` | Idempotent cancellation and asynchronous resource cleanup. |
+| `handle.closed()` | Observes cleanup without initiating removal. |
+
+Requests use `NpcSpawnRequest.builder(instance, model, transform)`. Optional settings configure
+meshes, sound callbacks, publication guards and render policy. `toBuilder()` creates an
+independent builder. The default sound callbacks are silent.
+
+Command failures arrive through their stages. Operational failures use `NpcOperationException`
+and retain their cause. Keep and observe cleanup even if readiness or publication fails.
+
+## Animation and units
+
+| Value | Unit |
+| --- | --- |
+| Numeric keyframes, `NpcClip.lengthSeconds`, pose sampling | Seconds. |
+| Shared `playClip(id, time)` and `advanceClipTo(time)` | Absolute clip-local milliseconds. |
+| Bone rotations and `applyHeadLook(yaw, pitch)` | Degrees. |
+| Root position | World coordinates. |
+
+`playClip(id)` starts at zero. Shared clips need a host clock. Personal clips use their own
+monotonic clock. `stopClip()` selects rest; `stopClipIfPlaying(id)` stops only a matching request.
+
+`NpcRenderConfig.builder().protectSoundPlayback(true)` enables shared audible-gesture
+protection. `canStartClip(id)` is advisory; use `reserveClip(id)` when a start and a host-clock
+reset must be coordinated. Close every returned reservation, including after queueing its start.
+A model's optional `NpcClipSound.durationMillis` describes effective cue duration; zero means
+unknown. Do not infer complete sound duration from a short animation alone.
+
+## Per-player state
+
+`NpcViewerState` supplies scale and highlight. Scale is finite and in `(0, 16]`.
+`preparePresentation(options)` prepares a private copy for a concrete player connection.
+Private clip and head-look channels can follow or override shared state independently.
+Root movement and viewer scale still follow the parent.
+
+Handles, live entities and player references stay on their owning backend. Reconnects and
+cross-proxy/backend transfers require fresh local ownership.
+
+## Import options
+
+The CLI accepts `validate` and `compile`. Important options are:
+
+| Option | Meaning |
+| --- | --- |
+| `--input` | One `.bbmodel` file or a directory. |
+| `--namespace` | Namespace for generated model and resource IDs. |
+| `--target` | Required Minecraft target: `26.2` or `26.3`. |
+| `--output` | New directory for a compiled result. |
+| `--config` | JSON configuration for explicit model IDs and sound bindings. |
+| `--base-pack` | Compatible pack ZIP or directory to merge. |
+| `--description` | Override the output pack description. |
+
+Generic Blockbench 5.0 and legacy 4.10 models support cube geometry, bone hierarchy, pivots,
+per-face UVs, embedded/relative PNGs and numeric position/rotation/scale animation. Supported
+interpolation is `linear`, `step`, `catmullrom`; loop modes are `once`, `loop`, `hold`.
+Use the CLI's diagnostics for unsupported expressions or source features.
+
+A relative path such as `town/merchant.bbmodel` becomes `my_server:npc/town/merchant`.
+Use `models` in your import configuration to override that mapping. Sound bindings name an
+existing model and clip, with either a local OGG `file` or an `external` event:
+
+```json import.json
+{
+  "schemaVersion": 1,
+  "sounds": [{
+    "model": "my_server:npc/merchant",
+    "clip": "wave",
+    "key": "minecraft:entity.villager.yes",
+    "external": true,
+    "volume": 0.8,
+    "pitch": 1,
+    "radius": 12
+  }]
+}
+```
+
+Pass it with `--config models/import.json`. Local sound paths and model-mapping paths are
+relative to the input directory. Namespace/path conflicts are errors; the compiler does not
+silently replace unrelated assets.
+
+## Numeric definitions and limits
+
+`NpcModelJson.decode(bytes, limits)` returns `Success` or a nonempty `Failure.problems` list.
+Problems contain a code and field path. Manual constructors validate the same model invariants.
+Schema 1 permits at most 256 bones, 1024 parts, 128 clips, 4096 keys per channel and 300 seconds
+per clip. `NpcDecodeLimits` can lower these budgets. Parent bones precede their children.
+
+Package names group model, animation, math, I/O and validation types under
+`gg.grounds.npc.core`. Minestom rendering, configuration, transforms, viewer state, callbacks
+and presentations live under `gg.grounds.npc.minestom`. Packages named `internal` are implementation
+details. The matching source checkout's `dokkaGenerate` task generates the complete KDoc reference.

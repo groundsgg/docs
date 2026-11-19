@@ -4,3 +4,8 @@
 .codex
 **/.superpowers/
 **/superpowers/
+
+# Local outputs from the independent NPC documentation check.
+/examples/npc/.gradle/
+/examples/npc/.kotlin/
+/examples/npc/build/
