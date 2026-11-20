@@ -1,0 +1,57 @@
+---
+title: "Troubleshoot NPCs"
+description: "Check common causes of invisible models, missing animation, silent cues and startup failures."
+---
+
+## The model is invisible or appears as paper
+
+Make sure the player is in the NPC's instance and near its position. Accept the matching
+resourcepack, and check that the player's computer can download its URL.
+`127.0.0.1` means the player's own computer, so use a reachable host when testing remotely.
+
+The resourcepack request uses the SHA-1 of the exact ZIP served at its URL.
+`SampleNpcPack` computes it from your local pack file, so the hosted and local files must match.
+The manifest records SHA-256 for artifact verification; it is not the request's SHA-1.
+After changing the pack, update the hosted file and rebuild the request from the matching local file. A server bundle and an unrelated pack do not form a working model.
+The quickstart files target Minecraft 26.2.
+
+## The NPC is prepared but invisible
+
+Preparation creates hidden parts. Wait for `start.ready()`, handle rejection, and then await
+`handle.publish()`. The quickstart helper performs both steps.
+
+## A shared animation starts but stays still
+
+Your application must drive shared clip time. Use the [animation helper](/reference/libraries/npc/shared-npcs)
+or call `advanceClipTo(...)` with increasing absolute clip-local milliseconds.
+Passing `50` repeatedly always selects the same sample; it does not add 50 ms.
+
+Private presentations have their own clock and do not need this driver.
+
+## A clip has no sound
+
+Both shared and private sound callbacks are silent by default. Add the callback from the
+[sound guide](/reference/libraries/npc/shared-npcs#make-a-clip-audible).
+Check the cue's event ID and, for custom sounds, the resourcepack's sound definition and file.
+A private callback must send only to its recipient.
+
+## Startup hangs while waiting for an NPC
+
+Do not block an instance tick waiting for another command on that instance. Compose returned
+stages instead. Keep shutdown waits on a separate thread while the scheduler is still available.
+
+## The content loader rejects a path
+
+Check the reported path and diagnostic. A configured content file must exist and its final
+path component must not be a symlink. An existing content directory must contain the complete
+bundle, rather than an individual model JSON file.
+
+For a projected Kubernetes Secret, a top-level key is a symlink. Project the archive as
+`content/server-content.zip` and open that nested file, or use a read-only file `subPath` mount.
+This keeps the archive itself a regular file.
+
+## Gradle cannot resolve the package
+
+Check the GitHub Packages repository and the `read:packages` credentials from
+[installation](/reference/libraries/npc/installation). Use NPC 2.0.0 consistently across modules.
+A local source build is optional; it is not a prerequisite for consuming the released package.

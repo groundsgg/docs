@@ -216,11 +216,21 @@
                 "group": "NPC library",
                 "pages": [
                   "reference/libraries/npc/index",
+                  "reference/libraries/npc/installation",
                   "reference/libraries/npc/getting-started",
                   "reference/libraries/npc/importing",
                   "reference/libraries/npc/shared-npcs",
                   "reference/libraries/npc/personal-presentations",
-                  "reference/libraries/npc/migration"
+                  "reference/libraries/npc/integration",
+                  "reference/libraries/npc/troubleshooting",
+                  {
+                    "group": "Reference and advanced",
+                    "pages": [
+                      "reference/libraries/npc/api-reference",
+                      "reference/libraries/npc/migration",
+                      "reference/libraries/npc/advanced"
+                    ]
+                  }
                 ]
               },
               {

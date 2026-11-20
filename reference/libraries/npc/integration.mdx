@@ -1,0 +1,85 @@
+---
+title: "Manage NPCs in your application"
+description: "Load shared model data once, own each NPC's lifetime, and clean up before your server stops."
+---
+
+The quickstart creates one bot. In an application with shops, quests or several worlds,
+keep model data separate from the NPCs created from it.
+
+## Load once, create several NPCs
+
+Load and verify a prepared bundle during startup. `content.getModels()` is an immutable lookup;
+you can reuse a selected `NpcModel` for several `NpcSpawnRequest` objects.
+Each request chooses its own instance, position, sound callback and configuration.
+
+`FirstNpc.java` loads files on each call to keep the first example self-contained. In your
+application, move those two file operations into your content-loading service and pass the
+selected model to the request builder. Keep blocking file work off the instance tick.
+
+## Keep an owner until removal finishes
+
+Your application owns both the NPC and any repeating tasks it creates:
+
+1. Keep the `NpcStart` returned by `NpcRenderer.prepare(...)` immediately.
+2. Wait asynchronously for preparation. A ready handle is still hidden.
+3. Publish the handle, then allow application code to use it.
+4. Cancel your animation tasks and await `start.cancel()` before stopping the instance.
+
+A start token lets you cancel before a handle exists. It also remains useful after publication.
+The quickstart's `FirstNpc` wraps this sequence. Keep one such owner per NPC, including NPCs
+that are still starting.
+
+If a creation step fails, cancel and await that start before considering cleanup complete.
+If cleanup also fails, retain both errors. Do not shut down the scheduler while cleanup still
+needs to finish.
+
+## Avoid blocking the instance thread
+
+NPC commands return `CompletionStage` values. Compose them from event callbacks:
+
+```java
+npc.applyHeadLook(20, -10)
+   .thenCompose(unused -> npc.applyTransform(destination))
+   .whenComplete((unused, error) -> {
+       if (error != null) error.printStackTrace();
+   });
+```
+
+Here `destination` is the `NpcRenderTransform` from the movement guide.
+Waiting with `join()` or `get()` inside an instance tick can block the same scheduler that
+must complete the command. Bounded waits are appropriate on a separate bootstrap/shutdown
+thread, as shown in the quickstart.
+
+A completed server command does not acknowledge a rendered Minecraft frame or an accepted
+resourcepack. Use your application's pack-status handling when gameplay requires that boundary.
+
+## Handle changing worlds and reconnects
+
+Invalidate pending installations when a world closes or a newer installation replaces them.
+For that advanced lifecycle, configure `NpcPublicationGuard` on the spawn request. Its callback
+must check the current generation and run the supplied publication operation synchronously
+and atomically. The default guard runs it immediately.
+
+Player objects and private presentation handles belong to one current backend connection.
+When a player transfers between servers or proxies, cancel old local state and create new state
+at the destination. Use network-wide presence/routing when resolving remote players.
+
+## Add Scene when you need interactions
+
+The NPC library renders models. If you also want authored placements, click/proximity triggers
+and logical colliders, add the optional Scene adapter:
+
+```kotlin build.gradle.kts
+dependencies {
+    implementation("gg.grounds:scene-npc-minestom:1.0.1")
+    implementation("gg.grounds:npc-minestom:2.0.0")
+}
+```
+
+Resolve Scene from its `groundsgg/library-scene` GitHub Packages repository as well.
+Scene owns the logical element, interactions and activation; NPC owns its rendered parts.
+Your application still loads models and supplies the exact scene catalogs.
+See the [Scene runtime reference](/reference/plugins/scenes/runtime) for that separate integration.
+
+Next: [troubleshooting](/reference/libraries/npc/troubleshooting) or
+[advanced build and verification workflows](/reference/libraries/npc/advanced).

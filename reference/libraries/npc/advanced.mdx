@@ -1,0 +1,82 @@
+---
+title: "Build and verify NPC content"
+description: "Automate imports, run the complete example, build the library locally and verify independent consumers."
+---
+
+Use these workflows after the [first NPC guide](/reference/libraries/npc/getting-started).
+They are for build automation and library development; ordinary applications consume the
+published dependencies and prepared model data.
+
+## Run imports through Gradle
+
+Use the published `gg.grounds:npc-cli:2.0.0` artifact on a separate `JavaExec` classpath.
+Declare your models, import configuration and base pack as task inputs. The CLI requires a
+new output directory, so let the task own and recreate only its generated output directory.
+
+The complete [independent Gradle importer example](https://github.com/groundsgg/library-npc/tree/v2.0.0/fixtures/gradle-importer-consumer)
+shows dependency resolution, inputs, outputs and pack verification. It uses the same compiler
+as the CLI JAR and startup API.
+
+## Run the complete example server
+
+Clone the [NPC repository](https://github.com/groundsgg/library-npc) at tag `v2.0.0`, configure
+the package credentials from installation, and run from its root:
+
+```sh
+./gradlew -p examples/standalone-minestom runImportedDemo \
+  -PnpcVersion=2.0.0 \
+  -PnpcRepository=https://maven.pkg.github.com/groundsgg/library-npc
+```
+
+The example uses an original Blockbench model, starts Minestom, and hosts its generated pack.
+Connect to `localhost:25574` with the matching 26.2 client. Accept the pack, then try
+`/npcwave`, `/npclook` and `/npcmove`. The example README lists the other tasks and commands.
+This is an optional complete application for comparison with your own integration.
+
+## Build the library locally
+
+Use this path when changing the library itself. Run from the matching NPC source checkout:
+
+```sh
+NPC_VERSION="$(cat version.txt)-local-SNAPSHOT"
+./gradlew -PversionOverride="$NPC_VERSION" \
+  check apiCheck dokkaGenerate publishAllPublicationsToReviewRepository
+```
+
+The local Maven files are written to `.evidence/maven`. To use them in the standalone example:
+
+```sh
+./gradlew -p examples/standalone-minestom run \
+  -PnpcVersion="$NPC_VERSION" -PnpcRepository="file:$PWD/.evidence/maven"
+```
+
+Source builds do not require a Grounds package token. A local publication does not create a
+GitHub release or upload packages. Use `--refresh-dependencies` when deliberately rebuilding
+a mutable local candidate and Gradle still resolves old bytes.
+
+## Understand the repository tools
+
+| Directory | Purpose |
+| --- | --- |
+| `examples/` | A complete application demonstrating the library. |
+| `fixtures/` | Independent Java/Kotlin consumers proving the published modules can be reused. |
+| `tools/` | Artifact, license and dependency-origin checks for library maintainers. |
+| `src/smoke` inside the example | Synthetic-player scenarios for automated lifecycle and isolation checks. |
+
+The release workflow exercises independent consumers and CLI distributions. These checks
+complement real-client tests; they do not confirm what a player sees or hears.
+
+## Verify the documentation example
+
+In the Docs repository, `examples/npc` compiles the downloadable Java classes against the
+released packages and starts a temporary local Minestom server. Its smoke check creates,
+animates and removes the bot, and cancels pending creation. The documentation CI runs it. It also extracts and compiles the actual Java/Kotlin guide snippets.
+
+With Gradle 9.2.1, Java 25 and package credentials available:
+
+```sh
+gradle -p examples/npc run checkSnippets
+```
+
+The expected result is `NPC docs quickstart OK`. No Grounds services or permanent server ports
+are needed. A Minecraft-client check is still needed for visual appearance and audio.

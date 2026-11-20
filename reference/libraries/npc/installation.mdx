@@ -1,0 +1,66 @@
+---
+title: "Install the NPC library"
+description: "Add the published library to an existing Java or Kotlin Minestom project."
+---
+
+Use Java 25. These guides use NPC **2.0.0** with public Minestom
+`2026.10.07-26.2`, which runs Minecraft 26.2. The quickstart pack targets that same version.
+
+## Configure package access
+
+The library is published to GitHub Packages. Maven downloads require a GitHub username
+and a token with `read:packages`, including for public packages.
+
+Add these properties to your user-level `~/.gradle/gradle.properties`:
+
+```properties gradle.properties
+github.user=YOUR_GITHUB_USERNAME
+github.token=YOUR_READ_PACKAGES_TOKEN
+```
+
+Keep the token out of your project and Git history. In CI, provide the properties through
+your secret store as `GITHUB_ACTOR` and `GITHUB_TOKEN`; the build below accepts these
+environment variables when the user-level properties are absent.
+
+## Add the repository and dependency
+
+Add the following to your existing Gradle Kotlin build file:
+
+```kotlin build.gradle.kts
+repositories {
+    mavenCentral()
+    exclusiveContent {
+        forRepository {
+            maven {
+                url = uri("https://maven.pkg.github.com/groundsgg/library-npc")
+                credentials {
+                    username = providers.gradleProperty("github.user").orNull
+                        ?: providers.environmentVariable("GITHUB_ACTOR").orNull
+                    password = providers.gradleProperty("github.token").orNull
+                        ?: providers.environmentVariable("GITHUB_TOKEN").orNull
+                }
+            }
+        }
+        filter {
+            includeModule("gg.grounds", "npc-core")
+            includeModule("gg.grounds", "npc-minestom")
+            includeModule("gg.grounds", "npc-importer")
+            includeModule("gg.grounds", "npc-cli")
+        }
+    }
+}
+
+dependencies {
+    implementation("gg.grounds:npc-minestom:2.0.0")
+    // Keep one Minestom dependency in your application.
+    implementation("net.minestom:minestom:2026.10.07-26.2")
+}
+```
+
+`npc-minestom` already brings in `npc-core`. You do not need the importer or CLI to load
+the prepared example. Your application supplies Minestom; the library does not start a server.
+
+If your project already selects another Minestom version, check its compatibility before
+changing it. A pack's Minecraft target must also match the clients connecting to that server.
+
+Continue with [your first NPC](/reference/libraries/npc/getting-started).

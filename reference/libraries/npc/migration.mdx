@@ -1,7 +1,19 @@
 ---
 title: "Migrate the NPC API"
-description: "Update packages, builders and lifecycle commands and rebuild Scene, Lobby and optional Dialogue consumers together."
+description: "Move an existing application to NPC 2.0.0 and select a compatible Scene adapter."
 ---
+
+## From NPC 1.1 to 2.0
+
+Use `2.0.0` for every selected NPC module. This release adds shared clip admission,
+reservations and optional sound-duration metadata. The four-argument Java `NpcClipSound`
+constructor remains available; Kotlin data-class copy signatures changed. Recompile consumers
+rather than replacing a JAR beneath already compiled Kotlin code.
+
+If you use Scene, select `scene-npc-minestom:1.0.1`. Ordinary hosts do not need to build Scene,
+Lobby or Dialogue to use the standalone NPC library.
+
+## From NPC 0.2
 
 NPC `1.0.0` intentionally breaks source and JVM signatures from `0.2.0`.
 Schema-1 model JSON, resource IDs and authored units remain compatible. Recompile Java and Kotlin
@@ -43,31 +55,13 @@ closing. Custom or delegating `NpcHandle` implementations forward `preparePresen
 Keep numeric sampling in seconds, shared command time in milliseconds, and rotations in degrees.
 Shared playback still needs a host clock; private playback uses the library's monotonic clock.
 
-## Rebuild a coordinated released dependency set
+## Update an application
 
-<Steps>
-<Step title="Select the NPC producer release">
-Use the published NPC `1.1.0` artifacts (which retain the redesigned 1.0 API) or build that exact source locally. The release workflow
-verifies independent Java/Kotlin consumers and the standalone example against GitHub Packages.
-</Step>
-<Step title="Rebuild Scene and application consumers">
-Use the published `scene-npc-minestom:1.0.0` adapter with NPC `1.1.0` when rebuilding Lobby.
-Scene exports NPC types in its API. Keep Scene generation/publication guards, colliders and asynchronous
-rollback/resource drains intact.
+1. Select released NPC `2.0.0` modules in your build.
+2. Update an optional Scene NPC adapter to `1.0.1` and recompile the host.
+3. Run your normal application tests, then check model appearance, animation, sound,
+   reconnects and cleanup with the matching client pack.
 
-For optional Dialogue NPC integration, update the actor adapter and fixture while keeping the
-base Dialogue Minestom module independent of NPC. Preserve private sound isolation, cancellation
-during preparation and restoration of the shared NPC.
-
-</Step>
-<Step title="Verify actual artifact reuse">
-Run independent Java/Kotlin consumers, both runtime profiles and the host tests. Verify the
-actual loaded JAR origins and hashes; matching Maven version strings alone do not identify a
-mutable snapshot's bytes. Retain a complete previous dependency set for rollback.
-</Step>
-</Steps>
-
-NPC `1.0.0` replaces the earlier local API-review label. Use Scene `1.0.0` for this API;
-Scene `0.5.0` remains the older adapter for NPC `0.2.0`. Do not mix the redesigned
-NPC JAR with that older compiled adapter. Complete real-client visual/audio, licensed-content
-and actual reconnect/backend/proxy ownership checks before product rollout.
+Scene `0.5.0` is the older adapter for NPC `0.2.0`; it cannot be mixed with the redesigned
+NPC API. See [installation](/reference/libraries/npc/installation) for package access and
+[advanced workflows](/reference/libraries/npc/advanced) if you maintain the libraries themselves.

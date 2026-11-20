@@ -9,7 +9,7 @@ description: "Integrate renderer factories, action handlers, effects, player pol
 
 ```kotlin build.gradle.kts
 dependencies {
-    implementation("gg.grounds:scene-minestom:0.4.3")
+    implementation("gg.grounds:scene-minestom:1.0.1")
 }
 ```
 
@@ -79,27 +79,22 @@ Call APIs that touch Minestom state from the owning instance thread. Retain `run
 
 Java adapters can subclass `JavaSceneAssetRendererRegistry`, `JavaRenderedAssetHandle`, `JavaSceneEffectSink`, and `JavaSceneActionRegistry`. Identifier-bearing contexts expose String `get...Value()` accessors. `SceneRuntimeJava.identity(sceneId, mapId, mapVersion)` constructs an identity without requiring Java callers to invoke Kotlin value-class constructors.
 
-## Current lobby host
+## Render NPC models
 
-The current `minestom-lobby` dependency pins are `scene-minestom:0.4.3`, `resourcepacks-catalog:1.0.0`, and `plugin-lobby-scene-catalog:2.0.0`, with the installed `plugin-lobby-minestom:2.6.0` navigator service. These are source pins as of October 14, 2026, not a claim about every live deployment.
+Add the optional `scene-npc-minestom:1.0.1` adapter with NPC `2.0.0` when a scene contains
+NPC bodies. Your host loads the model content and supplies it through `SceneNpcModelSource`.
+The adapter handles NPC rendering; Scene retains the logical element, collider and interactions.
+The [NPC developer guides](/reference/libraries/npc/index) explain model loading and client packs.
 
-| Capability | Lobby behavior |
-| --- | --- |
-| `grounds:editor/guide`, `grounds:editor/marker` | Explicit placeholder renderer factories; no general model renderer |
-| Root/local transforms and authored scale | Supported |
-| Labels and viewer-private highlights | Supported |
-| `grounds:lobby/open_navigator` | Parameterless action; requires the installed service and an eligible connected player |
-| Message, action bar, title actions | Supported by runtime |
-| Animation, viewer-scale actions, sound, particles | Rejected during host preflight |
-
-A present invalid/unsupported root sidecar fails startup. With a scene selected, player configuration waits up to 30 seconds for the runtime gate; failure, disconnect, or host close assigns no spawn instance. This gate is separate from Agones readiness. Cleanup failure or timeout is reported, not treated as success.
+Renderer/effect support depends on your host. Declare the capabilities you actually implement
+and reject unsupported scene content during preflight. Published model data and the scene's
+catalog pins must match. A particular Grounds Lobby deployment is not the runtime library's
+capability limit.
 
 ## Implementation sources
 
-Verified against the main-branch source on October 14, 2026.
+For current API definitions, use the published 1.0.1 source.
 
-- [Runtime request and interface](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneRuntime.kt)
-- [Renderer contract](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneRendering.kt)
-- [Application actions](https://github.com/groundsgg/library-scene/blob/dbe3fca13c9d552dc885b172193d21bc9c59e8c8/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneActions.kt)
-- [Lobby preflight](https://github.com/groundsgg/minestom-lobby/blob/628da000fc01bf541078e4160b441cbe7e361a25/src/main/kotlin/gg/grounds/minestom/lobby/scene/LobbySceneLoader.kt)
-- [Current dependency pins](https://github.com/groundsgg/minestom-lobby/blob/628da000fc01bf541078e4160b441cbe7e361a25/build.gradle.kts)
+- [Runtime request and interface](https://github.com/groundsgg/library-scene/blob/v1.0.1/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneRuntime.kt)
+- [Renderer contract](https://github.com/groundsgg/library-scene/blob/v1.0.1/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneRendering.kt)
+- [Application actions](https://github.com/groundsgg/library-scene/blob/v1.0.1/scene-minestom/src/main/kotlin/gg/grounds/scene/minestom/SceneActions.kt)
